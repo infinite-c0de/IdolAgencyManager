@@ -1,0 +1,9 @@
+{
+  "_percentage": 25,
+  "_max_bet_amount": 0.1,
+  "_gas_price": 1000000000,
+  "_gas_limit": 250000,
+  "_target": [
+    "0xe696edcb189e056ecfb1508fe8542b6a5c2f687a"
+  ]
+}

@@ -1,0 +1,23 @@
+{
+    "_max_bet_amount": 0.12,
+    "_max_bear_amount": 0.12,
+    "_min_bet_amount": 0,
+    "_left_time": 4,
+    "_high_payout_both": 2.2,
+    "_high_payout": 2.35,
+    "_time_difference": 0,
+    "_normal_or_high": "normal",
+    "_normal_gas_limit": 98832,
+    "_router": "0x18B2A687610328590Bc8F2e5fEdDe3b582A49cdA",
+    "_chainlink": "0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE",
+    "_profile_contract_Address": "0xdf4dbf6536201370f95e06a0f8a7a70fe40e388a",
+    "new_user": "https://discord.com/api/webhooks/1382186864412463236/AFXeQ08NSKVWYvJCE2hKitUT0VUDsOwE-2X3nfCJkVjbIMhoqeDpt1jaFY5yqiv5eQsH",
+    "whale_appear": "https://discord.com/api/webhooks/1382184918343352352/wrW_Kc39z83Ij5TFnvKJouLjen_WVo1UVNjUNxx2lNGKK0h7kT-n_1AcJQ3sRhsCPGyY",
+    "whale_channel": "https://discord.com/api/webhooks/1382181888776736860/zATo5NPo1YSpgfiYQMIc4e_5RZpOgHQLsH-H1pbVgzk6wDO_gw20EjFLOe4SjoayoMBf",
+    "weird_bet": "https://discord.com/api/webhooks/1386902945592774717/UN0-ju38ocRX_Axj_Rk7H_Sksz-9tAkakLpgW3n9fDTYnKR-efy634m5QmNnf16f8_DN",
+    "big_bets_1": "https://discord.com/api/webhooks/1382187031563731024/bJEi7pldgD7gtTiGNUwWmnp6WRXTb0RwMZGrKx8RYPcY_uIeGV3nEduexhBMdNZI86hZ",
+    "big_bets_3": "https://discord.com/api/webhooks/1382187109527584879/DYApnn_scoSlNHGr_nErwYUBv1bP7r0d42EfTqQuuzpY7HIVW4cbgQ6iJ7wPpg_NIJ1G",
+    "idot_tracker": "https://discord.com/api/webhooks/1382187429137485884/z193mdaVVn2Rc8hKeDNR8Jb6czgnGyvNooKlfbDezK9fkuKPwZO7KrOlEqmJjRnD6yUo",
+    "our_bets": "https://discord.com/api/webhooks/1382187522217480312/mnl01ONO-dpyFsnYrUxVNLUR1E0r7xk5JSxE8rJWneclu1fbdVcFlthBf7vvFCFGs76C",
+    "price": "https://discord.com/api/webhooks/1382187249193713805/zTI5vehXBUqQqqRuRL5RWbLy8BnMzcHTtxY2rvuq9OdDf_GvH-y2_w9QGt4Mac6dfsHM"
+}
