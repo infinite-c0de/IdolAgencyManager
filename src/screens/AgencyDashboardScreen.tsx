@@ -21,6 +21,7 @@ import {
 import { RadarChart } from '../components/charts';
 import { Gradient } from '../components/ui/Gradient';
 import type { ScheduleItem } from '../data/gameData';
+import { getGroupMembers, getPrimaryGroup } from '../features/groups';
 import type { RootStackParamList } from '../navigation/types';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
@@ -31,10 +32,8 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 export function AgencyDashboardScreen() {
   const navigation = useNavigation<Nav>();
   const { agency, idols, groups, revenueHistory, schedule, agencyRadar } = useGame();
-  const elevate = groups[0];
-  const members = elevate.memberIds
-    .map(id => idols.find(i => i.id === id))
-    .filter((i): i is NonNullable<typeof i> => Boolean(i));
+  const elevate = getPrimaryGroup(groups);
+  const members = elevate ? getGroupMembers(elevate, idols) : [];
   const stats = [
     { label: 'Vocal', v: 92 },
     { label: 'Dance', v: 95 },
@@ -42,6 +41,16 @@ export function AgencyDashboardScreen() {
     { label: 'Visual', v: 89 },
     { label: 'Charisma', v: 90 },
   ];
+
+  if (!elevate) {
+    return (
+      <AppShell title="Control Center" subtitle="Real-time pulse of your agency">
+        <Card>
+          <Text style={styles.tinyMuted}>No active groups yet. Create your first group to see dashboard insights.</Text>
+        </Card>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell title="Control Center" subtitle="Real-time pulse of your agency">

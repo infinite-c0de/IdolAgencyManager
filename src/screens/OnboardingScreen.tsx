@@ -5,10 +5,13 @@ import React, { useCallback, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card } from '../components/AppShell';
 import { Gradient } from '../components/ui/Gradient';
+import { InfoTag } from '../components/ui/InfoTag';
+import { MetricCard } from '../components/ui/MetricCard';
+import { MetricGrid } from '../components/ui/MetricGrid';
+import { selectOnboardingCityData } from '../features/economy';
 import type { RootStackParamList } from '../navigation/types';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
-import { fmt } from '../utils/format';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -18,12 +21,7 @@ export function OnboardingScreen() {
   const [agencyName, setAgencyName] = useState('');
   const [ceoName, setCeoName] = useState('');
   const [city, setCity] = useState(cities[0].id);
-  const picked = cities.find(c => c.id === city) ?? cities[0];
-  const projectedMonthly = Math.round(140_000_000 * picked.revenue * (1 + picked.domesticStreamingBonus));
-  const projectedGrossWeekly = Math.round(projectedMonthly / 4);
-  const projectedTaxWeekly = Math.round(projectedGrossWeekly * picked.taxRate);
-  const projectedOpsWeekly = Math.round(picked.officeRentWeekly * picked.operationalCostMultiplier);
-  const projectedNetWeekly = projectedGrossWeekly - projectedTaxWeekly - projectedOpsWeekly;
+  const onboardingData = selectOnboardingCityData(cities, city);
 
   useFocusEffect(
     useCallback(() => {
@@ -68,32 +66,31 @@ export function OnboardingScreen() {
       <Card>
         <Text style={styles.sectionLabel}>STARTING CITY</Text>
         <View style={styles.cityGrid}>
-          {cities.map(c => {
-            const active = city === c.id;
+          {onboardingData.cityCards.map(cityCard => {
+            const active = onboardingData.selectedCityId === cityCard.id;
             return (
               <TouchableOpacity
-                key={c.id}
-                onPress={() => setCity(c.id)}
+                key={cityCard.id}
+                onPress={() => setCity(cityCard.id)}
                 style={[styles.cityCard, active ? styles.cityActive : styles.cityIdle]}
                 activeOpacity={0.85}>
                 <View style={styles.rowBetween}>
                   <View style={styles.cityNameRow}>
-                    <Text style={styles.cityFlag}>{c.flag}</Text>
+                    <Text style={styles.cityFlag}>{cityCard.flag}</Text>
                     <Text style={styles.cityName} numberOfLines={1}>
-                      {c.name}
+                      {cityCard.name}
                     </Text>
                   </View>
                   <View style={styles.diffBadge}>
-                    <Text style={styles.diffText}>{c.difficulty}</Text>
+                    <Text style={styles.diffText}>{cityCard.difficulty}</Text>
                   </View>
                 </View>
-                <Text style={styles.cityDesc}>{c.desc}</Text>
-                <View style={styles.tagRow}>
-                  <Tag k="Tax Rate" v={`${Math.round(c.taxRate * 100)}%`} />
-                  <Tag k="Office Rent/Week" v={fmt(c.officeRentWeekly)} />
-                  <Tag k="Local Reputation" v={`${c.localReputationBoost >= 0 ? '+' : ''}${c.localReputationBoost}`} />
-                  <Tag k="Domestic Streaming" v={`+${Math.round(c.domesticStreamingBonus * 100)}%`} />
-                </View>
+                <Text style={styles.cityDesc}>{cityCard.description}</Text>
+                <MetricGrid style={styles.tagRow}>
+                  {cityCard.tags.map(tag => (
+                    <InfoTag key={`${cityCard.id}-${tag.label}`} label={tag.label} value={tag.value} />
+                  ))}
+                </MetricGrid>
               </TouchableOpacity>
             );
           })}
@@ -101,19 +98,12 @@ export function OnboardingScreen() {
       </Card>
 
       <Card glow="violet">
-        <Text style={styles.sectionLabel}>PREVIEW · {picked.name.toUpperCase()}</Text>
-        <View style={styles.previewRow}>
-          <P k="Starting Seed Capital" v={picked.budget} />
-          <P k="Starting Reputation Score" v={`${Math.max(0, Math.min(100, 50 + picked.localReputationBoost))}`} />
-          <P k="Office Rent (Weekly)" v={fmt(picked.officeRentWeekly)} />
-          <P k="Government Tax Rate" v={`${Math.round(picked.taxRate * 100)}%`} />
-          <P k="Projected Weekly Gross" v={fmt(projectedGrossWeekly)} />
-          <P k="Projected Weekly Tax" v={fmt(-projectedTaxWeekly)} />
-          <P k="Projected Weekly Operations" v={fmt(-projectedOpsWeekly)} />
-          <P k="Projected Weekly Net Balance" v={fmt(projectedNetWeekly)} />
-          <P k="Domestic Streaming Bonus" v={`+${Math.round(picked.domesticStreamingBonus * 100)}%`} />
-          <P k="Local Market Competition" v={`${picked.competition}%`} />
-        </View>
+        <Text style={styles.sectionLabel}>PREVIEW · {onboardingData.selectedCityName.toUpperCase()}</Text>
+        <MetricGrid style={styles.previewRow}>
+          {onboardingData.previewMetrics.map(metric => (
+            <MetricCard key={metric.label} label={metric.label} value={metric.value} />
+          ))}
+        </MetricGrid>
         <TouchableOpacity onPress={handleCreateAgency} activeOpacity={0.85}>
           <Gradient colors={[colors.teal, colors.violet]} direction="to-r" style={styles.createBtn}>
             <Sparkles size={16} color={colors.slate900} />
@@ -151,29 +141,8 @@ function Field({
   );
 }
 
-function Tag({ k, v }: { k: string; v: string }) {
-  return (
-    <View style={styles.tag}>
-      <View style={styles.tagInner}>
-        <Text style={styles.tagK}>{k}</Text>
-        <Text style={styles.tagV}>{v}</Text>
-      </View>
-    </View>
-  );
-}
-
-function P({ k, v }: { k: string; v: string }) {
-  return (
-    <View style={styles.preview}>
-      <Text style={styles.tinyMuted}>{k}</Text>
-      <Text style={styles.previewVal}>{v}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  tinyMuted: { fontSize: 10, color: colors.mutedForeground },
   sectionLabel: { fontSize: 13, fontWeight: '700', letterSpacing: 1, color: colors.foreground },
 
   fields: { marginTop: spacing.md, gap: spacing.md },
@@ -200,15 +169,9 @@ const styles = StyleSheet.create({
   diffBadge: { borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.sm, paddingVertical: 2 },
   diffText: { fontSize: 10, color: colors.foreground },
   cityDesc: { marginTop: 4, fontSize: 11, color: colors.mutedForeground },
-  tagRow: { marginTop: spacing.sm, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 4 },
-  tag: { width: '49%', borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.whiteA05, paddingHorizontal: 6, paddingVertical: 4 },
-  tagInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  tagK: { fontSize: 10, color: colors.mutedForeground },
-  tagV: { fontSize: 10, fontWeight: '700', color: colors.foreground },
+  tagRow: { marginTop: spacing.sm, justifyContent: 'space-between', rowGap: 4 },
 
-  previewRow: { marginTop: spacing.md, flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  preview: { flexGrow: 1, flexBasis: '46%', borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.whiteA05, padding: 10 },
-  previewVal: { fontSize: 14, fontWeight: '700', color: colors.foreground },
+  previewRow: { marginTop: spacing.md },
 
   createBtn: {
     marginTop: spacing.lg,

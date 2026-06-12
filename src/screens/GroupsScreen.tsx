@@ -12,13 +12,10 @@ import {
 import { AppShell, Avatar, Card } from '../components/AppShell';
 import { RadarChart } from '../components/charts';
 import { Gradient } from '../components/ui/Gradient';
+import { buildGroupRadar, buildGroupReadiness, getGroupMembers } from '../features/groups';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 import { fmt } from '../utils/format';
-
-function avg(a: number[]) {
-  return Math.round(a.reduce((s, n) => s + n, 0) / Math.max(a.length, 1));
-}
 
 export function GroupsScreen() {
   const { groups, idols } = useGame();
@@ -39,29 +36,9 @@ export function GroupsScreen() {
       subtitle={`${active} active · ${predebut} pre-debut`}
       action={newAction}>
       {groups.map(g => {
-        const members = g.memberIds
-          .map(id => idols.find(i => i.id === id))
-          .filter((i): i is NonNullable<typeof i> => Boolean(i));
-        const radar = [
-          { skill: 'VOCAL', v: avg(members.map(m => m.stats.vocal)) },
-          { skill: 'DANCE', v: avg(members.map(m => m.stats.dance)) },
-          { skill: 'RAP', v: avg(members.map(m => m.stats.rap)) },
-          { skill: 'VISUAL', v: avg(members.map(m => m.stats.visual)) },
-          { skill: 'CHARISMA', v: avg(members.map(m => m.stats.charisma)) },
-        ];
-        const ready =
-          members.length >= 3 &&
-          avg(members.map(m => m.stats.vocal)) >= 70 &&
-          avg(members.map(m => m.stats.dance)) >= 70;
-
-        const checks = [
-          { ok: members.length >= 3, t: '≥ 3 members' },
-          { ok: true, t: 'Leader assigned' },
-          { ok: avg(members.map(m => m.stats.vocal)) >= 70, t: 'Vocal avg ≥ 70' },
-          { ok: avg(members.map(m => m.stats.dance)) >= 70, t: 'Dance avg ≥ 70' },
-          { ok: g.status === 'Active', t: 'Debut song' },
-          { ok: g.status === 'Active', t: 'Promotion plan' },
-        ];
+        const members = getGroupMembers(g, idols);
+        const radar = buildGroupRadar(members);
+        const readiness = buildGroupReadiness(members, g.status === 'Active');
 
         return (
           <Card key={g.id} glow={g.status === 'Active' ? 'teal' : 'violet'}>
@@ -128,7 +105,7 @@ export function GroupsScreen() {
             <View style={styles.readiness}>
               <Text style={styles.subLabel}>DEBUT READINESS</Text>
               <View style={styles.checkGrid}>
-                {checks.map(c => (
+                {readiness.checks.map(c => (
                   <View key={c.t} style={styles.checkItem}>
                     <View style={[styles.checkDot, c.ok ? styles.checkOn : styles.checkOff]} />
                     <Text style={c.ok ? styles.checkTextOn : styles.checkTextOff}>{c.t}</Text>
@@ -136,7 +113,7 @@ export function GroupsScreen() {
                 ))}
               </View>
               <Text style={styles.readyText}>
-                {ready ? (
+                {readiness.ready ? (
                   <Text style={styles.mintText}>Ready to debut</Text>
                 ) : (
                   <Text style={styles.amberText}>Almost there</Text>

@@ -13,30 +13,20 @@ import {
 } from 'react-native';
 import { AppShell, Card, StatusDot } from '../components/AppShell';
 import { Gradient } from '../components/ui/Gradient';
+import { filterIdols, IDOL_STATUSES, type IdolFilterStatus } from '../features/idols';
 import type { RootStackParamList } from '../navigation/types';
 import { useGame } from '../state/GameContext';
-import type { Status } from '../types';
 import { colors, radius, spacing } from '../theme';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
-
-const statuses: ('All' | Status)[] = ['All', 'Active', 'Trainee', 'Resting', 'Promoting', 'Injured'];
 
 export function IdolsScreen() {
   const navigation = useNavigation<Nav>();
   const { idols } = useGame();
   const [q, setQ] = useState('');
-  const [filter, setFilter] = useState<'All' | Status>('All');
+  const [filter, setFilter] = useState<IdolFilterStatus>('All');
 
-  const list = useMemo(
-    () =>
-      idols.filter(
-        i =>
-          (filter === 'All' || i.status === filter) &&
-          (q === '' || i.stageName.toLowerCase().includes(q.toLowerCase())),
-      ),
-    [q, filter],
-  );
+  const list = useMemo(() => filterIdols(idols, q, filter), [idols, q, filter]);
 
   const recruitAction = (
     <TouchableOpacity
@@ -69,7 +59,7 @@ export function IdolsScreen() {
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filterRow}>
-          {statuses.map(s => {
+          {IDOL_STATUSES.map(s => {
             const active = filter === s;
             return (
               <TouchableOpacity

@@ -3,6 +3,9 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { AppShell, Card, SectionTitle } from '../components/AppShell';
 import { AreaChart, ResponsiveChart } from '../components/charts';
+import { MetricCard } from '../components/ui/MetricCard';
+import { MetricGrid } from '../components/ui/MetricGrid';
+import { selectFinanceSummary, selectProfitLossSeries } from '../features/economy';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 import { fmt } from '../utils/format';
@@ -17,13 +20,8 @@ const costs = [
 
 export function FinanceScreen() {
   const { agency, revenueHistory, transactions } = useGame();
-  const pl = revenueHistory.map(r => ({
-    m: r.m,
-    profit: Math.round(r.group + r.solo + r.merch - 220 - r.solo * 0.4),
-  }));
-  const income = 612_000_000;
-  const expense = 442_000_000;
-  const net = income - expense;
+  const pl = selectProfitLossSeries(revenueHistory);
+  const { income, expense, net } = selectFinanceSummary(transactions);
 
   return (
     <AppShell title="Finance" subtitle="Numbers that move the agency">
@@ -35,11 +33,26 @@ export function FinanceScreen() {
           </View>
           <Wallet size={32} color={colors.tealBright} />
         </View>
-        <View style={styles.kpiRow}>
-          <KPI label="Income" v={fmt(income)} c={colors.mint} />
-          <KPI label="Expenses" v={fmt(expense)} c="#FDA4AF" />
-          <KPI label="Net" v={fmt(net)} c={colors.tealBright} />
-        </View>
+        <MetricGrid style={styles.kpiRow}>
+          <MetricCard
+            label="Income"
+            value={fmt(income)}
+            valueColor={colors.mint}
+            containerStyle={styles.kpiCard}
+          />
+          <MetricCard
+            label="Expenses"
+            value={fmt(expense)}
+            valueColor="#FDA4AF"
+            containerStyle={styles.kpiCard}
+          />
+          <MetricCard
+            label="Net"
+            value={fmt(net)}
+            valueColor={colors.tealBright}
+            containerStyle={styles.kpiCard}
+          />
+        </MetricGrid>
       </Card>
 
       <Card>
@@ -98,15 +111,6 @@ export function FinanceScreen() {
   );
 }
 
-function KPI({ label, v, c }: { label: string; v: string; c: string }) {
-  return (
-    <View style={styles.kpi}>
-      <Text style={styles.tinyMuted}>{label}</Text>
-      <Text style={[styles.kpiValue, { color: c }]}>{v}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   flex1: { flex: 1, minWidth: 0 },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -115,9 +119,8 @@ const styles = StyleSheet.create({
   balanceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   balanceLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: colors.mutedForeground },
   balanceValue: { fontSize: 28, fontWeight: '900', color: colors.tealBright },
-  kpiRow: { marginTop: spacing.md, flexDirection: 'row', gap: spacing.sm },
-  kpi: { flex: 1, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.whiteA05, padding: 10 },
-  kpiValue: { fontSize: 14, fontWeight: '700' },
+  kpiRow: { marginTop: spacing.md, flexWrap: 'nowrap' },
+  kpiCard: { flex: 1, flexBasis: undefined },
 
   costList: { gap: spacing.sm },
   costLabel: { fontSize: 11, color: colors.foreground },

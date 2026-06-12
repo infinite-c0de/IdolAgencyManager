@@ -13,6 +13,7 @@ import {
   Users,
   Wallet,
 } from 'lucide-react-native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { ReactNode } from 'react';
 import {
   Image,
@@ -23,12 +24,13 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getCityByName } from '../features/cities';
+import { selectTopBarMetrics } from '../features/economy';
+import type { RootStackParamList } from '../navigation/types';
+import { useGame } from '../state/GameContext';
 import { colors, gradients, radius, spacing, statusColor } from '../theme';
 import { fmt } from '../utils/format';
 import { Gradient } from './ui/Gradient';
-import type { RootStackParamList } from '../navigation/types';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useGame } from '../state/GameContext';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -55,25 +57,14 @@ const more = nav.slice(5);
 
 export function TopBar() {
   const { agency, idols, groups, cities } = useGame();
-  const cityProfile = cities.find(city => city.name === agency.city) ?? cities[0];
-  const totalFanbase = Math.max(
-    0,
-    Math.round(
-      idols.reduce((sum, idol) => sum + idol.popularity * 3200, 0) +
-      groups.reduce((sum, group) => sum + group.popularity * 1800, 0),
-    ),
+  const cityProfile = getCityByName(cities, agency.city);
+  const { weeklyNet: netWeekly, fanbaseLabel } = selectTopBarMetrics(
+    agency.monthlyIncome,
+    cityProfile,
+    idols,
+    groups,
   );
-  const grossWeekly = Math.round(agency.monthlyIncome / 4);
-  const weeklyTax = Math.round(grossWeekly * cityProfile.taxRate);
-  const weeklyOps = Math.round(cityProfile.officeRentWeekly * cityProfile.operationalCostMultiplier);
-  const weeklyNet = grossWeekly - weeklyTax - weeklyOps;
-  const weeklyNetLabel = `${weeklyNet >= 0 ? '+' : ''}${fmt(weeklyNet)}`;
-  const fanbaseLabel =
-    totalFanbase >= 1_000_000
-      ? `${(totalFanbase / 1_000_000).toFixed(1)}M`
-      : totalFanbase >= 1_000
-        ? `${(totalFanbase / 1_000).toFixed(0)}K`
-        : `${totalFanbase}`;
+  const weeklyNetLabel = `${netWeekly >= 0 ? '+' : ''}${fmt(netWeekly)}`;
 
   return (
     <View style={styles.topBar}>

@@ -1,20 +1,20 @@
 import type { Agency, City, Group, Idol, Trainee } from '../types';
 
-const idolAnh = require('../assets/idols/idol_anh.png');
-const idolJoon = require('../assets/idols/idol_joon.png');
-const idolLena = require('../assets/idols/idol_lena.png');
-const idolMina = require('../assets/idols/idol_mina.png');
-const idolNarin = require('../assets/idols/idol_narin.png');
-const idolRiku = require('../assets/idols/idol_riku.png');
-const idolSora = require('../assets/idols/idol_sora.png');
-const idolTao = require('../assets/idols/idol_tao.png');
-const idolWei = require('../assets/idols/idol_wei.png');
-const idolYara = require('../assets/idols/idol_yara.png');
-const traineeAria = require('../assets/idols/trainee_aria.png');
-const traineeRenjun = require('../assets/idols/trainee_renjun.png');
-const traineeMai = require('../assets/idols/trainee_mai.png');
-const traineeTheo = require('../assets/idols/trainee_theo.png');
-const traineeSky = require('../assets/idols/trainee_sky.png');
+const idolAnh = require('../assets/idols/idol_anh.webp');
+const idolJoon = require('../assets/idols/idol_joon.webp');
+const idolLena = require('../assets/idols/idol_lena.webp');
+const idolMina = require('../assets/idols/idol_mina.webp');
+const idolNarin = require('../assets/idols/idol_narin.webp');
+const idolRiku = require('../assets/idols/idol_riku.webp');
+const idolSora = require('../assets/idols/idol_sora.webp');
+const idolTao = require('../assets/idols/idol_tao.webp');
+const idolWei = require('../assets/idols/idol_wei.webp');
+const idolYara = require('../assets/idols/idol_yara.webp');
+const traineeAria = require('../assets/idols/trainee_aria.webp');
+const traineeRenjun = require('../assets/idols/trainee_renjun.webp');
+const traineeMai = require('../assets/idols/trainee_mai.webp');
+const traineeTheo = require('../assets/idols/trainee_theo.webp');
+const traineeSky = require('../assets/idols/trainee_sky.webp');
 
 export const idolGallery = [idolAnh, idolJoon, idolLena, idolMina, idolNarin, idolRiku, idolSora, idolTao, idolWei, idolYara];
 
