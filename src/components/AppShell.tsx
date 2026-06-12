@@ -30,6 +30,7 @@ import type { RootStackParamList } from '../navigation/types';
 import { useGame } from '../state/GameContext';
 import { colors, gradients, radius, spacing, statusColor } from '../theme';
 import { fmt } from '../utils/format';
+import { AgencyLogoMark } from './ui/AgencyLogoMark';
 import { Gradient } from './ui/Gradient';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -55,6 +56,22 @@ const nav: NavItem[] = [
 const primary = nav.slice(0, 5);
 const more = nav.slice(5);
 
+function AgencyLogoBadge({ logo }: { logo: ReturnType<typeof useGame>['agency']['logo'] }) {
+  if (logo.kind === 'custom') {
+    return (
+      <View style={styles.logo}>
+        <Image source={{ uri: logo.uri }} resizeMode="cover" style={styles.customLogoImage} />
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.logo}>
+      <AgencyLogoMark preset={logo.kind === 'preset' ? logo.preset : 'NEON_STAR'} size={38} />
+    </View>
+  );
+}
+
 export function TopBar() {
   const { agency, idols, groups, cities } = useGame();
   const cityProfile = getCityByName(cities, agency.city);
@@ -69,11 +86,7 @@ export function TopBar() {
   return (
     <View style={styles.topBar}>
       <View style={styles.topBarRow}>
-        <Gradient
-          colors={['rgba(34,211,238,0.25)', 'rgba(217,70,239,0.25)']}
-          style={styles.logo}>
-          <Star size={20} color={colors.tealBright} />
-        </Gradient>
+        <AgencyLogoBadge logo={agency.logo} />
         <View style={styles.flex1}>
           <View style={styles.rowCenter}>
             <Text style={styles.agencyName} numberOfLines={1}>
@@ -182,13 +195,11 @@ export function AppShell({
   title,
   subtitle,
   action,
-  showMoreNavRow = true,
 }: {
   children: ReactNode;
   title?: string;
   subtitle?: string;
   action?: ReactNode;
-  showMoreNavRow?: boolean;
 }) {
   const insets = useSafeAreaInsets();
   return (
@@ -200,7 +211,7 @@ export function AppShell({
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
         {title ? <PageHeader title={title} subtitle={subtitle} action={action} /> : null}
-        {showMoreNavRow ? <MoreNavRow /> : null}
+        <MoreNavRow />
         {children}
       </ScrollView>
       <BottomNav />
@@ -335,7 +346,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: 'rgba(34,211,238,0.6)',
+    overflow: 'hidden',
   },
+  customLogoImage: { width: '100%', height: '100%' },
   agencyName: {
     color: colors.foreground,
     fontSize: 14,

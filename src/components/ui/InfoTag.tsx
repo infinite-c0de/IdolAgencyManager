@@ -1,10 +1,18 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { colors, radius } from '../../theme';
 
-export function InfoTag({ label, value }: { label: string; value: string }) {
+export function InfoTag({
+  label,
+  value,
+  style,
+}: {
+  label: string;
+  value: string;
+  style?: StyleProp<ViewStyle>;
+}) {
   return (
-    <View style={styles.tag}>
+    <View style={[styles.tag, style]}>
       <View style={styles.tagInner}>
         <Text style={styles.tagLabel}>{label}</Text>
         <Text style={styles.tagValue}>{value}</Text>

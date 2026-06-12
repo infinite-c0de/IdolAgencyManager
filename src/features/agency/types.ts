@@ -1,10 +1,11 @@
 import type { Dispatch, SetStateAction } from 'react';
-import type { Agency, Idol, Trainee } from '../../types';
+import type { Agency, AgencyLogo, Idol, Trainee } from '../../types';
 
 export type CreateAgencyPayload = {
   agencyName: string;
   ceoName: string;
   cityId: string;
+  logo: AgencyLogo;
 };
 
 export type RecruitResult =

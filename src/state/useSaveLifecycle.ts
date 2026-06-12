@@ -11,7 +11,6 @@ import {
 import type { SaveData, SaveSlotSummary, UseSaveLifecycleParams } from '../features/saves';
 import {
   cloneInitialAgency,
-  cloneInitialIdols,
   cloneInitialTrainees,
   createInitialSave,
   withCurrentTraineeAssets,
@@ -116,7 +115,7 @@ export function useSaveLifecycle({
 
   const resetGame = async () => {
     setAgency(cloneInitialAgency());
-    setIdols(cloneInitialIdols());
+    setIdols([]);
     setTrainees(cloneInitialTrainees());
     setIsAgencyCreated(false);
     setActiveSlotId(null);
@@ -155,7 +154,7 @@ export function useSaveLifecycle({
 
     if (activeSlotId === slotId) {
       setAgency(cloneInitialAgency());
-      setIdols(cloneInitialIdols());
+      setIdols([]);
       setTrainees(cloneInitialTrainees());
       setIsAgencyCreated(false);
       setActiveSlotId(null);

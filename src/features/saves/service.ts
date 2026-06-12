@@ -1,15 +1,6 @@
-import { initialAgency, initialIdols, initialTrainees } from '../../data/gameData';
+import { initialAgency, initialTrainees } from '../../data/gameData';
 import type { Idol, Trainee } from '../../types';
 import type { SaveData } from './types';
-
-function cloneDefaultIdols(): Idol[] {
-  return initialIdols.map(idol => ({
-    ...idol,
-    languages: [...idol.languages],
-    gradient: [...idol.gradient],
-    stats: { ...idol.stats },
-  }));
-}
 
 function cloneDefaultTrainees(): Trainee[] {
   return initialTrainees.map(trainee => ({
@@ -26,7 +17,7 @@ function cloneDefaultAgency() {
 export function createDefaultSaveData(slotId: number): SaveData {
   return {
     agency: cloneDefaultAgency(),
-    idols: cloneDefaultIdols(),
+    idols: [],
     trainees: cloneDefaultTrainees(),
     isAgencyCreated: false,
     activeSlotId: slotId,

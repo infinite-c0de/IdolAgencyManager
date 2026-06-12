@@ -22,13 +22,15 @@ export function useAgencyActions({
   setTrainees,
   setIsAgencyCreated,
 }: UseAgencyActionsParams) {
-  const createAgency = ({ agencyName, ceoName, cityId }: CreateAgencyPayload) => {
+  const createAgency = ({ agencyName, ceoName, cityId, logo }: CreateAgencyPayload) => {
     const pickedCity = getCityById(cities, cityId);
-    if (!isValidAgencyCreationInput({ agencyName, ceoName, cityId })) {
+    if (!isValidAgencyCreationInput({ agencyName, ceoName, cityId, logo })) {
       return false;
     }
 
-    setAgency(() => buildCreatedAgency(cloneInitialAgency(), { agencyName, ceoName, cityId }, pickedCity));
+    setAgency(() =>
+      buildCreatedAgency(cloneInitialAgency(), { agencyName, ceoName, cityId, logo }, pickedCity),
+    );
     setIsAgencyCreated(true);
     return true;
   };

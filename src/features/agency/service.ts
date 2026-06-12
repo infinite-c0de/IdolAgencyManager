@@ -7,6 +7,7 @@ export function normalizeAgencyInputs(payload: CreateAgencyPayload) {
     agencyName: payload.agencyName.trim(),
     ceoName: payload.ceoName.trim(),
     cityId: payload.cityId,
+    logo: payload.logo,
   };
 }
 
@@ -26,6 +27,7 @@ export function buildCreatedAgency(
     name: normalized.agencyName.toUpperCase(),
     ceoName: normalized.ceoName,
     city: city.name,
+    logo: normalized.logo,
     money: city.startingBudget,
     reputation: getStartingReputation(city),
     monthlyIncome: getProjectedMonthlyIncome(city),

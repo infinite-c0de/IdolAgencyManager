@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
   initialAgency,
-  initialIdols,
   initialTrainees,
   cities,
   groups as baseGroups,
@@ -56,7 +55,7 @@ export type GameState = {
 
 export function useGameState(): GameState {
   const [agency, setAgency] = useState<Agency>(initialAgency);
-  const [idols, setIdols] = useState<Idol[]>(initialIdols);
+  const [idols, setIdols] = useState<Idol[]>([]);
   const [trainees, setTrainees] = useState<Trainee[]>(initialTrainees);
   const [activeSlotId, setActiveSlotId] = useState<number | null>(null);
   const [isAgencyCreated, setIsAgencyCreated] = useState(false);

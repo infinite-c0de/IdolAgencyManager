@@ -1,5 +1,28 @@
 export type Status = 'Active' | 'Trainee' | 'Resting' | 'Injured' | 'Promoting';
 
+export type AgencyLogoPreset =
+  | 'NEON_STAR'
+  | 'AURORA_CROWN'
+  | 'LUNAR_SPOTLIGHT'
+  | 'NOVA_COMPASS'
+  | 'CRYSTAL_WINGS'
+  | 'PRISM_DIAMOND'
+  | 'STAGE_LIGHTS'
+  | 'HEART_ORBIT'
+  | 'SOUNDWAVE'
+  | 'STAR_RING'
+  | 'LOTUS_IDOL'
+  | 'OCEAN_WAVE'
+  | 'ORBIT_STAR'
+  | 'NEON_CHEVRON'
+  | 'WINGED_STAR'
+  | 'CRYSTAL_CITY';
+
+export type AgencyLogo =
+  | { kind: 'none' }
+  | { kind: 'preset'; preset: AgencyLogoPreset }
+  | { kind: 'custom'; uri: string };
+
 export type Agency = {
   name: string;
   ceoName: string;
@@ -12,6 +35,7 @@ export type Agency = {
   monthlyIncome: number;
   ranking: number;
   city: string;
+  logo: AgencyLogo;
 };
 
 export type City = {

@@ -19,6 +19,7 @@ import {
   lineColors,
 } from '../components/charts';
 import { RadarChart } from '../components/charts';
+import { AgencyLogoMark } from '../components/ui/AgencyLogoMark';
 import { Gradient } from '../components/ui/Gradient';
 import type { ScheduleItem } from '../data/gameData';
 import { getGroupMembers, getPrimaryGroup } from '../features/groups';
@@ -57,9 +58,18 @@ export function AgencyDashboardScreen() {
       {/* Group hero */}
       <Card glow="teal">
         <View style={styles.rowBetweenStart}>
-          <View>
-            <Text style={styles.heroTitle}>{elevate.name}</Text>
-            <Text style={styles.tinyMuted}>{members.length} members · Active</Text>
+          <View style={styles.groupHeading}>
+            <View style={styles.agencyLogoBadge}>
+              {agency.logo.kind === 'custom' ? (
+                <Image source={{ uri: agency.logo.uri }} resizeMode="cover" style={styles.agencyLogoImage} />
+              ) : (
+                <AgencyLogoMark preset={agency.logo.kind === 'preset' ? agency.logo.preset : 'NEON_STAR'} size={34} />
+              )}
+            </View>
+            <View>
+              <Text style={styles.heroTitle}>{elevate.name}</Text>
+              <Text style={styles.tinyMuted}>{members.length} members · Active</Text>
+            </View>
           </View>
           <View style={styles.activeBadge}>
             <Text style={styles.activeBadgeText}>Active</Text>
@@ -265,6 +275,19 @@ const styles = StyleSheet.create({
   flex1: { flex: 1, minWidth: 0 },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   rowBetweenStart: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.md },
+  groupHeading: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  agencyLogoBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(34,211,238,0.6)',
+    backgroundColor: colors.whiteA05,
+    overflow: 'hidden',
+  },
+  agencyLogoImage: { width: '100%', height: '100%' },
   alignEnd: { alignItems: 'flex-end' },
   tinyMuted: { fontSize: 10, color: colors.mutedForeground },
 

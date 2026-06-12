@@ -1,4 +1,4 @@
-import type { Agency, City, Group, Idol, Trainee } from '../types';
+import type { Agency, City, Group, Trainee } from '../types';
 
 const idolAnh = require('../assets/idols/idol_anh.webp');
 const idolJoon = require('../assets/idols/idol_joon.webp');
@@ -10,26 +10,43 @@ const idolSora = require('../assets/idols/idol_sora.webp');
 const idolTao = require('../assets/idols/idol_tao.webp');
 const idolWei = require('../assets/idols/idol_wei.webp');
 const idolYara = require('../assets/idols/idol_yara.webp');
-const traineeAria = require('../assets/idols/trainee_aria.webp');
-const traineeRenjun = require('../assets/idols/trainee_renjun.webp');
-const traineeMai = require('../assets/idols/trainee_mai.webp');
-const traineeTheo = require('../assets/idols/trainee_theo.webp');
-const traineeSky = require('../assets/idols/trainee_sky.webp');
+const idolAria = require('../assets/idols/trainee_aria.webp');
+const idolRenjun = require('../assets/idols/trainee_renjun.webp');
+const idolMai = require('../assets/idols/trainee_mai.webp');
+const idolTheo = require('../assets/idols/trainee_theo.webp');
+const idolSky = require('../assets/idols/trainee_sky.webp');
 
-export const idolGallery = [idolAnh, idolJoon, idolLena, idolMina, idolNarin, idolRiku, idolSora, idolTao, idolWei, idolYara];
+export const idolGallery = [
+  idolAnh,
+  idolJoon,
+  idolLena,
+  idolMina,
+  idolNarin,
+  idolRiku,
+  idolSora,
+  idolTao,
+  idolWei,
+  idolYara,
+  idolAria,
+  idolRenjun,
+  idolMai,
+  idolTheo,
+  idolSky,
+];
 
 export const initialAgency: Agency = {
-  name: 'STARLIGHT ENT.',
-  ceoName: 'Park J.',
-  level: 16,
-  money: 2_850_500_000,
-  gems: 8_750,
-  energy: 92,
+  name: 'NEW AGENCY',
+  ceoName: '',
+  level: 1,
+  money: 0,
+  gems: 0,
+  energy: 100,
   energyMax: 100,
-  reputation: 88,
-  monthlyIncome: 450_000_000,
-  ranking: 4,
-  city: 'Seoul',
+  reputation: 0,
+  monthlyIncome: 0,
+  ranking: 999,
+  city: '-',
+  logo: { kind: 'none' },
 };
 
 export const cities: City[] = [
@@ -134,22 +151,7 @@ const grads: string[][] = [
   ['rgba(129,140,248,0.4)', 'rgba(139,92,246,0.4)', 'rgba(236,72,153,0.4)'],
 ];
 
-export const initialIdols: Idol[] = [
-  { id: 'kai', stageName: 'Kai', fullName: 'Park Jong-in', age: 21, dob: 'January 14, 2005', nationality: 'South Korean', flag: '🇰🇷', languages: ['Korean', 'English'], personality: 'Introverted, Charismatic', trainingYears: 3, role: 'Lead Vocalist', group: 'ELEVATE', status: 'Active', popularity: 95, rank: 2, gradient: grads[0], image: idolJoon, stats: { vocal: 92, dance: 88, rap: 78, visual: 90, charisma: 90, stamina: 84, variety: 70, acting: 65 }, health: 84, morale: 76, energy: 78 },
-  { id: 'yuna', stageName: 'Yuna', fullName: 'Kim Yu-na', age: 20, dob: 'March 02, 2006', nationality: 'South Korean', flag: '🇰🇷', languages: ['Korean', 'English', 'Japanese'], personality: 'Cheerful, Focused', trainingYears: 4, role: 'Main Vocal', group: 'ELEVATE', status: 'Active', popularity: 97, rank: 1, gradient: grads[1], image: idolNarin, stats: { vocal: 96, dance: 82, rap: 60, visual: 94, charisma: 92, stamina: 80, variety: 88, acting: 74 }, health: 90, morale: 88, energy: 85 },
-  { id: 'jihoon', stageName: 'Jihoon', fullName: 'Lee Ji-hoon', age: 23, dob: 'August 19, 2002', nationality: 'South Korean', flag: '🇰🇷', languages: ['Korean'], personality: 'Calm, Strategic', trainingYears: 5, role: 'Leader / Rapper', group: 'ELEVATE', status: 'Active', popularity: 90, rank: 3, gradient: grads[2], image: idolWei, stats: { vocal: 74, dance: 80, rap: 94, visual: 86, charisma: 88, stamina: 88, variety: 72, acting: 60 }, health: 80, morale: 74, energy: 70 },
-  { id: 'haru', stageName: 'Haru', fullName: 'Choi Ha-ru', age: 22, dob: 'November 30, 2003', nationality: 'South Korean', flag: '🇰🇷', languages: ['Korean', 'English'], personality: 'Warm, Playful', trainingYears: 3, role: 'Main Dancer', group: 'ELEVATE', status: 'Promoting', popularity: 97, rank: 1, gradient: grads[3], image: idolRiku, stats: { vocal: 78, dance: 96, rap: 70, visual: 92, charisma: 90, stamina: 92, variety: 84, acting: 70 }, health: 78, morale: 82, energy: 68 },
-  { id: 'seulgi', stageName: 'Seulgi', fullName: 'Kang Seul-gi', age: 24, dob: 'May 12, 2001', nationality: 'South Korean', flag: '🇰🇷', languages: ['Korean', 'Japanese'], personality: 'Elegant, Reserved', trainingYears: 6, role: 'Visual', group: 'ELEVATE', status: 'Active', popularity: 92, rank: 4, gradient: grads[4], image: idolLena, stats: { vocal: 80, dance: 88, rap: 64, visual: 98, charisma: 90, stamina: 78, variety: 70, acting: 82 }, health: 86, morale: 80, energy: 74 },
-  { id: 'minji', stageName: 'Minji', fullName: 'Park Min-ji', age: 19, dob: 'April 22, 2007', nationality: 'South Korean', flag: '🇰🇷', languages: ['Korean', 'English'], personality: 'Bright, Determined', trainingYears: 2, role: 'Solo Artist', status: 'Active', popularity: 88, rank: 5, gradient: grads[5], image: idolMina, stats: { vocal: 84, dance: 78, rap: 70, visual: 88, charisma: 84, stamina: 76, variety: 80, acting: 68 }, health: 82, morale: 84, energy: 80 },
-  { id: 'sora', stageName: 'Sora', fullName: 'Han So-ra', age: 18, dob: 'September 09, 2007', nationality: 'South Korean', flag: '🇰🇷', languages: ['Korean'], personality: 'Quiet, Hardworking', trainingYears: 2, role: 'Solo Artist', status: 'Trainee', popularity: 90, rank: 6, gradient: grads[0], image: idolSora, stats: { vocal: 74, dance: 82, rap: 68, visual: 86, charisma: 78, stamina: 80, variety: 70, acting: 60 }, health: 88, morale: 78, energy: 90 },
-  { id: 'leo', stageName: 'Leo', fullName: 'Jang Leo', age: 22, dob: 'July 04, 2003', nationality: 'South Korean', flag: '🇰🇷', languages: ['Korean', 'English', 'Chinese'], personality: 'Bold, Outgoing', trainingYears: 4, role: 'Main Rapper', group: 'ELEVATE', status: 'Resting', popularity: 89, rank: 7, gradient: grads[1], image: idolTao, stats: { vocal: 72, dance: 84, rap: 96, visual: 84, charisma: 90, stamina: 82, variety: 88, acting: 70 }, health: 74, morale: 70, energy: 60 },
-  { id: 'luna', stageName: 'Luna', fullName: 'Bae Lu-na', age: 17, dob: 'December 25, 2008', nationality: 'South Korean', flag: '🇰🇷', languages: ['Korean', 'Japanese'], personality: 'Curious, Energetic', trainingYears: 1, role: 'Trainee', status: 'Trainee', popularity: 76, rank: 12, gradient: grads[2], image: idolYara, stats: { vocal: 66, dance: 74, rap: 60, visual: 84, charisma: 72, stamina: 74, variety: 64, acting: 58 }, health: 90, morale: 86, energy: 92 },
-];
-
-export const groups: Group[] = [
-  { id: 'elevate', name: 'ELEVATE', fanName: 'LUMINA', concept: 'Premium Pop', status: 'Active', popularity: 88, monthlyRevenue: 450_000_000, synergy: 92, memberIds: ['yuna', 'jihoon', 'leo', 'haru', 'seulgi'], gradient: grads[1] },
-  { id: 'aurora', name: 'AURORA', fanName: 'STELLA', concept: 'Girl Crush', status: 'Pre-debut', popularity: 42, monthlyRevenue: 0, synergy: 71, memberIds: ['minji', 'sora', 'luna'], gradient: grads[3] },
-];
+export const groups: Group[] = [];
 
 export type ScheduleItem = {
   id: number;
@@ -170,23 +172,23 @@ export const schedule: ScheduleItem[] = [
 ];
 
 export const revenueHistory = [
-  { m: 'JAN', group: 220, solo: 80, merch: 40 },
-  { m: 'FEB', group: 260, solo: 110, merch: 55 },
-  { m: 'MAR', group: 310, solo: 130, merch: 70 },
-  { m: 'APR', group: 290, solo: 160, merch: 85 },
-  { m: 'MAY', group: 360, solo: 180, merch: 95 },
-  { m: 'JUN', group: 410, solo: 200, merch: 110 },
-  { m: 'JUL', group: 470, solo: 230, merch: 130 },
-  { m: 'AUG', group: 520, solo: 260, merch: 150 },
-  { m: 'SEP', group: 590, solo: 290, merch: 170 },
+  { m: 'JAN', group: 0, solo: 0, merch: 0 },
+  { m: 'FEB', group: 0, solo: 0, merch: 0 },
+  { m: 'MAR', group: 0, solo: 0, merch: 0 },
+  { m: 'APR', group: 0, solo: 0, merch: 0 },
+  { m: 'MAY', group: 0, solo: 0, merch: 0 },
+  { m: 'JUN', group: 0, solo: 0, merch: 0 },
+  { m: 'JUL', group: 0, solo: 0, merch: 0 },
+  { m: 'AUG', group: 0, solo: 0, merch: 0 },
+  { m: 'SEP', group: 0, solo: 0, merch: 0 },
 ];
 
 export const agencyRadar = [
-  { skill: 'VOCAL', v: 92 },
-  { skill: 'DANCE', v: 90 },
-  { skill: 'RAP', v: 78 },
-  { skill: 'VISUAL', v: 94 },
-  { skill: 'CHARISMA', v: 90 },
+  { skill: 'VOCAL', v: 0 },
+  { skill: 'DANCE', v: 0 },
+  { skill: 'RAP', v: 0 },
+  { skill: 'VISUAL', v: 0 },
+  { skill: 'CHARISMA', v: 0 },
 ];
 
 export const rivals = [
@@ -196,15 +198,13 @@ export const rivals = [
   { id: 'halo', name: 'HALO STUDIOS', reputation: 71, groups: 2, share: 9, threat: 'Low', recent: 'Scandal — reputation dropped 4 pts' },
 ];
 
-export const transactions = [
-  { id: 1, label: "ELEVATE — Single 'Lumina' royalties", type: 'income', amount: 184_000_000, date: 'Oct 10' },
-  { id: 2, label: 'Music Bank performance fee', type: 'income', amount: 22_000_000, date: 'Oct 09' },
-  { id: 3, label: 'Dance Practice — weekly', type: 'expense', amount: -8_500_000, date: 'Oct 08' },
-  { id: 4, label: 'Trainee recruitment — Luna', type: 'expense', amount: -45_000_000, date: 'Oct 06' },
-  { id: 5, label: 'CF shoot prep — NEXUS Ads', type: 'expense', amount: -12_000_000, date: 'Oct 05' },
-  { id: 6, label: 'Fan meeting — Seoul', type: 'income', amount: 96_000_000, date: 'Oct 02' },
-  { id: 7, label: 'Vocal coaching — Yuna, Kai', type: 'expense', amount: -6_200_000, date: 'Sep 30' },
-];
+export const transactions: Array<{
+  id: number;
+  label: string;
+  type: 'income' | 'expense';
+  amount: number;
+  date: string;
+}> = [];
 
 export const promotions = [
   { id: 'ms', name: 'Music Show Performance', cost: 18_000_000, fans: '+12k', rep: '+3', fatigue: '+15', time: '1 day' },
@@ -232,11 +232,21 @@ export const markets = [
 ];
 
 export const initialTrainees: Trainee[] = [
-  { id: 't1', name: 'Aria', age: 17, nationality: 'Japanese', flag: '🇯🇵', languages: ['Japanese', 'Korean', 'English'], potential: 92, skill: 'Vocal', personality: 'Quiet, Driven', cost: 80_000_000, gradient: grads[0], image: traineeAria },
-  { id: 't2', name: 'Renjun', age: 18, nationality: 'Chinese', flag: '🇨🇳', languages: ['Chinese', 'Korean'], potential: 88, skill: 'Dance', personality: 'Sharp, Bold', cost: 65_000_000, gradient: grads[1], image: traineeRenjun },
-  { id: 't3', name: 'Mai', age: 16, nationality: 'Vietnamese', flag: '🇻🇳', languages: ['Vietnamese', 'Korean', 'English'], potential: 84, skill: 'Visual', personality: 'Bright, Curious', cost: 42_000_000, gradient: grads[2], image: traineeMai },
-  { id: 't4', name: 'Theo', age: 19, nationality: 'Thai', flag: '🇹🇭', languages: ['Thai', 'English'], potential: 80, skill: 'Rap', personality: 'Calm, Witty', cost: 36_000_000, gradient: grads[3], image: traineeTheo },
-  { id: 't5', name: 'Sky', age: 17, nationality: 'Korean', flag: '🇰🇷', languages: ['Korean', 'Japanese'], potential: 94, skill: 'Charisma', personality: 'Magnetic, Warm', cost: 95_000_000, gradient: grads[4], image: traineeSky },
+  { id: 'anh', name: 'Anh', age: 17, nationality: 'Vietnamese', flag: '🇻🇳', languages: ['Vietnamese', 'Korean'], potential: 86, skill: 'Visual', personality: 'Graceful, Ambitious', cost: 52_000_000, gradient: grads[0], image: idolAnh },
+  { id: 'joon', name: 'Joon', age: 19, nationality: 'Korean', flag: '🇰🇷', languages: ['Korean', 'English'], potential: 90, skill: 'Vocal', personality: 'Focused, Charismatic', cost: 72_000_000, gradient: grads[1], image: idolJoon },
+  { id: 'lena', name: 'Lena', age: 18, nationality: 'Korean', flag: '🇰🇷', languages: ['Korean', 'Japanese'], potential: 88, skill: 'Visual', personality: 'Elegant, Calm', cost: 68_000_000, gradient: grads[2], image: idolLena },
+  { id: 'mina', name: 'Mina', age: 18, nationality: 'Korean', flag: '🇰🇷', languages: ['Korean', 'English'], potential: 85, skill: 'Dance', personality: 'Bright, Determined', cost: 58_000_000, gradient: grads[3], image: idolMina },
+  { id: 'narin', name: 'Narin', age: 17, nationality: 'Korean', flag: '🇰🇷', languages: ['Korean', 'English', 'Japanese'], potential: 94, skill: 'Vocal', personality: 'Confident, Warm', cost: 92_000_000, gradient: grads[4], image: idolNarin },
+  { id: 'riku', name: 'Riku', age: 19, nationality: 'Japanese', flag: '🇯🇵', languages: ['Japanese', 'Korean'], potential: 89, skill: 'Dance', personality: 'Playful, Precise', cost: 70_000_000, gradient: grads[5], image: idolRiku },
+  { id: 'sora', name: 'Sora', age: 17, nationality: 'Korean', flag: '🇰🇷', languages: ['Korean'], potential: 82, skill: 'Charisma', personality: 'Quiet, Hardworking', cost: 45_000_000, gradient: grads[0], image: idolSora },
+  { id: 'tao', name: 'Tao', age: 20, nationality: 'Chinese', flag: '🇨🇳', languages: ['Chinese', 'Korean', 'English'], potential: 87, skill: 'Rap', personality: 'Bold, Outgoing', cost: 62_000_000, gradient: grads[1], image: idolTao },
+  { id: 'wei', name: 'Wei', age: 19, nationality: 'Chinese', flag: '🇨🇳', languages: ['Chinese', 'Korean'], potential: 91, skill: 'Rap', personality: 'Calm, Strategic', cost: 78_000_000, gradient: grads[2], image: idolWei },
+  { id: 'yara', name: 'Yara', age: 17, nationality: 'Thai', flag: '🇹🇭', languages: ['Thai', 'Korean', 'English'], potential: 84, skill: 'Charisma', personality: 'Curious, Energetic', cost: 48_000_000, gradient: grads[3], image: idolYara },
+  { id: 'aria', name: 'Aria', age: 17, nationality: 'Japanese', flag: '🇯🇵', languages: ['Japanese', 'Korean', 'English'], potential: 92, skill: 'Vocal', personality: 'Quiet, Driven', cost: 80_000_000, gradient: grads[0], image: idolAria },
+  { id: 'renjun', name: 'Renjun', age: 18, nationality: 'Chinese', flag: '🇨🇳', languages: ['Chinese', 'Korean'], potential: 88, skill: 'Dance', personality: 'Sharp, Bold', cost: 65_000_000, gradient: grads[1], image: idolRenjun },
+  { id: 'mai', name: 'Mai', age: 16, nationality: 'Vietnamese', flag: '🇻🇳', languages: ['Vietnamese', 'Korean', 'English'], potential: 84, skill: 'Visual', personality: 'Bright, Curious', cost: 42_000_000, gradient: grads[2], image: idolMai },
+  { id: 'theo', name: 'Theo', age: 19, nationality: 'Thai', flag: '🇹🇭', languages: ['Thai', 'English'], potential: 80, skill: 'Rap', personality: 'Calm, Witty', cost: 36_000_000, gradient: grads[3], image: idolTheo },
+  { id: 'sky', name: 'Sky', age: 17, nationality: 'Korean', flag: '🇰🇷', languages: ['Korean', 'Japanese'], potential: 94, skill: 'Charisma', personality: 'Magnetic, Warm', cost: 95_000_000, gradient: grads[4], image: idolSky },
 ];
 
 export const trainingTypes = [
