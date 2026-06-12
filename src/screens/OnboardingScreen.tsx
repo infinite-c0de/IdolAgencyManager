@@ -34,7 +34,7 @@ export function OnboardingScreen() {
       ceoName,
       cityId: city,
     });
-    navigation.navigate('Home');
+    navigation.navigate('AgencyDashboard');
   };
 
   return (

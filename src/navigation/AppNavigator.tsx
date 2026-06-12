@@ -1,8 +1,9 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { AgencyDashboardScreen } from '../screens/AgencyDashboardScreen';
 import { FinanceScreen } from '../screens/FinanceScreen';
 import { GroupsScreen } from '../screens/GroupsScreen';
-import { HomeScreen } from '../screens/HomeScreen';
+import { MainMenuScreen } from '../screens/MainMenuScreen';
 import { IdolProfileScreen } from '../screens/IdolProfileScreen';
 import { IdolsScreen } from '../screens/IdolsScreen';
 import { MarketScreen } from '../screens/MarketScreen';
@@ -13,17 +14,14 @@ import { RivalsScreen } from '../screens/RivalsScreen';
 import { ScheduleScreen } from '../screens/ScheduleScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { TrainingScreen } from '../screens/TrainingScreen';
-import { useGame } from '../state/GameContext';
 import type { RootStackParamList } from './types';
 
 const Tab = createBottomTabNavigator<RootStackParamList>();
 
 function AppNavigator() {
-  const { isAgencyCreated } = useGame();
-
   return (
     <Tab.Navigator
-      initialRouteName={isAgencyCreated ? 'Home' : 'Onboarding'}
+      initialRouteName="Home"
       screenOptions={{
         headerTitleAlign: 'center',
         headerShown: false,
@@ -34,7 +32,8 @@ function AppNavigator() {
         // the project already renders its own in-app navigation bar.
         tabBarStyle: { display: 'none' },
       }}>
-      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Home" component={MainMenuScreen} />
+      <Tab.Screen name="AgencyDashboard" component={AgencyDashboardScreen} />
       <Tab.Screen name="Idols" component={IdolsScreen} />
       <Tab.Screen name="IdolProfile" component={IdolProfileScreen} />
       <Tab.Screen name="Groups" component={GroupsScreen} />

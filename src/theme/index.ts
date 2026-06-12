@@ -1,8 +1,3 @@
-/**
- * Design tokens converted from the original Lovable/Tailwind v4 (oklch) web theme.
- * oklch values were approximated to the closest hex so the neon / glass look is preserved.
- */
-
 export const colors = {
   // Base background stops (used by the app gradient backdrop)
   bgTop: '#080B12',

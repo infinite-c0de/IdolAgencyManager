@@ -30,6 +30,15 @@ type RecruitResult =
   | { ok: true; idolName: string }
   | { ok: false; reason: 'NOT_FOUND' | 'INSUFFICIENT_FUNDS' | 'ALREADY_RECRUITED' };
 
+export type SaveSlot = {
+  id: number;
+  label: string;
+  hasSave: boolean;
+  agencyName?: string;
+  city?: string;
+  updatedAt?: string;
+};
+
 type GameState = {
   agency: Agency;
   idols: Idol[];
@@ -49,14 +58,21 @@ type GameState = {
   trainingTypes: typeof trainingTypes;
   isAgencyCreated: boolean;
   isHydrated: boolean;
+  activeSlotId: number | null;
+  saveSlots: SaveSlot[];
   createAgency: (payload: CreateAgencyPayload) => void;
   recruitTrainee: (traineeId: string) => RecruitResult;
+  startNewGameInSlot: (slotId: number) => Promise<void>;
+  loadGameFromSlot: (slotId: number) => Promise<'AgencyDashboard' | 'Onboarding' | false>;
   resetGame: () => Promise<void>;
 };
 
 const GameContext = createContext<GameState | null>(null);
-const SAVE_KEY = 'idol_agency_save_v1';
+const LEGACY_SAVE_KEY = 'idol_agency_save_v1';
+const SLOT_COUNT = 3;
 const SAVE_VERSION = 1;
+
+const slotKey = (slotId: number) => `idol_agency_slot_${slotId}_v1`;
 
 type SaveData = {
   version: number;
@@ -64,6 +80,8 @@ type SaveData = {
   idols: Idol[];
   trainees: Trainee[];
   isAgencyCreated: boolean;
+  activeSlotId: number;
+  updatedAt: string;
 };
 
 function withCurrentTraineeAssets(trainees: Trainee[]) {
@@ -112,45 +130,116 @@ function traineeToIdol(trainee: Trainee): Idol {
   };
 }
 
+function createInitialSave(slotId: number): SaveData {
+  return {
+    version: SAVE_VERSION,
+    agency: initialAgency,
+    idols: initialIdols,
+    trainees: initialTrainees,
+    isAgencyCreated: false,
+    activeSlotId: slotId,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function applySaveAssets(save: SaveData): SaveData {
+  return {
+    ...save,
+    trainees: withCurrentTraineeAssets(save.trainees),
+  };
+}
+
+function isValidSave(save: SaveData | null): save is SaveData {
+  return Boolean(
+    save?.version === SAVE_VERSION &&
+      save.agency &&
+      Array.isArray(save.idols) &&
+      Array.isArray(save.trainees),
+  );
+}
+
+async function readSlotSave(slotId: number) {
+  try {
+    const raw = await AsyncStorage.getItem(slotKey(slotId));
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as SaveData;
+    return isValidSave(parsed) ? applySaveAssets(parsed) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function GameProvider({ children }: { children: ReactNode }) {
   const [agency, setAgency] = useState<Agency>(initialAgency);
   const [idols, setIdols] = useState<Idol[]>(initialIdols);
   const [trainees, setTrainees] = useState<Trainee[]>(initialTrainees);
   const [isAgencyCreated, setIsAgencyCreated] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [activeSlotId, setActiveSlotId] = useState<number | null>(null);
+  const [saveSlots, setSaveSlots] = useState<SaveSlot[]>(
+    Array.from({ length: SLOT_COUNT }, (_, index) => ({
+      id: index + 1,
+      label: `Slot ${index + 1}`,
+      hasSave: false,
+    })),
+  );
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const refreshSaveSlots = async () => {
+    const slots = await Promise.all(
+      Array.from({ length: SLOT_COUNT }, async (_, index) => {
+        const id = index + 1;
+        const save = await readSlotSave(id);
+        return {
+          id,
+          label: `Slot ${id}`,
+          hasSave: Boolean(save),
+          agencyName: save?.agency.name,
+          city: save?.agency.city,
+          updatedAt: save?.updatedAt,
+        };
+      }),
+    );
+    setSaveSlots(slots);
+  };
+
+  const applySave = (save: SaveData) => {
+    setAgency(save.agency);
+    setIdols(save.idols);
+    setTrainees(withCurrentTraineeAssets(save.trainees));
+    setIsAgencyCreated(Boolean(save.isAgencyCreated));
+    setActiveSlotId(save.activeSlotId);
+  };
 
   useEffect(() => {
     let active = true;
 
     const hydrate = async () => {
       try {
-        const raw = await AsyncStorage.getItem(SAVE_KEY);
-        if (!raw) {
-          return;
+        const legacyRaw = await AsyncStorage.getItem(LEGACY_SAVE_KEY);
+        const firstSlot = await readSlotSave(1);
+        if (!firstSlot && legacyRaw) {
+          const legacy = JSON.parse(legacyRaw) as SaveData;
+          if (isValidSave(legacy)) {
+            await AsyncStorage.setItem(
+              slotKey(1),
+              JSON.stringify({
+                ...applySaveAssets(legacy),
+                activeSlotId: 1,
+                updatedAt: new Date().toISOString(),
+              }),
+            );
+            await AsyncStorage.removeItem(LEGACY_SAVE_KEY);
+          }
         }
-
-        const parsed = JSON.parse(raw) as SaveData;
-        if (parsed?.version !== SAVE_VERSION) {
-          return;
-        }
-
-        if (!parsed.agency || !Array.isArray(parsed.idols) || !Array.isArray(parsed.trainees)) {
-          return;
-        }
-
-        if (!active) {
-          return;
-        }
-
-        setAgency(parsed.agency);
-        setIdols(parsed.idols);
-        setTrainees(withCurrentTraineeAssets(parsed.trainees));
-        setIsAgencyCreated(Boolean(parsed.isAgencyCreated));
       } catch {
         // Ignore corrupted or missing saves and continue with defaults.
       } finally {
         if (active) {
+          await refreshSaveSlots();
           setIsHydrated(true);
         }
       }
@@ -172,7 +261,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, [isHydrated]);
 
   useEffect(() => {
-    if (!isHydrated) {
+    const slotId = activeSlotId;
+    if (!isHydrated || slotId === null) {
       return;
     }
 
@@ -187,8 +277,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
         idols,
         trainees,
         isAgencyCreated,
+        activeSlotId: slotId,
+        updatedAt: new Date().toISOString(),
       };
-      AsyncStorage.setItem(SAVE_KEY, JSON.stringify(payload)).catch(() => {
+      AsyncStorage.setItem(slotKey(slotId), JSON.stringify(payload)).then(refreshSaveSlots).catch(() => {
         // Ignore save errors for now; app remains playable.
       });
     }, 300);
@@ -198,14 +290,40 @@ export function GameProvider({ children }: { children: ReactNode }) {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [agency, idols, trainees, isAgencyCreated, isHydrated]);
+  }, [agency, idols, trainees, isAgencyCreated, isHydrated, activeSlotId]);
 
   const resetGame = async () => {
     setAgency(initialAgency);
     setIdols(initialIdols);
     setTrainees(initialTrainees);
     setIsAgencyCreated(false);
-    await AsyncStorage.removeItem(SAVE_KEY);
+    setActiveSlotId(null);
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    await Promise.all(
+      Array.from({ length: SLOT_COUNT }, (_, index) => AsyncStorage.removeItem(slotKey(index + 1))),
+    );
+    await AsyncStorage.removeItem(LEGACY_SAVE_KEY);
+    await refreshSaveSlots();
+  };
+
+  const startNewGameInSlot = async (slotId: number) => {
+    const save = createInitialSave(slotId);
+    applySave(save);
+    await AsyncStorage.setItem(slotKey(slotId), JSON.stringify(save));
+    await refreshSaveSlots();
+  };
+
+  const loadGameFromSlot = async (slotId: number) => {
+    const save = await readSlotSave(slotId);
+    if (!save) {
+      return false;
+    }
+
+    applySave(save);
+    await refreshSaveSlots();
+    return save.isAgencyCreated ? 'AgencyDashboard' : 'Onboarding';
   };
 
   const createAgency = ({ agencyName, ceoName, cityId }: CreateAgencyPayload) => {
@@ -267,11 +385,15 @@ export function GameProvider({ children }: { children: ReactNode }) {
       trainingTypes,
       isAgencyCreated,
       isHydrated,
+      activeSlotId,
+      saveSlots,
       createAgency,
       recruitTrainee,
+      startNewGameInSlot,
+      loadGameFromSlot,
       resetGame,
     }),
-    [agency, idols, trainees, isAgencyCreated, isHydrated],
+    [agency, idols, trainees, isAgencyCreated, isHydrated, activeSlotId, saveSlots],
   );
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

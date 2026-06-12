@@ -2,6 +2,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import {
   CalendarDays,
   ChevronRight,
+  Crown,
   Dumbbell,
   Gem,
   Globe2,
@@ -36,11 +37,11 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 type NavItem = {
   to: keyof RootStackParamList;
   label: string;
-  Icon: typeof Home;
+  Icon: typeof Star;
 };
 
 const nav: NavItem[] = [
-  { to: 'Home', label: 'Home', Icon: Home },
+  { to: 'AgencyDashboard', label: 'Agency', Icon: Home },
   { to: 'Idols', label: 'Idols', Icon: Users },
   { to: 'Groups', label: 'Groups', Icon: Music2 },
   { to: 'Training', label: 'Training', Icon: Dumbbell },

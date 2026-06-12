@@ -1,128 +1,84 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { FileText, Info, Palette, Rocket, Trash2 } from 'lucide-react-native';
+import { ChevronLeft, Rocket, Trash2 } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { AppShell, Card, SectionTitle } from '../components/AppShell';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Card, SectionTitle } from '../components/AppShell';
+import { Gradient } from '../components/ui/Gradient';
 import type { RootStackParamList } from '../navigation/types';
+import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
-const swatches = [
-  { n: 'bg', c: '#080B12' },
-  { n: 'surf', c: '#10131D' },
-  { n: 'teal', c: colors.teal },
-  { n: 'violet', c: colors.violet },
-  { n: 'mint', c: colors.mint },
-];
-
-const mvp = [
-  'Agency creation',
-  'Trainee recruitment',
-  'Idol profiles',
-  'Training schedule',
-  'Group management',
-  'Debut single workflow',
-  'Promotion scheduling',
-  'Market modifiers',
-  'Rival event feed',
-  'Finance dashboard',
-];
-
-const future = [
-  'Personalities',
-  'Scandals',
-  'Sponsorships',
-  'AI agencies',
-  'Contracts',
-  'Idol poaching',
-  'Acquisitions',
-  'Sub-labels',
-  'World tours',
-  'Advanced economy',
-];
-
 export function SettingsScreen() {
   const navigation = useNavigation<Nav>();
+  const insets = useSafeAreaInsets();
+  const { resetGame } = useGame();
   const [notifications, setNotifications] = useState(true);
   const [haptics, setHaptics] = useState(false);
   const [autoWeek, setAutoWeek] = useState(false);
 
   const confirmReset = () => {
-    Alert.alert('Reset prototype data', 'This will clear local prototype progress. Continue?', [
+    Alert.alert('Reset save data', 'This will clear every local save slot. Continue?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Reset', style: 'destructive', onPress: () => {} },
+      {
+        text: 'Reset',
+        style: 'destructive',
+        onPress: async () => {
+          await resetGame();
+          navigation.navigate('Home');
+        },
+      },
     ]);
   };
 
   return (
-    <AppShell title="Settings" subtitle="Prototype controls & style guide">
-      <Card>
-        <SectionTitle>GAME</SectionTitle>
-        <Row label="Notifications" value={notifications} onToggle={() => setNotifications(v => !v)} />
-        <Row label="Haptics" value={haptics} onToggle={() => setHaptics(v => !v)} />
-        <Row label="Auto-advance week" value={autoWeek} onToggle={() => setAutoWeek(v => !v)} />
-        <TouchableOpacity
-          style={styles.linkRow}
-          onPress={() => navigation.navigate('Onboarding')}
-          activeOpacity={0.7}>
-          <Text style={styles.linkText}>Restart onboarding</Text>
-          <Rocket size={16} color={colors.tealBright} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.dangerRow} onPress={confirmReset} activeOpacity={0.7}>
-          <Text style={styles.dangerText}>Reset prototype data</Text>
-          <Trash2 size={16} color="#FDA4AF" />
-        </TouchableOpacity>
-      </Card>
+    <Gradient colors={['#050711', '#0E1624', '#1B1233']} direction="to-b" style={styles.root}>
+      <View
+        style={[
+          styles.container,
+          {
+            paddingTop: Math.max(insets.top, spacing.lg),
+            paddingBottom: Math.max(insets.bottom, spacing.lg),
+          },
+        ]}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Home'))}
+            style={styles.backBtn}
+            activeOpacity={0.8}>
+            <ChevronLeft size={16} color={colors.foreground} />
+            <Text style={styles.backText}>Back</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Settings</Text>
+          <View style={styles.headerSpacer} />
+        </View>
 
-      <Card>
-        <SectionTitle>STYLE GUIDE</SectionTitle>
-        <View style={styles.swatchRow}>
-          {swatches.map(s => (
-            <View key={s.n} style={styles.swatchCol}>
-              <View style={[styles.swatch, { backgroundColor: s.c }]} />
-              <Text style={styles.tinyMuted}>{s.n}</Text>
-            </View>
-          ))}
-        </View>
-        <View style={styles.noteRow}>
-          <Palette size={16} color={colors.mutedForeground} />
-          <Text style={styles.note}> Dark futuristic · neon teal / violet · glass cards · soft glow</Text>
-        </View>
-      </Card>
+        <Text style={styles.subtitle}>Gameplay controls and save management</Text>
 
-      <Card>
-        <SectionTitle>MVP SCOPE</SectionTitle>
-        <View style={styles.bulletList}>
-          {mvp.map(s => (
-            <View key={s} style={styles.bulletItem}>
-              <View style={styles.bulletDot} />
-              <Text style={styles.bulletText}>{s}</Text>
-            </View>
-          ))}
-        </View>
-      </Card>
-
-      <Card>
-        <View style={styles.noteRow}>
-          <Info size={16} color={colors.mutedForeground} />
-          <Text style={styles.note}> Future expansion</Text>
-        </View>
-        <View style={styles.chipWrap}>
-          {future.map(t => (
-            <View key={t} style={styles.chip}>
-              <Text style={styles.chipText}>{t}</Text>
-            </View>
-          ))}
-        </View>
-      </Card>
-
-      <View style={styles.footer}>
-        <FileText size={12} color={colors.mutedForeground} />
-        <Text style={styles.tinyMuted}> Prototype v0.1 · UI-only vertical slice</Text>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <Card style={styles.modalCard}>
+            <SectionTitle>GAME</SectionTitle>
+            <Row label="Notifications" value={notifications} onToggle={() => setNotifications(v => !v)} />
+            <Row label="Haptics" value={haptics} onToggle={() => setHaptics(v => !v)} />
+            <Row label="Auto-advance week" value={autoWeek} onToggle={() => setAutoWeek(v => !v)} />
+            <TouchableOpacity
+              style={styles.linkRow}
+              onPress={() => navigation.navigate('Home')}
+              activeOpacity={0.7}>
+              <Text style={styles.linkText}>Back to title screen</Text>
+              <Rocket size={16} color={colors.tealBright} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.dangerRow} onPress={confirmReset} activeOpacity={0.7}>
+              <Text style={styles.dangerText}>Reset all save slots</Text>
+              <Trash2 size={16} color="#FDA4AF" />
+            </TouchableOpacity>
+          </Card>
+        </ScrollView>
       </View>
-    </AppShell>
+    </Gradient>
   );
 }
 
@@ -145,6 +101,40 @@ function Toggle({ on, onPress }: { on: boolean; onPress: () => void }) {
 
 const styles = StyleSheet.create({
   tinyMuted: { fontSize: 10, color: colors.mutedForeground },
+  root: { flex: 1 },
+  container: { flex: 1, paddingHorizontal: spacing.lg },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 36,
+  },
+  backBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.whiteA05,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+  },
+  backText: { fontSize: 12, color: colors.foreground },
+  headerTitle: { fontSize: 24, fontWeight: '900', color: colors.tealBright, letterSpacing: -0.4 },
+  headerSpacer: { width: 72 },
+  subtitle: {
+    marginTop: spacing.sm,
+    fontSize: 12,
+    color: colors.mutedForeground,
+    textAlign: 'center',
+  },
+  scrollContent: { paddingTop: spacing.lg, paddingBottom: spacing.md },
+  modalCard: {
+    borderWidth: 1,
+    borderColor: 'rgba(103,232,249,0.45)',
+    backgroundColor: 'rgba(17,22,35,0.92)',
+  },
 
   settingRow: {
     flexDirection: 'row',
@@ -189,20 +179,4 @@ const styles = StyleSheet.create({
   },
   dangerText: { fontSize: 14, color: '#FDA4AF' },
 
-  swatchRow: { flexDirection: 'row', gap: spacing.sm },
-  swatchCol: { flex: 1, alignItems: 'center', gap: 4 },
-  swatch: { height: 48, width: '100%', borderRadius: radius.lg },
-  noteRow: { marginTop: spacing.md, flexDirection: 'row', alignItems: 'center' },
-  note: { fontSize: 12, color: colors.mutedForeground },
-
-  bulletList: { gap: 6 },
-  bulletItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  bulletDot: { width: 6, height: 6, borderRadius: radius.full, backgroundColor: colors.teal },
-  bulletText: { fontSize: 12, color: colors.foreground },
-
-  chipWrap: { marginTop: spacing.sm, flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  chip: { borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.whiteA05, paddingHorizontal: spacing.sm, paddingVertical: 4 },
-  chipText: { fontSize: 10, color: colors.foreground },
-
-  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
 });

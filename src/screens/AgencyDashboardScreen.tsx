@@ -28,7 +28,7 @@ import { fmt } from '../utils/format';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
-export function HomeScreen() {
+export function AgencyDashboardScreen() {
   const navigation = useNavigation<Nav>();
   const { agency, idols, groups, revenueHistory, schedule, agencyRadar } = useGame();
   const elevate = groups[0];
