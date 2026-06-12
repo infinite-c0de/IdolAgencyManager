@@ -1,17 +1,40 @@
 import { Sparkles, UserPlus } from 'lucide-react-native';
-import React, { useState } from 'react';
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { ReactNode, useState } from 'react';
+import { ImageBackground, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card, SectionTitle } from '../components/AppShell';
 import { Gradient } from '../components/ui/Gradient';
-import { trainees } from '../data/mock';
+import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 import { fmt } from '../utils/format';
 
 const filters = ['All', 'Vocal', 'Dance', 'Rap', 'Visual', 'Charisma'];
 
 export function RecruitScreen() {
+  const { trainees, recruitTrainee } = useGame();
   const [confirm, setConfirm] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState('All');
+  const list = trainees.filter(t => activeFilter === 'All' || t.skill === activeFilter);
+
+  const handleRecruit = (traineeId: string) => {
+    const result = recruitTrainee(traineeId);
+    if (result.ok) {
+      setConfirm(result.idolName);
+      return;
+    }
+
+    if (result.reason === 'INSUFFICIENT_FUNDS') {
+      setError('Not enough budget to recruit this trainee.');
+      return;
+    }
+
+    if (result.reason === 'ALREADY_RECRUITED') {
+      setError('This trainee is already in your roster.');
+      return;
+    }
+
+    setError('Trainee not found.');
+  };
 
   return (
     <AppShell title="Scout Trainees" subtitle="Build the next generation of stars">
@@ -34,9 +57,9 @@ export function RecruitScreen() {
       </Card>
 
       <View style={styles.grid}>
-        {trainees.map(t => (
+        {list.map(t => (
           <Card key={t.id} style={styles.traineeCard}>
-            <Gradient colors={t.gradient} style={styles.image}>
+            <TraineeArt trainee={t}>
               <Text style={styles.flag}>{t.flag}</Text>
               <View style={styles.imageFooter}>
                 <View style={styles.rowBetweenEnd}>
@@ -52,18 +75,24 @@ export function RecruitScreen() {
                   </View>
                 </View>
               </View>
-            </Gradient>
+            </TraineeArt>
             <View style={styles.info}>
               <InfoRow k="Skill" v={t.skill} />
+              <InfoRow k="Languages" v={t.languages.join(', ')} />
               <InfoRow k="Personality" v={t.personality} />
               <InfoRow k="Cost" v={fmt(t.cost)} c={colors.tealBright} />
             </View>
-            <TouchableOpacity style={styles.recruitBtn} onPress={() => setConfirm(t.name)} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.recruitBtn} onPress={() => handleRecruit(t.id)} activeOpacity={0.8}>
               <UserPlus size={14} color={colors.slate900} />
               <Text style={styles.recruitText}> Recruit</Text>
             </TouchableOpacity>
           </Card>
         ))}
+        {list.length === 0 && (
+          <Card>
+            <Text style={styles.emptyText}>No trainees available for this filter.</Text>
+          </Card>
+        )}
       </View>
 
       <Modal visible={confirm !== null} transparent animationType="fade" onRequestClose={() => setConfirm(null)}>
@@ -78,7 +107,46 @@ export function RecruitScreen() {
           </View>
         </View>
       </Modal>
+
+      <Modal visible={error !== null} transparent animationType="fade" onRequestClose={() => setError(null)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Recruitment failed</Text>
+            <Text style={styles.modalBody}>{error}</Text>
+            <TouchableOpacity style={styles.continueBtn} onPress={() => setError(null)} activeOpacity={0.8}>
+              <Text style={styles.continueText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </AppShell>
+  );
+}
+
+function TraineeArt({
+  trainee,
+  children,
+}: {
+  trainee: ReturnType<typeof useGame>['trainees'][number];
+  children: ReactNode;
+}) {
+  if (trainee.image) {
+    return (
+      <ImageBackground
+        source={trainee.image}
+        resizeMode="cover"
+        style={styles.image}
+        imageStyle={styles.imageBg}>
+        <View style={styles.imageShade} />
+        {children}
+      </ImageBackground>
+    );
+  }
+
+  return (
+    <Gradient colors={trainee.gradient} style={styles.image}>
+      {children}
+    </Gradient>
   );
 }
 
@@ -102,9 +170,18 @@ const styles = StyleSheet.create({
 
   grid: { gap: spacing.md },
   traineeCard: {},
-  image: { height: 144, borderRadius: radius.lg, overflow: 'hidden' },
+  image: { height: 168, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.whiteA05 },
+  imageBg: { borderRadius: radius.lg },
+  imageShade: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: 'rgba(0,0,0,0.08)',
+  },
   flag: { position: 'absolute', right: 8, top: 6, fontSize: 18 },
-  imageFooter: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: spacing.sm, backgroundColor: 'rgba(0,0,0,0.45)' },
+  imageFooter: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: spacing.sm, backgroundColor: 'rgba(0,0,0,0.48)' },
   name: { fontSize: 16, fontWeight: '700', color: colors.foreground },
   sub: { fontSize: 10, color: 'rgba(255,255,255,0.7)' },
   potential: { flexDirection: 'row', alignItems: 'center', borderRadius: radius.full, backgroundColor: colors.black40, paddingHorizontal: spacing.sm, paddingVertical: 2 },
@@ -141,4 +218,5 @@ const styles = StyleSheet.create({
   modalBody: { marginTop: 4, fontSize: 12, color: colors.mutedForeground, textAlign: 'center' },
   continueBtn: { marginTop: spacing.lg, width: '100%', alignItems: 'center', borderRadius: radius.lg, backgroundColor: colors.teal, paddingVertical: spacing.sm },
   continueText: { fontSize: 14, fontWeight: '700', color: colors.slate900 },
+  emptyText: { fontSize: 12, color: colors.mutedForeground, textAlign: 'center' },
 });

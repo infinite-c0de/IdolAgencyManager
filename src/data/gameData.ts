@@ -1,4 +1,4 @@
-import type { Group, Idol } from '../types';
+import type { Agency, City, Group, Idol, Trainee } from '../types';
 
 const idolAnh = require('../assets/idols/idol_anh.png');
 const idolJoon = require('../assets/idols/idol_joon.png');
@@ -10,22 +10,17 @@ const idolSora = require('../assets/idols/idol_sora.png');
 const idolTao = require('../assets/idols/idol_tao.png');
 const idolWei = require('../assets/idols/idol_wei.png');
 const idolYara = require('../assets/idols/idol_yara.png');
+const traineeAria = require('../assets/idols/trainee_aria.png');
+const traineeRenjun = require('../assets/idols/trainee_renjun.png');
+const traineeMai = require('../assets/idols/trainee_mai.png');
+const traineeTheo = require('../assets/idols/trainee_theo.png');
+const traineeSky = require('../assets/idols/trainee_sky.png');
 
-export const idolGallery = [
-  idolAnh,
-  idolJoon,
-  idolLena,
-  idolMina,
-  idolNarin,
-  idolRiku,
-  idolSora,
-  idolTao,
-  idolWei,
-  idolYara,
-];
+export const idolGallery = [idolAnh, idolJoon, idolLena, idolMina, idolNarin, idolRiku, idolSora, idolTao, idolWei, idolYara];
 
-export const agency = {
+export const initialAgency: Agency = {
   name: 'STARLIGHT ENT.',
+  ceoName: 'Park J.',
   level: 16,
   money: 2_850_500_000,
   gems: 8_750,
@@ -37,18 +32,14 @@ export const agency = {
   city: 'Seoul',
 };
 
-export const cities = [
-  { id: 'seoul', name: 'Seoul', flag: '🇰🇷', desc: 'High competition, strong K-Pop market, high revenue potential.', budget: '₩2.85B', difficulty: 'Hard', fan: 1.2, cost: 1.3, revenue: 1.4, competition: 95 },
-  { id: 'tokyo', name: 'Tokyo', flag: '🇯🇵', desc: 'Strong idol market, stable fans, high promotion cost.', budget: '₩3.10B', difficulty: 'Hard', fan: 1.1, cost: 1.25, revenue: 1.3, competition: 85 },
-  { id: 'beijing', name: 'Beijing', flag: '🇨🇳', desc: 'Huge market, high revenue, complex competition.', budget: '₩2.60B', difficulty: 'Medium', fan: 1.3, cost: 1.1, revenue: 1.35, competition: 80 },
-  { id: 'hanoi', name: 'Hanoi', flag: '🇻🇳', desc: 'Emerging market, lower costs, strong growth potential.', budget: '₩1.80B', difficulty: 'Easy', fan: 1.4, cost: 0.7, revenue: 0.9, competition: 40 },
-  { id: 'bangkok', name: 'Bangkok', flag: '🇹🇭', desc: 'Regional growth hub, balanced costs and fan expansion.', budget: '₩2.00B', difficulty: 'Medium', fan: 1.25, cost: 0.85, revenue: 1.0, competition: 55 },
+export const cities: City[] = [
+  { id: 'seoul', name: 'Seoul', flag: '🇰🇷', desc: 'High competition, strong K-Pop market, high revenue potential.', budget: '₩2.85B', startingBudget: 2_850_000_000, difficulty: 'Hard', fan: 1.2, cost: 1.3, revenue: 1.4, competition: 95 },
+  { id: 'tokyo', name: 'Tokyo', flag: '🇯🇵', desc: 'Strong idol market, stable fans, high promotion cost.', budget: '₩3.10B', startingBudget: 3_100_000_000, difficulty: 'Hard', fan: 1.1, cost: 1.25, revenue: 1.3, competition: 85 },
+  { id: 'beijing', name: 'Beijing', flag: '🇨🇳', desc: 'Huge market, high revenue, complex competition.', budget: '₩2.60B', startingBudget: 2_600_000_000, difficulty: 'Medium', fan: 1.3, cost: 1.1, revenue: 1.35, competition: 80 },
+  { id: 'hanoi', name: 'Hanoi', flag: '🇻🇳', desc: 'Emerging market, lower costs, strong growth potential.', budget: '₩1.80B', startingBudget: 1_800_000_000, difficulty: 'Easy', fan: 1.4, cost: 0.7, revenue: 0.9, competition: 40 },
+  { id: 'bangkok', name: 'Bangkok', flag: '🇹🇭', desc: 'Regional growth hub, balanced costs and fan expansion.', budget: '₩2.00B', startingBudget: 2_000_000_000, difficulty: 'Medium', fan: 1.25, cost: 0.85, revenue: 1.0, competition: 55 },
 ];
 
-/**
- * Gradient palettes converted from the original Tailwind class strings, e.g.
- * "from-fuchsia-500/40 via-violet-500/40 to-cyan-400/40" -> rgba stops @ 0.4 alpha.
- */
 const grads: string[][] = [
   ['rgba(217,70,239,0.4)', 'rgba(139,92,246,0.4)', 'rgba(34,211,238,0.4)'],
   ['rgba(34,211,238,0.4)', 'rgba(14,165,233,0.4)', 'rgba(139,92,246,0.4)'],
@@ -58,7 +49,7 @@ const grads: string[][] = [
   ['rgba(129,140,248,0.4)', 'rgba(139,92,246,0.4)', 'rgba(236,72,153,0.4)'],
 ];
 
-export const idols: Idol[] = [
+export const initialIdols: Idol[] = [
   { id: 'kai', stageName: 'Kai', fullName: 'Park Jong-in', age: 21, dob: 'January 14, 2005', nationality: 'South Korean', flag: '🇰🇷', languages: ['Korean', 'English'], personality: 'Introverted, Charismatic', trainingYears: 3, role: 'Lead Vocalist', group: 'ELEVATE', status: 'Active', popularity: 95, rank: 2, gradient: grads[0], image: idolJoon, stats: { vocal: 92, dance: 88, rap: 78, visual: 90, charisma: 90, stamina: 84, variety: 70, acting: 65 }, health: 84, morale: 76, energy: 78 },
   { id: 'yuna', stageName: 'Yuna', fullName: 'Kim Yu-na', age: 20, dob: 'March 02, 2006', nationality: 'South Korean', flag: '🇰🇷', languages: ['Korean', 'English', 'Japanese'], personality: 'Cheerful, Focused', trainingYears: 4, role: 'Main Vocal', group: 'ELEVATE', status: 'Active', popularity: 97, rank: 1, gradient: grads[1], image: idolNarin, stats: { vocal: 96, dance: 82, rap: 60, visual: 94, charisma: 92, stamina: 80, variety: 88, acting: 74 }, health: 90, morale: 88, energy: 85 },
   { id: 'jihoon', stageName: 'Jihoon', fullName: 'Lee Ji-hoon', age: 23, dob: 'August 19, 2002', nationality: 'South Korean', flag: '🇰🇷', languages: ['Korean'], personality: 'Calm, Strategic', trainingYears: 5, role: 'Leader / Rapper', group: 'ELEVATE', status: 'Active', popularity: 90, rank: 3, gradient: grads[2], image: idolWei, stats: { vocal: 74, dance: 80, rap: 94, visual: 86, charisma: 88, stamina: 88, variety: 72, acting: 60 }, health: 80, morale: 74, energy: 70 },
@@ -155,12 +146,12 @@ export const markets = [
   { region: 'Global', fans: '5.5M', revenue: '₩1.34B', trend: '+10%', rank: '#13' },
 ];
 
-export const trainees = [
-  { id: 't1', name: 'Aria', age: 17, nationality: 'Japanese', flag: '🇯🇵', potential: 92, skill: 'Vocal', personality: 'Quiet, Driven', cost: 80_000_000, gradient: grads[0] },
-  { id: 't2', name: 'Renjun', age: 18, nationality: 'Chinese', flag: '🇨🇳', potential: 88, skill: 'Dance', personality: 'Sharp, Bold', cost: 65_000_000, gradient: grads[1] },
-  { id: 't3', name: 'Mai', age: 16, nationality: 'Vietnamese', flag: '🇻🇳', potential: 84, skill: 'Visual', personality: 'Bright, Curious', cost: 42_000_000, gradient: grads[2] },
-  { id: 't4', name: 'Theo', age: 19, nationality: 'Thai', flag: '🇹🇭', potential: 80, skill: 'Rap', personality: 'Calm, Witty', cost: 36_000_000, gradient: grads[3] },
-  { id: 't5', name: 'Sky', age: 17, nationality: 'Korean', flag: '🇰🇷', potential: 94, skill: 'Charisma', personality: 'Magnetic, Warm', cost: 95_000_000, gradient: grads[4] },
+export const initialTrainees: Trainee[] = [
+  { id: 't1', name: 'Aria', age: 17, nationality: 'Japanese', flag: '🇯🇵', languages: ['Japanese', 'Korean', 'English'], potential: 92, skill: 'Vocal', personality: 'Quiet, Driven', cost: 80_000_000, gradient: grads[0], image: traineeAria },
+  { id: 't2', name: 'Renjun', age: 18, nationality: 'Chinese', flag: '🇨🇳', languages: ['Chinese', 'Korean'], potential: 88, skill: 'Dance', personality: 'Sharp, Bold', cost: 65_000_000, gradient: grads[1], image: traineeRenjun },
+  { id: 't3', name: 'Mai', age: 16, nationality: 'Vietnamese', flag: '🇻🇳', languages: ['Vietnamese', 'Korean', 'English'], potential: 84, skill: 'Visual', personality: 'Bright, Curious', cost: 42_000_000, gradient: grads[2], image: traineeMai },
+  { id: 't4', name: 'Theo', age: 19, nationality: 'Thai', flag: '🇹🇭', languages: ['Thai', 'English'], potential: 80, skill: 'Rap', personality: 'Calm, Witty', cost: 36_000_000, gradient: grads[3], image: traineeTheo },
+  { id: 't5', name: 'Sky', age: 17, nationality: 'Korean', flag: '🇰🇷', languages: ['Korean', 'Japanese'], potential: 94, skill: 'Charisma', personality: 'Magnetic, Warm', cost: 95_000_000, gradient: grads[4], image: traineeSky },
 ];
 
 export const trainingTypes = [

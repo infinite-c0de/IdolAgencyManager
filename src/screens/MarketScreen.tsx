@@ -2,7 +2,7 @@ import { TrendingUp } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card, SectionTitle } from '../components/AppShell';
-import { cities, markets, opportunities } from '../data/mock';
+import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 
 const toneColor: Record<string, string> = {
@@ -13,19 +13,20 @@ const toneColor: Record<string, string> = {
 };
 
 export function MarketScreen() {
+  const { cities, markets, opportunities, agency } = useGame();
   const [tab, setTab] = useState(markets[0].region);
-  const seoul = cities[0];
+  const homeCity = cities.find(c => c.name === agency.city) ?? cities[0];
 
   return (
     <AppShell title="Market Pulse" subtitle="City modifiers and regional demand">
       <Card glow="teal">
-        <SectionTitle>HOME · SEOUL</SectionTitle>
-        <Text style={styles.desc}>{seoul.desc}</Text>
+        <SectionTitle>{`HOME · ${homeCity.name.toUpperCase()}`}</SectionTitle>
+        <Text style={styles.desc}>{homeCity.desc}</Text>
         <View style={styles.modRow}>
-          <Mod label="Fan Growth" v={`x${seoul.fan}`} c={colors.mint} />
-          <Mod label="Costs" v={`x${seoul.cost}`} c="#FDA4AF" />
-          <Mod label="Revenue" v={`x${seoul.revenue}`} c={colors.tealBright} />
-          <Mod label="Competition" v={`${seoul.competition}%`} c={colors.violetBright} />
+          <Mod label="Fan Growth" v={`x${homeCity.fan}`} c={colors.mint} />
+          <Mod label="Costs" v={`x${homeCity.cost}`} c="#FDA4AF" />
+          <Mod label="Revenue" v={`x${homeCity.revenue}`} c={colors.tealBright} />
+          <Mod label="Competition" v={`${homeCity.competition}%`} c={colors.violetBright} />
         </View>
       </Card>
 

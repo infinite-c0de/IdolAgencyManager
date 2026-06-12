@@ -24,12 +24,12 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { agency } from '../data/mock';
 import { colors, gradients, radius, spacing, statusColor } from '../theme';
 import { fmt } from '../utils/format';
 import { Gradient } from './ui/Gradient';
 import type { RootStackParamList } from '../navigation/types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useGame } from '../state/GameContext';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -55,6 +55,8 @@ const primary = nav.slice(0, 5);
 const more = nav.slice(5);
 
 export function TopBar() {
+  const { agency } = useGame();
+
   return (
     <View style={styles.topBar}>
       <View style={styles.topBarRow}>

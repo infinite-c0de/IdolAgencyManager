@@ -13,14 +13,17 @@ import { RivalsScreen } from '../screens/RivalsScreen';
 import { ScheduleScreen } from '../screens/ScheduleScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { TrainingScreen } from '../screens/TrainingScreen';
+import { useGame } from '../state/GameContext';
 import type { RootStackParamList } from './types';
 
 const Tab = createBottomTabNavigator<RootStackParamList>();
 
 function AppNavigator() {
+  const { isAgencyCreated } = useGame();
+
   return (
     <Tab.Navigator
-      initialRouteName="Home"
+      initialRouteName={isAgencyCreated ? 'Home' : 'Onboarding'}
       screenOptions={{
         headerTitleAlign: 'center',
         headerShown: false,

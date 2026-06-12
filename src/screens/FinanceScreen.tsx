@@ -3,14 +3,9 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { AppShell, Card, SectionTitle } from '../components/AppShell';
 import { AreaChart, ResponsiveChart } from '../components/charts';
-import { agency, revenueHistory, transactions } from '../data/mock';
+import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 import { fmt } from '../utils/format';
-
-const pl = revenueHistory.map(r => ({
-  m: r.m,
-  profit: Math.round(r.group + r.solo + r.merch - 220 - r.solo * 0.4),
-}));
 
 const costs = [
   { l: 'Training', v: 28, c: colors.teal },
@@ -21,6 +16,11 @@ const costs = [
 ];
 
 export function FinanceScreen() {
+  const { agency, revenueHistory, transactions } = useGame();
+  const pl = revenueHistory.map(r => ({
+    m: r.m,
+    profit: Math.round(r.group + r.solo + r.merch - 220 - r.solo * 0.4),
+  }));
   const income = 612_000_000;
   const expense = 442_000_000;
   const net = income - expense;

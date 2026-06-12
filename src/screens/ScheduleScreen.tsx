@@ -4,8 +4,8 @@ import { CalendarDays, Megaphone, Sparkles } from 'lucide-react-native';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card, SectionTitle } from '../components/AppShell';
-import { promotions, schedule } from '../data/mock';
 import type { RootStackParamList } from '../navigation/types';
+import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 import { fmt } from '../utils/format';
 
@@ -22,6 +22,7 @@ const dayEvents: Record<number, { text: string; color: string }> = {
 
 export function ScheduleScreen() {
   const navigation = useNavigation<Nav>();
+  const { schedule, promotions } = useGame();
 
   const releaseAction = (
     <TouchableOpacity style={styles.releaseBtn} onPress={() => navigation.navigate('Release')} activeOpacity={0.8}>

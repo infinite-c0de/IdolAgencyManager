@@ -12,7 +12,7 @@ import {
 import { AppShell, Avatar, Card } from '../components/AppShell';
 import { RadarChart } from '../components/charts';
 import { Gradient } from '../components/ui/Gradient';
-import { groups, idols } from '../data/mock';
+import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 import { fmt } from '../utils/format';
 
@@ -21,6 +21,7 @@ function avg(a: number[]) {
 }
 
 export function GroupsScreen() {
+  const { groups, idols } = useGame();
   const [open, setOpen] = useState(false);
   const active = groups.filter(g => g.status === 'Active').length;
   const predebut = groups.filter(g => g.status === 'Pre-debut').length;
@@ -146,7 +147,7 @@ export function GroupsScreen() {
         );
       })}
 
-      <NewGroupModal visible={open} onClose={() => setOpen(false)} />
+      <NewGroupModal visible={open} onClose={() => setOpen(false)} idols={idols} />
     </AppShell>
   );
 }
@@ -160,7 +161,15 @@ function Mini({ label, v }: { label: string; v: string }) {
   );
 }
 
-function NewGroupModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+function NewGroupModal({
+  visible,
+  onClose,
+  idols,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  idols: ReturnType<typeof useGame>['idols'];
+}) {
   const roles = ['Leader', 'Main Vocal', 'Lead Vocal', 'Main Dancer', 'Lead Dancer', 'Main Rapper', 'Visual', 'Center', 'Maknae'];
   const [name, setName] = useState('');
   const [fan, setFan] = useState('');

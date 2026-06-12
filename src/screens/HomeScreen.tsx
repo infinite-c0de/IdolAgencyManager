@@ -20,8 +20,9 @@ import {
 } from '../components/charts';
 import { RadarChart } from '../components/charts';
 import { Gradient } from '../components/ui/Gradient';
-import { agencyRadar, groups, idols, revenueHistory, schedule, ScheduleItem } from '../data/mock';
+import type { ScheduleItem } from '../data/gameData';
 import type { RootStackParamList } from '../navigation/types';
+import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 import { fmt } from '../utils/format';
 
@@ -29,6 +30,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export function HomeScreen() {
   const navigation = useNavigation<Nav>();
+  const { agency, idols, groups, revenueHistory, schedule, agencyRadar } = useGame();
   const elevate = groups[0];
   const members = elevate.memberIds
     .map(id => idols.find(i => i.id === id))
@@ -68,7 +70,7 @@ export function HomeScreen() {
         </View>
         <View style={styles.kpiRow}>
           <KPI icon={<Heart size={12} color="#FDA4AF" />} label="Popularity" value="88%" sub="+5%" />
-          <KPI icon={<Wallet size={12} color={colors.mint} />} label="Income" value="₩450M" sub="/mo" />
+          <KPI icon={<Wallet size={12} color={colors.mint} />} label="Income" value={fmt(agency.monthlyIncome)} sub="/mo" />
           <KPI icon={<CalendarCheck size={12} color={colors.tealBright} />} label="Schedule" value="3" sub="active" />
         </View>
       </Card>

@@ -3,7 +3,7 @@ import React, { ComponentType, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Avatar, Card, SectionTitle } from '../components/AppShell';
 import { Gradient } from '../components/ui/Gradient';
-import { idols, trainingTypes } from '../data/mock';
+import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 
 type IconType = ComponentType<{ size?: number; color?: string }>;
@@ -11,6 +11,7 @@ type IconType = ComponentType<{ size?: number; color?: string }>;
 const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
 export function TrainingScreen() {
+  const { idols, trainingTypes } = useGame();
   const [selectedIdol, setSelectedIdol] = useState(idols[0].id);
   const [selectedType, setSelectedType] = useState(trainingTypes[0].id);
   const [grid, setGrid] = useState<Record<string, string>>({});

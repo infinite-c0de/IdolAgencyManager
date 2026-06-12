@@ -15,12 +15,12 @@ import {
   Zap,
 } from 'lucide-react-native';
 import React, { ComponentType, ReactNode } from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card, SectionTitle, SkillBar, StatusDot } from '../components/AppShell';
 import { RadarChart } from '../components/charts';
 import { Gradient } from '../components/ui/Gradient';
-import { idols } from '../data/mock';
 import type { RootStackParamList, RootStackScreenProps } from '../navigation/types';
+import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -29,6 +29,7 @@ type IconType = ComponentType<{ size?: number; color?: string }>;
 
 export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>) {
   const navigation = useNavigation<Nav>();
+  const { idols } = useGame();
   const i = idols.find(x => x.id === route.params.id);
 
   if (!i) {
@@ -76,8 +77,7 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
     <AppShell title={i.stageName} subtitle={`${i.role} · ${i.group ?? 'Solo'}`} action={backAction}>
       {/* Hero portrait */}
       <Card glow="teal" style={styles.heroCard}>
-        <Gradient colors={i.gradient} style={styles.hero}>
-          {i.image ? <Image source={i.image} resizeMode="cover" style={styles.heroImage} /> : null}
+        <HeroArt image={i.image} gradient={i.gradient}>
           <View style={styles.heroFooter}>
             <View style={styles.rowBetweenEnd}>
               <View>
@@ -92,7 +92,7 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
               </View>
             </View>
           </View>
-        </Gradient>
+        </HeroArt>
       </Card>
 
       {/* Basic info */}
@@ -169,6 +169,35 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
   );
 }
 
+function HeroArt({
+  image,
+  gradient,
+  children,
+}: {
+  image?: number;
+  gradient: string[];
+  children: ReactNode;
+}) {
+  if (image) {
+    return (
+      <ImageBackground
+        source={image}
+        resizeMode="cover"
+        style={styles.hero}
+        imageStyle={styles.heroImage}>
+        <View style={styles.heroShade} />
+        {children}
+      </ImageBackground>
+    );
+  }
+
+  return (
+    <Gradient colors={gradient} style={styles.hero}>
+      {children}
+    </Gradient>
+  );
+}
+
 function Row({ k, v }: { k: string; v: ReactNode }) {
   return (
     <View style={styles.infoRow}>
@@ -214,12 +243,14 @@ const styles = StyleSheet.create({
 
   heroCard: { padding: 0, overflow: 'hidden' },
   hero: { height: 200, justifyContent: 'flex-end' },
-  heroImage: {
+  heroImage: { borderRadius: radius['2xl'] },
+  heroShade: {
     position: 'absolute',
     top: 0,
     right: 0,
     bottom: 0,
     left: 0,
+    backgroundColor: 'rgba(0,0,0,0.1)',
   },
   heroFooter: { padding: spacing.lg, backgroundColor: 'rgba(0,0,0,0.35)' },
   heroName: { fontSize: 28, fontWeight: '900', color: colors.tealBright },

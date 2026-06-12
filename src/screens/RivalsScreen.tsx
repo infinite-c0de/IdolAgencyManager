@@ -2,7 +2,7 @@ import { BarChart3, Megaphone, Search, ShieldAlert, Swords } from 'lucide-react-
 import React, { ComponentType } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card, SectionTitle } from '../components/AppShell';
-import { rivals } from '../data/mock';
+import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 
 type IconType = ComponentType<{ size?: number; color?: string }>;
@@ -23,6 +23,7 @@ const feedColor: Record<string, string> = {
 };
 
 export function RivalsScreen() {
+  const { rivals } = useGame();
   return (
     <AppShell title="Rival Agencies" subtitle="Event-driven market intel">
       {rivals.map(r => {

@@ -2,21 +2,40 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ChevronRight, Sparkles } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card } from '../components/AppShell';
 import { Gradient } from '../components/ui/Gradient';
-import { cities } from '../data/mock';
 import type { RootStackParamList } from '../navigation/types';
+import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export function OnboardingScreen() {
   const navigation = useNavigation<Nav>();
+  const { createAgency, cities } = useGame();
   const [agencyName, setAgencyName] = useState('Starlight Entertainment');
   const [ceoName, setCeoName] = useState('Park J.');
   const [city, setCity] = useState(cities[0].id);
   const picked = cities.find(c => c.id === city) ?? cities[0];
+
+  const handleCreateAgency = () => {
+    if (!agencyName.trim()) {
+      Alert.alert('Agency name required', 'Please enter your agency name before continuing.');
+      return;
+    }
+    if (!ceoName.trim()) {
+      Alert.alert('CEO name required', 'Please enter your CEO name before continuing.');
+      return;
+    }
+
+    createAgency({
+      agencyName,
+      ceoName,
+      cityId: city,
+    });
+    navigation.navigate('Home');
+  };
 
   return (
     <AppShell title="New Agency" subtitle="Build your idol empire">
@@ -40,9 +59,12 @@ export function OnboardingScreen() {
                 style={[styles.cityCard, active ? styles.cityActive : styles.cityIdle]}
                 activeOpacity={0.85}>
                 <View style={styles.rowBetween}>
-                  <Text style={styles.cityName}>
-                    {c.flag} {c.name}
-                  </Text>
+                  <View style={styles.cityNameRow}>
+                    <Text style={styles.cityFlag}>{c.flag}</Text>
+                    <Text style={styles.cityName} numberOfLines={1}>
+                      {c.name}
+                    </Text>
+                  </View>
                   <View style={styles.diffBadge}>
                     <Text style={styles.diffText}>{c.difficulty}</Text>
                   </View>
@@ -67,7 +89,7 @@ export function OnboardingScreen() {
           <P k="Difficulty" v={picked.difficulty} />
           <P k="Competition" v={`${picked.competition}%`} />
         </View>
-        <TouchableOpacity onPress={() => navigation.navigate('Home')} activeOpacity={0.85}>
+        <TouchableOpacity onPress={handleCreateAgency} activeOpacity={0.85}>
           <Gradient colors={[colors.teal, colors.violet]} direction="to-r" style={styles.createBtn}>
             <Sparkles size={16} color={colors.slate900} />
             <Text style={styles.createText}> Create Agency </Text>
@@ -146,7 +168,9 @@ const styles = StyleSheet.create({
   cityCard: { borderRadius: radius['2xl'], borderWidth: 1, padding: spacing.md },
   cityIdle: { borderColor: colors.border, backgroundColor: colors.whiteA05 },
   cityActive: { borderColor: 'rgba(34,211,238,0.6)', backgroundColor: 'rgba(34,211,238,0.06)' },
-  cityName: { fontSize: 18, fontWeight: '700', color: colors.foreground },
+  cityNameRow: { flexDirection: 'row', alignItems: 'center', flex: 1, minWidth: 0, gap: 6 },
+  cityFlag: { fontSize: 18 },
+  cityName: { fontSize: 18, fontWeight: '700', color: colors.foreground, flexShrink: 1 },
   diffBadge: { borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.sm, paddingVertical: 2 },
   diffText: { fontSize: 10, color: colors.foreground },
   cityDesc: { marginTop: 4, fontSize: 11, color: colors.mutedForeground },

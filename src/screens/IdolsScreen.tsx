@@ -13,8 +13,8 @@ import {
 } from 'react-native';
 import { AppShell, Card, StatusDot } from '../components/AppShell';
 import { Gradient } from '../components/ui/Gradient';
-import { idols } from '../data/mock';
 import type { RootStackParamList } from '../navigation/types';
+import { useGame } from '../state/GameContext';
 import type { Status } from '../types';
 import { colors, radius, spacing } from '../theme';
 
@@ -24,6 +24,7 @@ const statuses: ('All' | Status)[] = ['All', 'Active', 'Trainee', 'Resting', 'Pr
 
 export function IdolsScreen() {
   const navigation = useNavigation<Nav>();
+  const { idols } = useGame();
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<'All' | Status>('All');
 

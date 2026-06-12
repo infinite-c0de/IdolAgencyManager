@@ -1,5 +1,33 @@
 export type Status = 'Active' | 'Trainee' | 'Resting' | 'Injured' | 'Promoting';
 
+export type Agency = {
+  name: string;
+  ceoName: string;
+  level: number;
+  money: number;
+  gems: number;
+  energy: number;
+  energyMax: number;
+  reputation: number;
+  monthlyIncome: number;
+  ranking: number;
+  city: string;
+};
+
+export type City = {
+  id: string;
+  name: string;
+  flag: string;
+  desc: string;
+  budget: string;
+  startingBudget: number;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  fan: number;
+  cost: number;
+  revenue: number;
+  competition: number;
+};
+
 export type IdolStats = {
   vocal: number;
   dance: number;
@@ -47,4 +75,19 @@ export type Group = {
   synergy: number;
   memberIds: string[];
   gradient: string[];
+};
+
+export type Trainee = {
+  id: string;
+  name: string;
+  age: number;
+  nationality: string;
+  flag: string;
+  languages: string[];
+  potential: number;
+  skill: string;
+  personality: string;
+  cost: number;
+  gradient: string[];
+  image?: number;
 };

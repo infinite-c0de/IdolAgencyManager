@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card } from '../components/AppShell';
 import { Gradient } from '../components/ui/Gradient';
-import { conceptOptions, groups, languageOptions } from '../data/mock';
+import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 import { fmt } from '../utils/format';
 
@@ -14,6 +14,7 @@ const BUDGET_MAX = 500_000_000;
 const BUDGET_STEP = 10_000_000;
 
 export function ReleaseScreen() {
+  const { groups, conceptOptions, languageOptions } = useGame();
   const [step, setStep] = useState(1);
   const [group, setGroup] = useState(groups[0].id);
   const [concept, setConcept] = useState(conceptOptions[0]);
