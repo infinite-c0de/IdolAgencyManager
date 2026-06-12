@@ -26,6 +26,11 @@ export type City = {
   cost: number;
   revenue: number;
   competition: number;
+  taxRate: number;
+  officeRentWeekly: number;
+  localReputationBoost: number;
+  domesticStreamingBonus: number;
+  operationalCostMultiplier: number;
 };
 
 export type IdolStats = {

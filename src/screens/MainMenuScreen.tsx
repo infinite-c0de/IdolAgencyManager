@@ -1,13 +1,14 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Gamepad2, LogOut, Play, RotateCcw, Settings, Upload } from 'lucide-react-native';
+import { LogOut, Play, Settings, Trash2, Upload } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Alert, BackHandler, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, BackHandler, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gradient } from '../components/ui/Gradient';
 import type { RootStackParamList } from '../navigation/types';
 import { SaveSlot, useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
+import appIcon from '../assets/app_icon.png';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type SlotMode = 'new' | 'load';
@@ -15,13 +16,20 @@ type SlotMode = 'new' | 'load';
 export function MainMenuScreen() {
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
-  const { saveSlots, startNewGameInSlot, loadGameFromSlot } = useGame();
+  const { saveSlots, startNewGameInSlot, loadGameFromSlot, deleteSaveSlot } = useGame();
   const [slotMode, setSlotMode] = useState<SlotMode | null>(null);
 
   const openSlots = (mode: SlotMode) => setSlotMode(mode);
 
   const handleSlotPress = async (slot: SaveSlot) => {
     if (slotMode === 'new') {
+      if (slot.hasSave) {
+        Alert.alert(
+          'Saved game found',
+          'There is already game data here. Please remove it first and try again.',
+        );
+        return;
+      }
       await startNewGameInSlot(slot.id);
       setSlotMode(null);
       navigation.navigate('Onboarding');
@@ -38,12 +46,33 @@ export function MainMenuScreen() {
     navigation.navigate(route);
   };
 
+  const confirmDeleteSave = (slot: SaveSlot) => {
+    if (!slot.hasSave) {
+      return;
+    }
+
+    Alert.alert(
+      'Delete saved data',
+      `Remove saved data for ${slot.label}? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteSaveSlot(slot.id);
+          },
+        },
+      ],
+    );
+  };
+
   return (
     <Gradient colors={['#050711', '#111827', '#22113A']} direction="to-b" style={styles.root}>
       <View style={[styles.content, { paddingTop: Math.max(insets.top, 24), paddingBottom: Math.max(insets.bottom, 24) }]}>
         <View style={styles.hero}>
           <View style={styles.logo}>
-            <Gamepad2 size={34} color={colors.tealBright} />
+            <Image source={appIcon} style={styles.logoImage} resizeMode="cover" />
           </View>
           <Text style={styles.eyebrow}>GLOBAL IDOL MANAGEMENT EXPERIENCE</Text>
           <Text style={styles.title}>Idol Agency Manager</Text>
@@ -55,14 +84,14 @@ export function MainMenuScreen() {
         <View style={styles.buttonStack}>
           <TitleButton
             label="Start New Game"
-            description="Choose a slot and begin agency setup"
+            description="Start your agency here and begin your debut roadmap."
             Icon={Play}
             primary
             onPress={() => openSlots('new')}
           />
           <TitleButton
             label="Load Game"
-            description="Continue from a saved slot"
+            description="Continue your agency and resume your comeback journey"
             Icon={Upload}
             onPress={() => openSlots('load')}
           />
@@ -92,8 +121,8 @@ export function MainMenuScreen() {
                 <Text style={styles.modalTitle}>{slotMode === 'new' ? 'Start New Game' : 'Load Game'}</Text>
                 <Text style={styles.modalSubtitle}>
                   {slotMode === 'new'
-                    ? 'Select a slot. Saved slots will be overwritten.'
-                    : 'Select a saved slot to continue.'}
+                    ? 'Welcome, choose where your next idol journey begins.'
+                    : 'Choose a saved agency to continue your comeback journey.'}
                 </Text>
               </View>
               <TouchableOpacity style={styles.closeBtn} onPress={() => setSlotMode(null)} activeOpacity={0.8}>
@@ -103,28 +132,31 @@ export function MainMenuScreen() {
 
             <View style={styles.slotList}>
               {saveSlots.map(slot => (
-                <TouchableOpacity
-                  key={slot.id}
-                  style={[styles.slotCard, slot.hasSave ? styles.slotFilled : styles.slotEmpty]}
-                  onPress={() => handleSlotPress(slot)}
-                  activeOpacity={0.85}>
-                  <View style={styles.slotTop}>
-                    <Text style={styles.slotLabel}>{slot.label}</Text>
-                    <Text style={[styles.slotStatus, slot.hasSave ? styles.slotStatusFilled : styles.slotStatusEmpty]}>
-                      {slot.hasSave ? 'Saved' : 'Empty'}
-                    </Text>
-                  </View>
-                  <Text style={styles.slotAgency}>{slot.agencyName ?? 'Empty agency slot'}</Text>
-                  <Text style={styles.slotMeta}>
-                    {slot.hasSave ? `${slot.city ?? 'Unknown city'} · ${formatDate(slot.updatedAt)}` : 'Tap to begin a new agency'}
-                  </Text>
-                  {slotMode === 'new' && slot.hasSave ? (
-                    <View style={styles.overwriteRow}>
-                      <RotateCcw size={12} color="#FDA4AF" />
-                      <Text style={styles.overwriteText}> Will overwrite this save</Text>
+                <View key={slot.id} style={[styles.slotCard, slot.hasSave ? styles.slotFilled : styles.slotEmpty]}>
+                  <TouchableOpacity onPress={() => handleSlotPress(slot)} activeOpacity={0.85}>
+                    <View style={styles.slotTop}>
+                      <Text style={styles.slotLabel}>{slot.label}</Text>
+                      <Text style={[styles.slotStatus, slot.hasSave ? styles.slotStatusFilled : styles.slotStatusEmpty]}>
+                        {slot.hasSave ? 'Saved' : 'Empty'}
+                      </Text>
                     </View>
-                  ) : null}
-                </TouchableOpacity>
+                    <Text style={styles.slotAgency}>{slot.agencyName ?? 'empty slot'}</Text>
+                    <View style={styles.slotMetaRow}>
+                      <Text style={styles.slotMeta}>
+                        {slot.hasSave ? `${slot.city ?? 'Unknown city'} · ${formatDate(slot.updatedAt)}` : 'Tap to begin a new agency'}
+                      </Text>
+                      {slot.hasSave ? (
+                        <TouchableOpacity
+                          style={styles.deleteSaveBtn}
+                          onPress={() => confirmDeleteSave(slot)}
+                          activeOpacity={0.8}>
+                          <Trash2 size={14} color="#FDA4AF" />
+                          <Text style={styles.deleteSaveText}>Delete</Text>
+                        </TouchableOpacity>
+                      ) : null}
+                    </View>
+                  </TouchableOpacity>
+                </View>
               ))}
             </View>
           </View>
@@ -197,6 +229,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.45,
     shadowRadius: 18,
     elevation: 6,
+    overflow: 'hidden',
+  },
+  logoImage: {
+    width: '100%',
+    height: '100%',
   },
   eyebrow: { marginTop: spacing.lg, fontSize: 10, fontWeight: '700', letterSpacing: 2, color: colors.mutedForeground },
   title: { marginTop: 10, fontSize: 40, fontWeight: '900', letterSpacing: -1.5, color: colors.tealBright, textAlign: 'center' },
@@ -247,7 +284,24 @@ const styles = StyleSheet.create({
   slotStatusFilled: { color: colors.mint },
   slotStatusEmpty: { color: colors.mutedForeground },
   slotAgency: { marginTop: 6, fontSize: 18, fontWeight: '900', color: colors.tealBright },
-  slotMeta: { marginTop: 2, fontSize: 11, color: colors.mutedForeground },
-  overwriteRow: { marginTop: spacing.sm, flexDirection: 'row', alignItems: 'center' },
-  overwriteText: { fontSize: 10, fontWeight: '600', color: '#FDA4AF' },
+  slotMetaRow: {
+    marginTop: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  slotMeta: { fontSize: 11, color: colors.mutedForeground, flex: 1 },
+  deleteSaveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(251,113,133,0.45)',
+    backgroundColor: 'rgba(251,113,133,0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  deleteSaveText: { fontSize: 10, fontWeight: '600', color: '#FDA4AF' },
 });

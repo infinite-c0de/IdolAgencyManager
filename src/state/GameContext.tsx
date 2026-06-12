@@ -60,10 +60,11 @@ type GameState = {
   isHydrated: boolean;
   activeSlotId: number | null;
   saveSlots: SaveSlot[];
-  createAgency: (payload: CreateAgencyPayload) => void;
+  createAgency: (payload: CreateAgencyPayload) => boolean;
   recruitTrainee: (traineeId: string) => RecruitResult;
   startNewGameInSlot: (slotId: number) => Promise<void>;
   loadGameFromSlot: (slotId: number) => Promise<'AgencyDashboard' | 'Onboarding' | false>;
+  deleteSaveSlot: (slotId: number) => Promise<void>;
   resetGame: () => Promise<void>;
 };
 
@@ -83,6 +84,27 @@ type SaveData = {
   activeSlotId: number;
   updatedAt: string;
 };
+
+function cloneInitialAgency(): Agency {
+  return { ...initialAgency };
+}
+
+function cloneInitialIdols(): Idol[] {
+  return initialIdols.map(idol => ({
+    ...idol,
+    languages: [...idol.languages],
+    gradient: [...idol.gradient],
+    stats: { ...idol.stats },
+  }));
+}
+
+function cloneInitialTrainees(): Trainee[] {
+  return initialTrainees.map(trainee => ({
+    ...trainee,
+    languages: [...trainee.languages],
+    gradient: [...trainee.gradient],
+  }));
+}
 
 function withCurrentTraineeAssets(trainees: Trainee[]) {
   return trainees.map(trainee => {
@@ -133,9 +155,9 @@ function traineeToIdol(trainee: Trainee): Idol {
 function createInitialSave(slotId: number): SaveData {
   return {
     version: SAVE_VERSION,
-    agency: initialAgency,
-    idols: initialIdols,
-    trainees: initialTrainees,
+    agency: cloneInitialAgency(),
+    idols: cloneInitialIdols(),
+    trainees: cloneInitialTrainees(),
     isAgencyCreated: false,
     activeSlotId: slotId,
     updatedAt: new Date().toISOString(),
@@ -155,6 +177,16 @@ function isValidSave(save: SaveData | null): save is SaveData {
       save.agency &&
       Array.isArray(save.idols) &&
       Array.isArray(save.trainees),
+  );
+}
+
+function hasAgencyProgress(save: SaveData) {
+  return (
+    save.isAgencyCreated ||
+    save.agency.name !== initialAgency.name ||
+    save.agency.ceoName !== initialAgency.ceoName ||
+    save.agency.city !== initialAgency.city ||
+    save.agency.money !== initialAgency.money
   );
 }
 
@@ -207,9 +239,22 @@ export function GameProvider({ children }: { children: ReactNode }) {
   };
 
   const applySave = (save: SaveData) => {
-    setAgency(save.agency);
-    setIdols(save.idols);
-    setTrainees(withCurrentTraineeAssets(save.trainees));
+    setAgency({ ...save.agency });
+    setIdols(
+      save.idols.map(idol => ({
+        ...idol,
+        languages: [...idol.languages],
+        gradient: [...idol.gradient],
+        stats: { ...idol.stats },
+      })),
+    );
+    setTrainees(
+      withCurrentTraineeAssets(save.trainees).map(trainee => ({
+        ...trainee,
+        languages: [...trainee.languages],
+        gradient: [...trainee.gradient],
+      })),
+    );
     setIsAgencyCreated(Boolean(save.isAgencyCreated));
     setActiveSlotId(save.activeSlotId);
   };
@@ -293,9 +338,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, [agency, idols, trainees, isAgencyCreated, isHydrated, activeSlotId]);
 
   const resetGame = async () => {
-    setAgency(initialAgency);
-    setIdols(initialIdols);
-    setTrainees(initialTrainees);
+    setAgency(cloneInitialAgency());
+    setIdols(cloneInitialIdols());
+    setTrainees(cloneInitialTrainees());
     setIsAgencyCreated(false);
     setActiveSlotId(null);
     if (saveTimeoutRef.current) {
@@ -321,26 +366,54 @@ export function GameProvider({ children }: { children: ReactNode }) {
       return false;
     }
 
-    applySave(save);
+    const created = hasAgencyProgress(save);
+    const normalizedSave = created && !save.isAgencyCreated ? { ...save, isAgencyCreated: true } : save;
+
+    applySave(normalizedSave);
+    if (normalizedSave !== save) {
+      await AsyncStorage.setItem(slotKey(slotId), JSON.stringify(normalizedSave));
+    }
     await refreshSaveSlots();
-    return save.isAgencyCreated ? 'AgencyDashboard' : 'Onboarding';
+    return created ? 'AgencyDashboard' : 'Onboarding';
+  };
+
+  const deleteSaveSlot = async (slotId: number) => {
+    await AsyncStorage.removeItem(slotKey(slotId));
+
+    if (activeSlotId === slotId) {
+      setAgency(cloneInitialAgency());
+      setIdols(cloneInitialIdols());
+      setTrainees(cloneInitialTrainees());
+      setIsAgencyCreated(false);
+      setActiveSlotId(null);
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    }
+
+    await refreshSaveSlots();
   };
 
   const createAgency = ({ agencyName, ceoName, cityId }: CreateAgencyPayload) => {
     const pickedCity = cities.find(c => c.id === cityId) ?? cities[0];
-    const normalizedName = agencyName.trim().length > 0 ? agencyName.trim() : initialAgency.name;
-    const normalizedCeo = ceoName.trim().length > 0 ? ceoName.trim() : 'CEO';
+    const normalizedName = agencyName.trim();
+    const normalizedCeo = ceoName.trim();
 
-    setAgency(current => ({
-      ...current,
+    if (!normalizedName || !normalizedCeo) {
+      return false;
+    }
+
+    setAgency(() => ({
+      ...cloneInitialAgency(),
       name: normalizedName.toUpperCase(),
       ceoName: normalizedCeo,
       city: pickedCity.name,
       money: pickedCity.startingBudget,
-      reputation: 50,
-      monthlyIncome: Math.round(140_000_000 * pickedCity.revenue),
+      reputation: Math.max(0, Math.min(100, 50 + pickedCity.localReputationBoost)),
+      monthlyIncome: Math.round(140_000_000 * pickedCity.revenue * (1 + pickedCity.domesticStreamingBonus)),
     }));
     setIsAgencyCreated(true);
+    return true;
   };
 
   const recruitTrainee = (traineeId: string): RecruitResult => {
@@ -391,6 +464,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       recruitTrainee,
       startNewGameInSlot,
       loadGameFromSlot,
+      deleteSaveSlot,
       resetGame,
     }),
     [agency, idols, trainees, isAgencyCreated, isHydrated, activeSlotId, saveSlots],

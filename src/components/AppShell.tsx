@@ -4,7 +4,6 @@ import {
   ChevronRight,
   Crown,
   Dumbbell,
-  Gem,
   Globe2,
   Home,
   Music2,
@@ -13,7 +12,6 @@ import {
   Swords,
   Users,
   Wallet,
-  Zap,
 } from 'lucide-react-native';
 import React, { ReactNode } from 'react';
 import {
@@ -56,7 +54,26 @@ const primary = nav.slice(0, 5);
 const more = nav.slice(5);
 
 export function TopBar() {
-  const { agency } = useGame();
+  const { agency, idols, groups, cities } = useGame();
+  const cityProfile = cities.find(city => city.name === agency.city) ?? cities[0];
+  const totalFanbase = Math.max(
+    0,
+    Math.round(
+      idols.reduce((sum, idol) => sum + idol.popularity * 3200, 0) +
+      groups.reduce((sum, group) => sum + group.popularity * 1800, 0),
+    ),
+  );
+  const grossWeekly = Math.round(agency.monthlyIncome / 4);
+  const weeklyTax = Math.round(grossWeekly * cityProfile.taxRate);
+  const weeklyOps = Math.round(cityProfile.officeRentWeekly * cityProfile.operationalCostMultiplier);
+  const weeklyNet = grossWeekly - weeklyTax - weeklyOps;
+  const weeklyNetLabel = `${weeklyNet >= 0 ? '+' : ''}${fmt(weeklyNet)}`;
+  const fanbaseLabel =
+    totalFanbase >= 1_000_000
+      ? `${(totalFanbase / 1_000_000).toFixed(1)}M`
+      : totalFanbase >= 1_000
+        ? `${(totalFanbase / 1_000).toFixed(0)}K`
+        : `${totalFanbase}`;
 
   return (
     <View style={styles.topBar}>
@@ -83,17 +100,17 @@ export function TopBar() {
       <View style={styles.topStats}>
         <Text style={styles.statMoney}>{fmt(agency.money)}</Text>
         <View style={styles.rowCenterSm}>
-          <Gem size={12} color={colors.violetBright} />
-          <Text style={styles.statViolet}> {agency.gems.toLocaleString()}</Text>
+          <Users size={12} color={colors.violetBright} />
+          <Text style={styles.statViolet}> {fanbaseLabel}</Text>
         </View>
         <View style={styles.rowCenterSm}>
-          <Zap size={12} color={colors.mint} />
+          <Wallet size={12} color={colors.mint} />
           <Text style={styles.statMint}>
             {' '}
-            {agency.energy}/{agency.energyMax}
+            {weeklyNetLabel} / week
           </Text>
         </View>
-        <Text style={styles.muted}>Rank #{agency.ranking}</Text>
+        <Text style={styles.muted}>Global #{agency.ranking}</Text>
       </View>
     </View>
   );
@@ -174,11 +191,13 @@ export function AppShell({
   title,
   subtitle,
   action,
+  showMoreNavRow = true,
 }: {
   children: ReactNode;
   title?: string;
   subtitle?: string;
   action?: ReactNode;
+  showMoreNavRow?: boolean;
 }) {
   const insets = useSafeAreaInsets();
   return (
@@ -190,7 +209,7 @@ export function AppShell({
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
         {title ? <PageHeader title={title} subtitle={subtitle} action={action} /> : null}
-        <MoreNavRow />
+        {showMoreNavRow ? <MoreNavRow /> : null}
         {children}
       </ScrollView>
       <BottomNav />
@@ -240,8 +259,8 @@ export function SkillBar({
     color === 'teal'
       ? [colors.teal, colors.violet]
       : color === 'violet'
-      ? [colors.violet, '#8B5CF6']
-      : [colors.mint, colors.teal];
+        ? [colors.violet, '#8B5CF6']
+        : [colors.mint, colors.teal];
   return (
     <View style={styles.skillBar}>
       <View style={styles.rowBetween}>
@@ -443,20 +462,12 @@ const styles = StyleSheet.create({
   glowTeal: {
     borderWidth: 1,
     borderColor: 'rgba(34,211,238,0.6)',
-    shadowColor: colors.teal,
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 6,
+    backgroundColor: 'rgba(34,211,238,0.06)',
   },
   glowViolet: {
     borderWidth: 1,
     borderColor: 'rgba(217,70,239,0.6)',
-    shadowColor: colors.violet,
-    shadowOpacity: 0.45,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 6,
+    backgroundColor: 'rgba(217,70,239,0.06)',
   },
 
   sectionTitleRow: {
