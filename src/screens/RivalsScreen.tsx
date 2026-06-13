@@ -2,18 +2,11 @@ import { BarChart3, Megaphone, Search, ShieldAlert, Swords } from 'lucide-react-
 import React, { ComponentType } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card, SectionTitle } from '../components/AppShell';
+import { selectRivalFeed, selectRivalIntel } from '../features/simulation';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 
 type IconType = ComponentType<{ size?: number; color?: string }>;
-
-const feed = [
-  { t: 'NOVA MEDIA debuted boy group VANTA', time: '2h ago', tone: 'violet' },
-  { t: "PRISM LABEL's group 'Mirror' entered Top 10", time: '5h ago', tone: 'teal' },
-  { t: 'ZENITH ENT. signed promising trainee from Osaka', time: '8h ago', tone: 'mint' },
-  { t: 'NOVA MEDIA campaign reduced your Seoul share by 1.4%', time: '1d ago', tone: 'hot' },
-  { t: 'HALO STUDIOS scandal — reputation -4', time: '2d ago', tone: 'hot' },
-];
 
 const feedColor: Record<string, string> = {
   hot: '#FDA4AF',
@@ -23,7 +16,9 @@ const feedColor: Record<string, string> = {
 };
 
 export function RivalsScreen() {
-  const { rivals } = useGame();
+  const { agency, groups, idols } = useGame();
+  const rivals = selectRivalIntel(agency, groups, idols);
+  const feed = selectRivalFeed(agency, groups, idols);
   return (
     <AppShell title="Rival Agencies" subtitle="Event-driven market intel">
       {rivals.map(r => {

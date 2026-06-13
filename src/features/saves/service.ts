@@ -1,5 +1,5 @@
 import { initialAgency, initialTrainees } from '../../data/gameData';
-import type { Idol, Trainee } from '../../types';
+import type { Group, Idol, Trainee } from '../../types';
 import type { SaveData } from './types';
 
 function cloneDefaultTrainees(): Trainee[] {
@@ -19,6 +19,7 @@ export function createDefaultSaveData(slotId: number): SaveData {
     agency: cloneDefaultAgency(),
     idols: [],
     trainees: cloneDefaultTrainees(),
+    groups: [],
     isAgencyCreated: false,
     activeSlotId: slotId,
     updatedAt: new Date().toISOString(),
@@ -38,6 +39,7 @@ export function normalizeSaveData(raw: unknown, slotId: number): SaveData | null
   const agency = isRecord(raw.agency) ? { ...defaults.agency, ...raw.agency } : defaults.agency;
   const idols = Array.isArray(raw.idols) ? (raw.idols as Idol[]) : defaults.idols;
   const trainees = Array.isArray(raw.trainees) ? (raw.trainees as Trainee[]) : defaults.trainees;
+  const groups = Array.isArray(raw.groups) ? (raw.groups as Group[]) : defaults.groups;
   const isAgencyCreated = typeof raw.isAgencyCreated === 'boolean' ? raw.isAgencyCreated : defaults.isAgencyCreated;
   const activeSlotId =
     typeof raw.activeSlotId === 'number' && Number.isFinite(raw.activeSlotId)
@@ -49,6 +51,7 @@ export function normalizeSaveData(raw: unknown, slotId: number): SaveData | null
     agency,
     idols,
     trainees,
+    groups,
     isAgencyCreated,
     activeSlotId,
     updatedAt,

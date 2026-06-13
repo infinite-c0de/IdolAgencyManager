@@ -73,13 +73,14 @@ function AgencyLogoBadge({ logo }: { logo: ReturnType<typeof useGame>['agency'][
 }
 
 export function TopBar() {
-  const { agency, idols, groups, cities } = useGame();
+  const { agency, idols, groups, cities, transactions } = useGame();
   const cityProfile = getCityByName(cities, agency.city);
   const { weeklyNet: netWeekly, fanbaseLabel } = selectTopBarMetrics(
-    agency.monthlyIncome,
+    agency,
     cityProfile,
     idols,
     groups,
+    transactions,
   );
   const weeklyNetLabel = `${netWeekly >= 0 ? '+' : ''}${fmt(netWeekly)}`;
 

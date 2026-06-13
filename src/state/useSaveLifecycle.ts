@@ -20,11 +20,13 @@ export function useSaveLifecycle({
   agency,
   idols,
   trainees,
+  groups,
   isAgencyCreated,
   activeSlotId,
   setAgency,
   setIdols,
   setTrainees,
+  setGroups,
   setIsAgencyCreated,
   setActiveSlotId,
 }: UseSaveLifecycleParams) {
@@ -51,6 +53,13 @@ export function useSaveLifecycle({
         ...trainee,
         languages: [...trainee.languages],
         gradient: [...trainee.gradient],
+      })),
+    );
+    setGroups(
+      save.groups.map(group => ({
+        ...group,
+        memberIds: [...group.memberIds],
+        gradient: [...group.gradient],
       })),
     );
     setIsAgencyCreated(Boolean(save.isAgencyCreated));
@@ -97,6 +106,7 @@ export function useSaveLifecycle({
         agency,
         idols,
         trainees,
+        groups,
         isAgencyCreated,
         activeSlotId: slotId,
         updatedAt: new Date().toISOString(),
@@ -111,12 +121,13 @@ export function useSaveLifecycle({
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [agency, idols, trainees, isAgencyCreated, isHydrated, activeSlotId]);
+  }, [agency, idols, trainees, groups, isAgencyCreated, isHydrated, activeSlotId]);
 
   const resetGame = async () => {
     setAgency(cloneInitialAgency());
     setIdols([]);
     setTrainees(cloneInitialTrainees());
+    setGroups([]);
     setIsAgencyCreated(false);
     setActiveSlotId(null);
     if (saveTimeoutRef.current) {
@@ -156,6 +167,7 @@ export function useSaveLifecycle({
       setAgency(cloneInitialAgency());
       setIdols([]);
       setTrainees(cloneInitialTrainees());
+      setGroups([]);
       setIsAgencyCreated(false);
       setActiveSlotId(null);
       if (saveTimeoutRef.current) {

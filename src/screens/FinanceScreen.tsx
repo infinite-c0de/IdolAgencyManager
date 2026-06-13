@@ -5,6 +5,7 @@ import { AppShell, Card, SectionTitle } from '../components/AppShell';
 import { AreaChart, ResponsiveChart } from '../components/charts';
 import { MetricCard } from '../components/ui/MetricCard';
 import { MetricGrid } from '../components/ui/MetricGrid';
+import { getCityByName } from '../features/cities';
 import { selectFinanceSummary, selectProfitLossSeries } from '../features/economy';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
@@ -19,9 +20,10 @@ const costs = [
 ];
 
 export function FinanceScreen() {
-  const { agency, revenueHistory, transactions } = useGame();
+  const { agency, cities, revenueHistory, transactions } = useGame();
+  const city = getCityByName(cities, agency.city);
   const pl = selectProfitLossSeries(revenueHistory);
-  const { income, expense, net } = selectFinanceSummary(transactions);
+  const { income, expense, net } = selectFinanceSummary(agency, city, transactions);
 
   return (
     <AppShell title="Finance" subtitle="Numbers that move the agency">

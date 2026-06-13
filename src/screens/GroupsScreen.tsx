@@ -1,6 +1,7 @@
 import { Crown, Plus, Sparkles } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
+  Alert,
   Modal,
   ScrollView,
   StyleSheet,
@@ -12,13 +13,14 @@ import {
 import { AppShell, Avatar, Card } from '../components/AppShell';
 import { RadarChart } from '../components/charts';
 import { Gradient } from '../components/ui/Gradient';
+import type { CreateGroupResult } from '../features/groups';
 import { buildGroupRadar, buildGroupReadiness, getGroupMembers } from '../features/groups';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 import { fmt } from '../utils/format';
 
 export function GroupsScreen() {
-  const { groups, idols } = useGame();
+  const { groups, idols, conceptOptions, createGroup } = useGame();
   const [open, setOpen] = useState(false);
   const active = groups.filter(g => g.status === 'Active').length;
   const predebut = groups.filter(g => g.status === 'Pre-debut').length;
@@ -35,6 +37,20 @@ export function GroupsScreen() {
       title="Groups"
       subtitle={`${active} active · ${predebut} pre-debut`}
       action={newAction}>
+      {groups.length === 0 && (
+        <Card>
+          <View style={styles.emptyState}>
+            <Gradient colors={[colors.teal, colors.violet]} style={styles.emptyIcon}>
+              <Sparkles size={22} color={colors.slate900} />
+            </Gradient>
+            <Text style={styles.emptyTitle}>No groups formed yet</Text>
+            <Text style={styles.emptyText}>
+              Recruit idols first, then create a pre-debut group from available roster members.
+            </Text>
+          </View>
+        </Card>
+      )}
+
       {groups.map(g => {
         const members = getGroupMembers(g, idols);
         const radar = buildGroupRadar(members);
@@ -124,7 +140,13 @@ export function GroupsScreen() {
         );
       })}
 
-      <NewGroupModal visible={open} onClose={() => setOpen(false)} idols={idols} />
+      <NewGroupModal
+        visible={open}
+        onClose={() => setOpen(false)}
+        idols={idols}
+        concepts={conceptOptions}
+        createGroup={createGroup}
+      />
     </AppShell>
   );
 }
@@ -142,18 +164,66 @@ function NewGroupModal({
   visible,
   onClose,
   idols,
+  concepts,
+  createGroup,
 }: {
   visible: boolean;
   onClose: () => void;
   idols: ReturnType<typeof useGame>['idols'];
+  concepts: ReturnType<typeof useGame>['conceptOptions'];
+  createGroup: ReturnType<typeof useGame>['createGroup'];
 }) {
-  const roles = ['Leader', 'Main Vocal', 'Lead Vocal', 'Main Dancer', 'Lead Dancer', 'Main Rapper', 'Visual', 'Center', 'Maknae'];
   const [name, setName] = useState('');
   const [fan, setFan] = useState('');
+  const [concept, setConcept] = useState(concepts[0] ?? '');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const available = idols.filter(i => !i.group);
+  const canCreate = name.trim().length > 0 && fan.trim().length > 0 && concept.trim().length > 0 && selectedIds.length >= 2;
+
+  const closeAndReset = () => {
+    setName('');
+    setFan('');
+    setConcept(concepts[0] ?? '');
+    setSelectedIds([]);
+    onClose();
+  };
+
+  const toggleMember = (idolId: string) => {
+    setSelectedIds(current =>
+      current.includes(idolId) ? current.filter(id => id !== idolId) : [...current, idolId],
+    );
+  };
+
+  const showCreateError = (result: Extract<CreateGroupResult, { ok: false }>) => {
+    const messages: Record<typeof result.reason, string> = {
+      MISSING_NAME: 'Please enter a group name.',
+      MISSING_FAN_NAME: 'Please enter a fandom name.',
+      MISSING_CONCEPT: 'Please select a group concept.',
+      NOT_ENOUGH_MEMBERS: 'Select at least 2 recruited idols for this group.',
+      MEMBER_UNAVAILABLE: 'One or more selected idols are no longer available.',
+    };
+    Alert.alert('Cannot create group', messages[result.reason]);
+  };
+
+  const handleCreate = () => {
+    const result = createGroup({
+      name,
+      fanName: fan,
+      concept,
+      memberIds: selectedIds,
+    });
+
+    if (!result.ok) {
+      showCreateError(result);
+      return;
+    }
+
+    Alert.alert('Group created', `${result.groupName} is now preparing for debut.`);
+    closeAndReset();
+  };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={closeAndReset}>
       <View style={styles.modalBackdrop}>
         <View style={styles.modalCard}>
           <ScrollView showsVerticalScrollIndicator={false}>
@@ -163,38 +233,55 @@ function NewGroupModal({
               <Field label="Group name" placeholder="e.g. AURORA" value={name} onChangeText={setName} />
               <Field label="Fan name" placeholder="e.g. STELLA" value={fan} onChangeText={setFan} />
               <View>
-                <Text style={styles.fieldLabel}>LOGO</Text>
-                <View style={styles.uploadBox}>
-                  <Text style={styles.tinyMuted}>Upload logo (placeholder)</Text>
+                <Text style={styles.fieldLabel}>CONCEPT</Text>
+                <View style={styles.chipWrap}>
+                  {concepts.map(option => {
+                    const active = concept === option;
+                    return (
+                      <TouchableOpacity
+                        key={option}
+                        style={[styles.roleChip, active && styles.selectedChip]}
+                        onPress={() => setConcept(option)}
+                        activeOpacity={0.8}>
+                        <Text style={[styles.roleChipText, active && styles.selectedChipText]}>{option}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               </View>
               <View>
-                <Text style={styles.fieldLabel}>AVAILABLE MEMBERS</Text>
+                <Text style={styles.fieldLabel}>AVAILABLE MEMBERS ({selectedIds.length} SELECTED)</Text>
+                {available.length === 0 && (
+                  <Text style={styles.helperText}>No available idols. Recruit idols or use idols who are not already assigned to a group.</Text>
+                )}
                 <View style={styles.chipWrap}>
-                  {available.map(i => (
-                    <View key={i.id} style={styles.memberChip}>
-                      <Avatar name={i.stageName} gradient={i.gradient} image={i.image} size={18} />
-                      <Text style={styles.memberChipText}> {i.stageName}</Text>
-                    </View>
-                  ))}
+                  {available.map(i => {
+                    const active = selectedIds.includes(i.id);
+                    return (
+                      <TouchableOpacity
+                        key={i.id}
+                        style={[styles.memberChip, active && styles.selectedChip]}
+                        onPress={() => toggleMember(i.id)}
+                        activeOpacity={0.8}>
+                        <Avatar name={i.stageName} gradient={i.gradient} image={i.image} size={18} />
+                        <Text style={[styles.memberChipText, active && styles.selectedChipText]}> {i.stageName}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
-              </View>
-              <View>
-                <Text style={styles.fieldLabel}>ROLES</Text>
-                <View style={styles.chipWrap}>
-                  {roles.map(r => (
-                    <View key={r} style={styles.roleChip}>
-                      <Text style={styles.roleChipText}>{r}</Text>
-                    </View>
-                  ))}
-                </View>
+                <Text style={styles.helperText}>
+                  Groups can start as pre-debut units with 2+ members. Debut readiness still improves at 3+ members.
+                </Text>
               </View>
             </View>
             <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={onClose} activeOpacity={0.8}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={closeAndReset} activeOpacity={0.8}>
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.createBtn} onPress={onClose} activeOpacity={0.8}>
+              <TouchableOpacity
+                style={[styles.createBtn, !canCreate && styles.createBtnDisabled]}
+                onPress={handleCreate}
+                activeOpacity={0.8}>
                 <Text style={styles.createText}>Create group</Text>
               </TouchableOpacity>
             </View>
@@ -248,6 +335,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   newText: { fontSize: 11, fontWeight: '700', color: colors.slate900 },
+
+  emptyState: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl },
+  emptyIcon: { width: 48, height: 48, borderRadius: radius.xl, alignItems: 'center', justifyContent: 'center' },
+  emptyTitle: { color: colors.foreground, fontSize: 18, fontWeight: '800' },
+  emptyText: { color: colors.mutedForeground, fontSize: 12, textAlign: 'center', lineHeight: 18 },
 
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.md },
   headerLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
@@ -313,6 +405,7 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 20, fontWeight: '900', color: colors.tealBright },
   modalBody: { marginTop: spacing.lg, gap: spacing.md },
   fieldLabel: { fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, color: colors.mutedForeground },
+  helperText: { marginTop: spacing.sm, fontSize: 11, lineHeight: 16, color: colors.mutedForeground },
   fieldInput: {
     marginTop: 4,
     borderRadius: radius.lg,
@@ -347,6 +440,8 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   memberChipText: { fontSize: 11, color: colors.foreground },
+  selectedChip: { borderColor: 'rgba(103,232,249,0.7)', backgroundColor: 'rgba(34,211,238,0.16)' },
+  selectedChipText: { color: colors.tealBright, fontWeight: '700' },
   roleChip: {
     borderRadius: radius.full,
     borderWidth: 1,
@@ -368,5 +463,6 @@ const styles = StyleSheet.create({
   },
   cancelText: { fontSize: 14, color: colors.foreground },
   createBtn: { flex: 1, alignItems: 'center', borderRadius: radius.lg, backgroundColor: colors.teal, paddingVertical: spacing.sm },
+  createBtnDisabled: { opacity: 0.5 },
   createText: { fontSize: 14, fontWeight: '700', color: colors.slate900 },
 });

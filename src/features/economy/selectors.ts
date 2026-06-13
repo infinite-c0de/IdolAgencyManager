@@ -1,8 +1,15 @@
-import type { City, Group, Idol } from '../../types';
+import type { Agency, City, Group, Idol } from '../../types';
 import { fmt } from '../../utils/format';
 import { getCityById } from '../cities';
-import { calculateCityProjection, calculateTotalFanbase, calculateWeeklyEconomy, formatCompactCount } from './service';
+import {
+  calculateCityProjection,
+  calculateTotalFanbase,
+  calculateWeeklyEconomy,
+  defaultEconomyModifiers,
+  formatCompactCount,
+} from './service';
 import type {
+  EconomyTransaction,
   OnboardingCityCardData,
   OnboardingCityData,
   OnboardingMetricItem,
@@ -11,13 +18,19 @@ import type {
 } from './types';
 
 export function selectTopBarMetrics(
-  monthlyIncome: number,
+  agency: Agency,
   city: City,
   idols: Idol[],
   groups: Group[],
+  transactions: EconomyTransaction[],
 ): TopBarMetrics {
   const totalFanbase = calculateTotalFanbase(idols, groups);
-  const { netWeekly: weeklyNet } = calculateWeeklyEconomy(monthlyIncome, city);
+  const { netWeekly: weeklyNet } = calculateWeeklyEconomy(
+    agency,
+    city,
+    defaultEconomyModifiers,
+    transactions,
+  );
 
   return {
     totalFanbase,
@@ -31,10 +44,6 @@ type RevenueHistoryPoint = {
   group: number;
   solo: number;
   merch: number;
-};
-
-type TransactionPoint = {
-  amount: number;
 };
 
 type MarketPoint = {
@@ -52,20 +61,23 @@ export function selectProfitLossSeries(revenueHistory: RevenueHistoryPoint[]) {
   }));
 }
 
-export function selectFinanceSummary(transactions: TransactionPoint[]) {
-  const income = transactions
-    .filter(transaction => transaction.amount > 0)
-    .reduce((sum, transaction) => sum + transaction.amount, 0);
-  const expense = Math.abs(
-    transactions
-      .filter(transaction => transaction.amount < 0)
-      .reduce((sum, transaction) => sum + transaction.amount, 0),
+export function selectFinanceSummary(
+  agency: Agency,
+  city: City,
+  transactions: EconomyTransaction[],
+) {
+  const weekly = calculateWeeklyEconomy(
+    agency,
+    city,
+    defaultEconomyModifiers,
+    transactions,
   );
 
   return {
-    income,
-    expense,
-    net: income - expense,
+    income: weekly.grossWeekly + weekly.transactionIncomeWeekly,
+    expense: weekly.transactionExpenseWeekly + weekly.taxWeekly + weekly.operationsWeekly,
+    net: weekly.netWeekly,
+    weekly,
   };
 }
 

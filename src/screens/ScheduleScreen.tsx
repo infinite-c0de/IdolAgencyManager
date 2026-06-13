@@ -1,9 +1,10 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { CalendarDays, Megaphone, Sparkles } from 'lucide-react-native';
+import { CalendarDays, Lock, Megaphone, Sparkles } from 'lucide-react-native';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card, SectionTitle } from '../components/AppShell';
+import { selectDynamicSchedule, selectPromotionOptions } from '../features/simulation';
 import type { RootStackParamList } from '../navigation/types';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
@@ -11,18 +12,20 @@ import { fmt } from '../utils/format';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
-const days = ['MON 12', 'TUE 13', 'WED 14', 'THU 15', 'FRI 16', 'SAT 17', 'SUN 18'];
+const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
-const dayEvents: Record<number, { text: string; color: string }> = {
-  0: { text: 'Music Bank', color: colors.tealBright },
-  1: { text: 'Recording', color: colors.violetBright },
-  3: { text: 'CF Shoot', color: '#FDA4AF' },
-  4: { text: 'Vocal', color: colors.mint },
+const eventColor = {
+  teal: colors.tealBright,
+  violet: colors.violetBright,
+  hot: '#FDA4AF',
+  mint: colors.mint,
 };
 
 export function ScheduleScreen() {
   const navigation = useNavigation<Nav>();
-  const { schedule, promotions } = useGame();
+  const { agency, idols, groups } = useGame();
+  const schedule = selectDynamicSchedule(idols, groups);
+  const promotions = selectPromotionOptions(agency, idols, groups);
 
   const releaseAction = (
     <TouchableOpacity style={styles.releaseBtn} onPress={() => navigation.navigate('Release')} activeOpacity={0.8}>
@@ -34,20 +37,26 @@ export function ScheduleScreen() {
   return (
     <AppShell title="Schedule" subtitle="Coordinate performances and promotions" action={releaseAction}>
       <Card>
-        <SectionTitle>WEEK · OCT 12 – 18</SectionTitle>
+        <SectionTitle>THIS WEEK</SectionTitle>
         <View style={styles.weekRow}>
           {days.map((d, i) => {
-            const ev = dayEvents[i];
-            const cellStyle = i === 0 ? styles.cellTeal : i === 1 ? styles.cellViolet : styles.cellIdle;
+            const events = schedule.filter(item => item.dayIndex === i);
+            const first = events[0];
+            const cellStyle =
+              first?.accent === 'teal'
+                ? styles.cellTeal
+                : first?.accent === 'violet'
+                  ? styles.cellViolet
+                  : styles.cellIdle;
             return (
               <View key={d} style={styles.dayCol}>
                 <Text style={styles.dayHead}>{d}</Text>
                 <View style={[styles.dayCell, cellStyle]}>
-                  {ev && (
-                    <Text style={[styles.eventText, { color: ev.color }]} numberOfLines={2}>
-                      {ev.text}
+                  {events.map(ev => (
+                    <Text key={ev.id} style={[styles.eventText, { color: eventColor[ev.accent] }]} numberOfLines={2}>
+                      {ev.title}
                     </Text>
-                  )}
+                  ))}
                 </View>
               </View>
             );
@@ -82,8 +91,9 @@ export function ScheduleScreen() {
             <View key={p.id} style={styles.promo}>
               <View style={styles.rowBetween}>
                 <Text style={styles.promoName}>{p.name}</Text>
-                <Megaphone size={16} color={colors.violetBright} />
+                {p.lockedReason ? <Lock size={16} color={colors.mutedForeground} /> : <Megaphone size={16} color={colors.violetBright} />}
               </View>
+              <Text style={styles.tinyMuted}>Target · {p.target}</Text>
               <View style={styles.statGrid}>
                 <Stat k="Cost" v={fmt(p.cost)} />
                 <Stat k="Fans" v={p.fans} c={colors.mint} />
@@ -91,8 +101,11 @@ export function ScheduleScreen() {
                 <Stat k="Fatigue" v={p.fatigue} c="#FDA4AF" />
                 <Stat k="Duration" v={p.time} />
               </View>
-              <TouchableOpacity style={styles.scheduleBtn} activeOpacity={0.8}>
-                <Text style={styles.scheduleBtnText}>Schedule</Text>
+              {p.lockedReason ? <Text style={styles.lockText}>{p.lockedReason}</Text> : null}
+              <TouchableOpacity
+                style={[styles.scheduleBtn, p.lockedReason && styles.scheduleBtnDisabled]}
+                activeOpacity={0.8}>
+                <Text style={styles.scheduleBtnText}>{p.lockedReason ? 'Locked' : 'Schedule'}</Text>
               </TouchableOpacity>
             </View>
           ))}
@@ -152,9 +165,11 @@ const styles = StyleSheet.create({
   promoGrid: { gap: spacing.sm },
   promo: { borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.whiteA05, padding: spacing.md },
   promoName: { fontSize: 13, fontWeight: '700', color: colors.foreground },
+  lockText: { marginTop: spacing.sm, fontSize: 10, color: colors.mutedForeground },
   statGrid: { marginTop: spacing.sm, flexDirection: 'row', flexWrap: 'wrap' },
   statItem: { width: '50%', flexDirection: 'row', justifyContent: 'space-between', paddingRight: spacing.md, marginBottom: 2 },
   statVal: { fontSize: 10, fontWeight: '600', color: colors.foreground },
   scheduleBtn: { marginTop: spacing.md, borderRadius: radius.md, backgroundColor: colors.teal, paddingVertical: 6, alignItems: 'center' },
+  scheduleBtnDisabled: { backgroundColor: colors.whiteA10 },
   scheduleBtnText: { fontSize: 11, fontWeight: '700', color: colors.slate900 },
 });

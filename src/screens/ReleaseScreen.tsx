@@ -1,5 +1,5 @@
 import { ChevronRight, Music2, Sparkles } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card } from '../components/AppShell';
 import { Gradient } from '../components/ui/Gradient';
@@ -16,12 +16,19 @@ const BUDGET_STEP = 10_000_000;
 export function ReleaseScreen() {
   const { groups, conceptOptions, languageOptions } = useGame();
   const [step, setStep] = useState(1);
-  const [group, setGroup] = useState(groups[0].id);
+  const [group, setGroup] = useState(groups[0]?.id ?? '');
   const [concept, setConcept] = useState(conceptOptions[0]);
   const [quality, setQuality] = useState(2);
   const [lang, setLang] = useState(languageOptions[0]);
   const [budget, setBudget] = useState(120_000_000);
   const [done, setDone] = useState(false);
+  const canContinue = step !== 1 || Boolean(group);
+
+  useEffect(() => {
+    if (!group && groups[0]) {
+      setGroup(groups[0].id);
+    }
+  }, [group, groups]);
 
   return (
     <AppShell title="New Release" subtitle="Plan a debut single">
@@ -37,6 +44,12 @@ export function ReleaseScreen() {
         <View style={styles.stepBody}>
           {step === 1 && (
             <View style={styles.col}>
+              {groups.length === 0 && (
+                <View style={styles.emptyBox}>
+                  <Text style={styles.emptyTitle}>No group ready</Text>
+                  <Text style={styles.tinyMuted}>Create a group from recruited idols before planning a release.</Text>
+                </View>
+              )}
               {groups.map(g => {
                 const active = group === g.id;
                 return (
@@ -159,7 +172,14 @@ export function ReleaseScreen() {
             <Text style={styles.backText}>Back</Text>
           </TouchableOpacity>
           {step < 5 ? (
-            <TouchableOpacity style={styles.nextBtn} onPress={() => setStep(s => s + 1)} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={[styles.nextBtn, !canContinue && styles.nextBtnDisabled]}
+              onPress={() => {
+                if (canContinue) {
+                  setStep(s => s + 1);
+                }
+              }}
+              activeOpacity={0.8}>
               <Text style={styles.nextText}>Next </Text>
               <ChevronRight size={14} color={colors.slate900} />
             </TouchableOpacity>
@@ -224,6 +244,15 @@ const styles = StyleSheet.create({
   flex1: { flex: 1 },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   tinyMuted: { fontSize: 11, color: colors.mutedForeground },
+  emptyBox: {
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.whiteA05,
+    padding: spacing.md,
+    gap: 4,
+  },
+  emptyTitle: { color: colors.foreground, fontSize: 14, fontWeight: '800' },
 
   stepHead: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.sm },
   stepName: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: colors.tealBright },
@@ -267,6 +296,7 @@ const styles = StyleSheet.create({
   backBtn: { flex: 1, alignItems: 'center', borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.whiteA05, paddingVertical: spacing.sm },
   backText: { fontSize: 14, color: colors.foreground },
   nextBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: radius.lg, backgroundColor: colors.teal, paddingVertical: spacing.sm },
+  nextBtnDisabled: { opacity: 0.5 },
   nextText: { fontSize: 14, fontWeight: '700', color: colors.slate900 },
   releaseBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: radius.lg, paddingVertical: spacing.sm },
 

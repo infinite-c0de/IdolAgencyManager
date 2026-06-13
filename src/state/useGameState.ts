@@ -5,11 +5,6 @@ import {
   cities,
   groups as baseGroups,
   revenueHistory,
-  schedule,
-  promotions,
-  rivals,
-  markets,
-  opportunities,
   transactions,
   agencyRadar,
   conceptOptions,
@@ -17,9 +12,11 @@ import {
   trainingTypes,
 } from '../data/gameData';
 import type { CreateAgencyPayload, RecruitResult } from '../features/agency';
+import type { CreateGroupPayload, CreateGroupResult } from '../features/groups';
 import type { SaveSlotSummary } from '../features/saves';
-import type { Agency, Idol, Trainee } from '../types';
+import type { Agency, Group, Idol, Trainee } from '../types';
 import { useAgencyActions } from './useAgencyActions';
+import { useGroupActions } from './useGroupActions';
 import { useSaveLifecycle } from './useSaveLifecycle';
 
 export type SaveSlot = SaveSlotSummary;
@@ -29,13 +26,8 @@ export type GameState = {
   idols: Idol[];
   trainees: Trainee[];
   cities: typeof cities;
-  groups: typeof baseGroups;
+  groups: Group[];
   revenueHistory: typeof revenueHistory;
-  schedule: typeof schedule;
-  promotions: typeof promotions;
-  rivals: typeof rivals;
-  markets: typeof markets;
-  opportunities: typeof opportunities;
   transactions: typeof transactions;
   agencyRadar: typeof agencyRadar;
   conceptOptions: typeof conceptOptions;
@@ -47,6 +39,7 @@ export type GameState = {
   saveSlots: SaveSlot[];
   createAgency: (payload: CreateAgencyPayload) => boolean;
   recruitTrainee: (traineeId: string) => RecruitResult;
+  createGroup: (payload: CreateGroupPayload) => CreateGroupResult;
   startNewGameInSlot: (slotId: number) => Promise<void>;
   loadGameFromSlot: (slotId: number) => Promise<'AgencyDashboard' | 'Onboarding' | false>;
   deleteSaveSlot: (slotId: number) => Promise<void>;
@@ -57,6 +50,7 @@ export function useGameState(): GameState {
   const [agency, setAgency] = useState<Agency>(initialAgency);
   const [idols, setIdols] = useState<Idol[]>([]);
   const [trainees, setTrainees] = useState<Trainee[]>(initialTrainees);
+  const [groups, setGroups] = useState<Group[]>(baseGroups);
   const [activeSlotId, setActiveSlotId] = useState<number | null>(null);
   const [isAgencyCreated, setIsAgencyCreated] = useState(false);
 
@@ -71,11 +65,13 @@ export function useGameState(): GameState {
     agency,
     idols,
     trainees,
+    groups,
     isAgencyCreated,
     activeSlotId,
     setAgency,
     setIdols,
     setTrainees,
+    setGroups,
     setIsAgencyCreated,
     setActiveSlotId,
   });
@@ -90,19 +86,21 @@ export function useGameState(): GameState {
     setIsAgencyCreated,
   });
 
+  const { createGroup } = useGroupActions({
+    idols,
+    groups,
+    setIdols,
+    setGroups,
+  });
+
   return useMemo(
     () => ({
       agency,
       idols,
       trainees,
       cities,
-      groups: baseGroups,
+      groups,
       revenueHistory,
-      schedule,
-      promotions,
-      rivals,
-      markets,
-      opportunities,
       transactions,
       agencyRadar,
       conceptOptions,
@@ -114,6 +112,7 @@ export function useGameState(): GameState {
       saveSlots,
       createAgency,
       recruitTrainee,
+      createGroup,
       startNewGameInSlot,
       loadGameFromSlot,
       deleteSaveSlot,
@@ -123,12 +122,14 @@ export function useGameState(): GameState {
       agency,
       idols,
       trainees,
+      groups,
       isAgencyCreated,
       isHydrated,
       activeSlotId,
       saveSlots,
       createAgency,
       recruitTrainee,
+      createGroup,
       startNewGameInSlot,
       loadGameFromSlot,
       deleteSaveSlot,

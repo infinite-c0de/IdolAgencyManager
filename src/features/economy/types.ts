@@ -1,8 +1,22 @@
 export type WeeklyEconomy = {
   grossWeekly: number;
+  transactionIncomeWeekly: number;
+  transactionExpenseWeekly: number;
   taxWeekly: number;
   operationsWeekly: number;
   netWeekly: number;
+};
+
+export type EconomyModifiers = {
+  incomeMultiplier: number;
+  taxMultiplier: number;
+  operationsMultiplier: number;
+  flatMonthlyIncome: number;
+  flatWeeklyOperations: number;
+};
+
+export type EconomyTransaction = {
+  amount: number;
 };
 
 export type CityEconomyProjection = WeeklyEconomy & {

@@ -29,6 +29,7 @@ export function createInitialSave(slotId: number): SaveData {
     agency: cloneInitialAgency(),
     idols: [],
     trainees: cloneInitialTrainees(),
+    groups: [],
     isAgencyCreated: false,
     activeSlotId: slotId,
     updatedAt: new Date().toISOString(),

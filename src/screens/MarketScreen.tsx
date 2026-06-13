@@ -1,11 +1,12 @@
 import { TrendingUp } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card, SectionTitle } from '../components/AppShell';
 import { MetricCard } from '../components/ui/MetricCard';
 import { MetricGrid } from '../components/ui/MetricGrid';
 import { getCityByName } from '../features/cities';
 import { selectMarketByRegion } from '../features/economy';
+import { selectMarketOpportunities, selectMarketPulse } from '../features/simulation';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 
@@ -17,10 +18,18 @@ const toneColor: Record<string, string> = {
 };
 
 export function MarketScreen() {
-  const { cities, markets, opportunities, agency } = useGame();
-  const [tab, setTab] = useState(markets[0].region);
+  const { cities, agency, idols, groups } = useGame();
+  const markets = selectMarketPulse(cities, agency, idols, groups);
+  const opportunities = selectMarketOpportunities(cities, agency, idols, groups);
+  const [tab, setTab] = useState(markets[0]?.region ?? '');
   const homeCity = getCityByName(cities, agency.city);
   const selectedMarket = selectMarketByRegion(markets, tab);
+
+  useEffect(() => {
+    if (!selectedMarket && markets[0]) {
+      setTab(markets[0].region);
+    }
+  }, [markets, selectedMarket]);
 
   return (
     <AppShell title="Market Pulse" subtitle="City modifiers and regional demand">
