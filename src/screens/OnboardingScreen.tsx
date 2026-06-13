@@ -84,7 +84,10 @@ export function OnboardingScreen() {
       logo,
     });
     if (created) {
-      navigation.navigate('AgencyDashboard');
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'AgencyDashboard' }],
+      });
     }
   };
 
