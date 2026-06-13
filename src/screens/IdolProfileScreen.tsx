@@ -106,6 +106,8 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
           <Row k="Nationality" v={`${i.nationality} ${i.flag}`} />
           <Row k="Languages" v={i.languages.join(', ')} />
           <Row k="Personality" v={i.personality} />
+          <Row k="Archetype" v={i.personalityProfile?.archetype ?? 'All-Rounder'} />
+          <Row k="Dominance" v={`${i.personalityProfile?.dominance ?? 55}`} />
           <Row k="Training" v={`${i.trainingYears} years`} />
         </View>
         <View style={styles.vitalRow}>

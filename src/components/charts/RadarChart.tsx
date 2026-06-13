@@ -34,9 +34,13 @@ export function RadarChart({
   max = 100,
   fillStops = [colors.teal, colors.violet],
 }: Props) {
+  if (!data.length) {
+    return <View />;
+  }
+
   const cx = size / 2;
   const cy = size / 2;
-  const radius = size / 2 - 26;
+  const radius = size / 2 - 32;
   const n = data.length;
   const angle = (i: number) => (-Math.PI / 2) + (i * 2 * Math.PI) / n;
 
@@ -101,16 +105,20 @@ export function RadarChart({
         />
 
         {data.map((d, i) => {
-          const p = pointAt(cx, cy, radius + 14, angle(i));
+          const a = angle(i);
+          const p = pointAt(cx, cy, radius + 12, a);
+          const cos = Math.cos(a);
+          const textAnchor = cos > 0.35 ? 'start' : cos < -0.35 ? 'end' : 'middle';
+          const xOffset = cos > 0.35 ? 2 : cos < -0.35 ? -2 : 0;
           return (
             <SvgText
               key={d.skill}
-              x={p.x}
+              x={p.x + xOffset}
               y={p.y + 3}
               fill="rgba(255,255,255,0.7)"
               fontSize={9}
               fontWeight="600"
-              textAnchor="middle">
+              textAnchor={textAnchor}>
               {d.skill}
             </SvgText>
           );

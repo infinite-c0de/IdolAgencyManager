@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
-import type { Group, Idol } from '../../types';
+import type { Group, GroupRole, Idol } from '../../types';
 
 export type GroupRadarPoint = {
   skill: 'VOCAL' | 'DANCE' | 'RAP' | 'VISUAL' | 'CHARISMA';
@@ -23,13 +23,21 @@ export type CreateGroupPayload = {
   fanName: string;
   concept: string;
   memberIds: string[];
+  roleAssignments: Partial<Record<GroupRole, string>>;
 };
 
 export type CreateGroupResult =
   | { ok: true; groupName: string }
   | {
       ok: false;
-      reason: 'MISSING_NAME' | 'MISSING_FAN_NAME' | 'MISSING_CONCEPT' | 'NOT_ENOUGH_MEMBERS' | 'MEMBER_UNAVAILABLE';
+      reason:
+        | 'MISSING_NAME'
+        | 'MISSING_FAN_NAME'
+        | 'MISSING_CONCEPT'
+        | 'NOT_ENOUGH_MEMBERS'
+        | 'MEMBER_UNAVAILABLE'
+        | 'MISSING_REQUIRED_ROLE'
+        | 'INVALID_ROLE_ASSIGNMENT';
     };
 
 export type CreateGroupBuildResult =

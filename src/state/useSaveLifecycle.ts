@@ -8,6 +8,7 @@ import {
   removeSaveSlot,
   writeSaveSlot,
 } from '../features/saves';
+import { normalizePersonalityProfile } from '../features/idols';
 import type { SaveData, SaveSlotSummary, UseSaveLifecycleParams } from '../features/saves';
 import {
   cloneInitialAgency,
@@ -46,6 +47,7 @@ export function useSaveLifecycle({
         languages: [...idol.languages],
         gradient: [...idol.gradient],
         stats: { ...idol.stats },
+        personalityProfile: normalizePersonalityProfile(idol.personalityProfile, idol.personality),
       })),
     );
     setTrainees(
@@ -53,12 +55,17 @@ export function useSaveLifecycle({
         ...trainee,
         languages: [...trainee.languages],
         gradient: [...trainee.gradient],
+        personalityProfile: normalizePersonalityProfile(
+          trainee.personalityProfile,
+          trainee.personality,
+        ),
       })),
     );
     setGroups(
       save.groups.map(group => ({
         ...group,
         memberIds: [...group.memberIds],
+        roleAssignments: group.roleAssignments ? { ...group.roleAssignments } : undefined,
         gradient: [...group.gradient],
       })),
     );

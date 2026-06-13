@@ -3,10 +3,9 @@ import {
   initialAgency,
   initialTrainees,
   cities,
-  groups as baseGroups,
-  revenueHistory,
-  transactions,
-  agencyRadar,
+  initialGroups as baseGroups,
+  initialRevenueHistory as revenueHistory,
+  initialTransactions as transactions,
   conceptOptions,
   languageOptions,
   trainingTypes,
@@ -29,7 +28,6 @@ export type GameState = {
   groups: Group[];
   revenueHistory: typeof revenueHistory;
   transactions: typeof transactions;
-  agencyRadar: typeof agencyRadar;
   conceptOptions: typeof conceptOptions;
   languageOptions: typeof languageOptions;
   trainingTypes: typeof trainingTypes;
@@ -102,7 +100,6 @@ export function useGameState(): GameState {
       groups,
       revenueHistory,
       transactions,
-      agencyRadar,
       conceptOptions,
       languageOptions,
       trainingTypes,

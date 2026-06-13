@@ -1,5 +1,36 @@
 export type Status = 'Active' | 'Trainee' | 'Resting' | 'Injured' | 'Promoting';
 
+export type PersonalityArchetype =
+  | 'Center'
+  | 'Anchor'
+  | 'Performer'
+  | 'Strategist'
+  | 'Mediator'
+  | 'All-Rounder';
+
+export type PersonalityTraits = {
+  ambition: number;
+  ego: number;
+  teamwork: number;
+  responsibility: number;
+  discipline: number;
+  adaptability: number;
+};
+
+export type PersonalityProfile = {
+  archetype: PersonalityArchetype;
+  dominance: number;
+  traits: PersonalityTraits;
+};
+
+export type GroupRole =
+  | 'Leader'
+  | 'Main Vocal'
+  | 'Main Dancer'
+  | 'Main Rapper'
+  | 'Visual'
+  | 'Center';
+
 export type AgencyLogoPreset =
   | 'NEON_STAR'
   | 'AURORA_CROWN'
@@ -78,6 +109,7 @@ export type Idol = {
   flag: string;
   languages: string[];
   personality: string;
+  personalityProfile?: PersonalityProfile;
   trainingYears: number;
   role: string;
   group?: string;
@@ -103,6 +135,7 @@ export type Group = {
   monthlyRevenue: number;
   synergy: number;
   memberIds: string[];
+  roleAssignments?: Partial<Record<GroupRole, string>>;
   gradient: string[];
 };
 
@@ -116,6 +149,7 @@ export type Trainee = {
   potential: number;
   skill: string;
   personality: string;
+  personalityProfile?: PersonalityProfile;
   cost: number;
   gradient: string[];
   image?: number;

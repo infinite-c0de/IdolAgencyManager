@@ -17,7 +17,18 @@ import type { CreateGroupResult } from '../features/groups';
 import { buildGroupRadar, buildGroupReadiness, getGroupMembers } from '../features/groups';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
+import type { GroupRole } from '../types';
 import { fmt } from '../utils/format';
+
+const GROUP_ROLES: GroupRole[] = [
+  'Leader',
+  'Main Vocal',
+  'Main Dancer',
+  'Main Rapper',
+  'Visual',
+  'Center',
+];
+const REQUIRED_ROLES: GroupRole[] = ['Leader', 'Main Vocal', 'Main Dancer'];
 
 export function GroupsScreen() {
   const { groups, idols, conceptOptions, createGroup } = useGame();
@@ -93,21 +104,21 @@ export function GroupsScreen() {
               <View style={styles.flex1}>
                 <Text style={styles.subLabel}>MEMBERS & ROLES</Text>
                 <View style={styles.memberList}>
-                  {members.map((m, idx) => (
-                    <View key={m.id} style={styles.memberItem}>
-                      <Avatar name={m.stageName} gradient={m.gradient} image={m.image} size={32} />
-                      <View style={styles.flex1}>
-                        <View style={styles.memberNameRow}>
-                          {idx === 0 && <Crown size={12} color={colors.amber} />}
-                          <Text style={styles.memberName}> {m.stageName}</Text>
+                  {members.map(m => {
+                    const hasLeaderRole = m.role.includes('Leader');
+                    return (
+                      <View key={m.id} style={styles.memberItem}>
+                        <Avatar name={m.stageName} gradient={m.gradient} image={m.image} size={32} />
+                        <View style={styles.flex1}>
+                          <View style={styles.memberNameRow}>
+                            {hasLeaderRole && <Crown size={12} color={colors.amber} />}
+                            <Text style={styles.memberName}> {m.stageName}</Text>
+                          </View>
+                          <Text style={styles.tinyMuted}>{m.role}</Text>
                         </View>
-                        <Text style={styles.tinyMuted}>
-                          {idx === 0 ? 'Leader · ' : ''}
-                          {m.role}
-                        </Text>
                       </View>
-                    </View>
-                  ))}
+                    );
+                  })}
                 </View>
               </View>
               <View style={styles.synergyCol}>
@@ -177,21 +188,43 @@ function NewGroupModal({
   const [fan, setFan] = useState('');
   const [concept, setConcept] = useState(concepts[0] ?? '');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [roleAssignments, setRoleAssignments] = useState<Partial<Record<GroupRole, string>>>({});
   const available = idols.filter(i => !i.group);
-  const canCreate = name.trim().length > 0 && fan.trim().length > 0 && concept.trim().length > 0 && selectedIds.length >= 2;
+  const hasRequiredRoles = REQUIRED_ROLES.every(role => Boolean(roleAssignments[role]));
+  const canCreate =
+    name.trim().length > 0 &&
+    fan.trim().length > 0 &&
+    concept.trim().length > 0 &&
+    selectedIds.length >= 2 &&
+    hasRequiredRoles;
 
   const closeAndReset = () => {
     setName('');
     setFan('');
     setConcept(concepts[0] ?? '');
     setSelectedIds([]);
+    setRoleAssignments({});
     onClose();
   };
 
   const toggleMember = (idolId: string) => {
-    setSelectedIds(current =>
-      current.includes(idolId) ? current.filter(id => id !== idolId) : [...current, idolId],
-    );
+    setSelectedIds(current => {
+      const next = current.includes(idolId) ? current.filter(id => id !== idolId) : [...current, idolId];
+      if (!next.includes(idolId)) {
+        setRoleAssignments(prev => {
+          const entries = Object.entries(prev).filter(([, assignedId]) => assignedId !== idolId);
+          return Object.fromEntries(entries) as Partial<Record<GroupRole, string>>;
+        });
+      }
+      return next;
+    });
+  };
+
+  const assignRole = (role: GroupRole, idolId: string) => {
+    setRoleAssignments(current => ({
+      ...current,
+      [role]: current[role] === idolId ? undefined : idolId,
+    }));
   };
 
   const showCreateError = (result: Extract<CreateGroupResult, { ok: false }>) => {
@@ -201,6 +234,8 @@ function NewGroupModal({
       MISSING_CONCEPT: 'Please select a group concept.',
       NOT_ENOUGH_MEMBERS: 'Select at least 2 recruited idols for this group.',
       MEMBER_UNAVAILABLE: 'One or more selected idols are no longer available.',
+      MISSING_REQUIRED_ROLE: 'Assign Leader, Main Vocal, and Main Dancer before creating.',
+      INVALID_ROLE_ASSIGNMENT: 'Role assignments must use selected members only.',
     };
     Alert.alert('Cannot create group', messages[result.reason]);
   };
@@ -211,6 +246,7 @@ function NewGroupModal({
       fanName: fan,
       concept,
       memberIds: selectedIds,
+      roleAssignments,
     });
 
     if (!result.ok) {
@@ -271,6 +307,48 @@ function NewGroupModal({
                 </View>
                 <Text style={styles.helperText}>
                   Groups can start as pre-debut units with 2+ members. Debut readiness still improves at 3+ members.
+                </Text>
+              </View>
+              <View>
+                <Text style={styles.fieldLabel}>ROLE ASSIGNMENT</Text>
+                {selectedIds.length === 0 ? (
+                  <Text style={styles.helperText}>Select members first to assign core roles.</Text>
+                ) : (
+                  <View style={styles.roleSection}>
+                    {GROUP_ROLES.map(role => {
+                      const assignedId = roleAssignments[role];
+                      const isRequired = REQUIRED_ROLES.includes(role);
+                      return (
+                        <View key={role} style={styles.roleRow}>
+                          <Text style={styles.roleTitle}>
+                            {role}
+                            {isRequired ? ' *' : ''}
+                          </Text>
+                          <View style={styles.chipWrap}>
+                            {available
+                              .filter(member => selectedIds.includes(member.id))
+                              .map(member => {
+                                const active = assignedId === member.id;
+                                return (
+                                  <TouchableOpacity
+                                    key={`${role}-${member.id}`}
+                                    style={[styles.roleChip, active && styles.selectedChip]}
+                                    onPress={() => assignRole(role, member.id)}
+                                    activeOpacity={0.8}>
+                                    <Text style={[styles.roleChipText, active && styles.selectedChipText]}>
+                                      {member.stageName}
+                                    </Text>
+                                  </TouchableOpacity>
+                                );
+                              })}
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+                <Text style={styles.helperText}>
+                  Required roles: Leader, Main Vocal, Main Dancer. Better role fit increases group synergy.
                 </Text>
               </View>
             </View>
@@ -406,6 +484,9 @@ const styles = StyleSheet.create({
   modalBody: { marginTop: spacing.lg, gap: spacing.md },
   fieldLabel: { fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, color: colors.mutedForeground },
   helperText: { marginTop: spacing.sm, fontSize: 11, lineHeight: 16, color: colors.mutedForeground },
+  roleSection: { marginTop: spacing.sm, gap: spacing.sm },
+  roleRow: { gap: 6 },
+  roleTitle: { fontSize: 11, fontWeight: '700', color: colors.foreground },
   fieldInput: {
     marginTop: 4,
     borderRadius: radius.lg,

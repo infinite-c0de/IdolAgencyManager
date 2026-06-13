@@ -18,10 +18,12 @@ export type PromotionOption = {
   id: string;
   name: string;
   cost: number;
-  fans: string;
-  rep: string;
-  fatigue: string;
-  time: string;
+  fansGain: number;
+  reputationGain: number;
+  fatigueGain: number;
+  durationHours: number;
+  expectedRevenue: number;
+  efficiencyScore: number;
   target: string;
   lockedReason?: string;
 };
@@ -56,6 +58,77 @@ export type RivalFeedItem = {
   tone: 'mint' | 'hot' | 'violet' | 'teal';
 };
 
+type PromotionTemplate = {
+  id: string;
+  name: string;
+  baseCost: number;
+  baseFansK: number;
+  baseReputation: number;
+  baseFatigue: number;
+  durationHours: number;
+  popularityWeight: number;
+  synergyWeight: number;
+  memberWeight: number;
+  intensity: number;
+  requiresDebut?: boolean;
+};
+
+const PROMOTION_TEMPLATES: PromotionTemplate[] = [
+  {
+    id: 'social',
+    name: 'Social Media Campaign',
+    baseCost: 5_200_000,
+    baseFansK: 9,
+    baseReputation: 1,
+    baseFatigue: 3,
+    durationHours: 72,
+    popularityWeight: 0.6,
+    synergyWeight: 0.25,
+    memberWeight: 0.2,
+    intensity: 0.8,
+  },
+  {
+    id: 'dance',
+    name: 'Dance Challenge',
+    baseCost: 3_600_000,
+    baseFansK: 14,
+    baseReputation: 2,
+    baseFatigue: 5,
+    durationHours: 120,
+    popularityWeight: 0.85,
+    synergyWeight: 0.5,
+    memberWeight: 0.35,
+    intensity: 1.1,
+  },
+  {
+    id: 'fan-meet',
+    name: 'Fan Meeting',
+    baseCost: 14_500_000,
+    baseFansK: 16,
+    baseReputation: 4,
+    baseFatigue: 10,
+    durationHours: 24,
+    popularityWeight: 0.55,
+    synergyWeight: 0.7,
+    memberWeight: 0.45,
+    intensity: 1.5,
+  },
+  {
+    id: 'music-show',
+    name: 'Music Show Performance',
+    baseCost: 19_000_000,
+    baseFansK: 20,
+    baseReputation: 3,
+    baseFatigue: 13,
+    durationHours: 24,
+    popularityWeight: 1.0,
+    synergyWeight: 0.85,
+    memberWeight: 0.4,
+    intensity: 1.7,
+    requiresDebut: true,
+  },
+];
+
 function avg(values: number[]) {
   return Math.round(values.reduce((sum, value) => sum + value, 0) / Math.max(values.length, 1));
 }
@@ -70,6 +143,10 @@ function primaryGroup(groups: Group[]) {
 
 function activeGroupCount(groups: Group[]) {
   return groups.filter(group => group.status === 'Active').length;
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
 }
 
 export function selectDynamicSchedule(idols: Idol[], groups: Group[]): DynamicScheduleItem[] {
@@ -169,60 +246,82 @@ export function selectDynamicSchedule(idols: Idol[], groups: Group[]): DynamicSc
   ];
 }
 
-export function selectPromotionOptions(agency: Agency, idols: Idol[], groups: Group[]): PromotionOption[] {
+export function selectPromotionOptions(
+  cities: City[],
+  agency: Agency,
+  idols: Idol[],
+  groups: Group[],
+): PromotionOption[] {
   const group = primaryGroup(groups);
+  const homeCity = cities.find(city => city.name === agency.city) ?? cities[0];
   const popularity = group?.popularity ?? avg(idols.map(idol => idol.popularity));
-  const memberScale = Math.max(1, group?.memberIds.length ?? idols.length);
+  const memberCount = Math.max(1, group?.memberIds.length ?? idols.length);
+  const synergy = group?.synergy ?? avg(idols.map(idol => idol.morale));
+  const cityCostFactor = homeCity ? homeCity.cost : 1;
+  const cityRevenueFactor = homeCity ? homeCity.revenue : 1;
+  const streamingBoost = homeCity ? 1 + homeCity.domesticStreamingBonus : 1;
+  const competitionPenalty = homeCity ? clamp(1 - homeCity.competition / 250, 0.55, 1) : 1;
+  const repFactor = clamp(0.85 + agency.reputation / 250, 0.85, 1.35);
   const unlocked = Boolean(group);
   const lockedReason = unlocked ? undefined : 'Create a group before scheduling group promotions.';
-  const baseFans = Math.max(3, Math.round(popularity * memberScale * 0.08));
 
-  return [
-    {
-      id: 'social',
-      name: 'Social Media Campaign',
-      cost: Math.round(5_000_000 + agency.reputation * 80_000),
-      fans: `+${baseFans}k`,
-      rep: '+1',
-      fatigue: '+3',
-      time: '3 days',
+  return PROMOTION_TEMPLATES.map(template => {
+    const cost = Math.round(
+      template.baseCost * cityCostFactor * repFactor * (1 + popularity / 260),
+    );
+    const fansGain = Math.max(
+      1000,
+      Math.round(
+        (template.baseFansK * 1000 +
+          popularity * template.popularityWeight * 120 +
+          synergy * template.synergyWeight * 80 +
+          memberCount * template.memberWeight * 900) *
+          streamingBoost *
+          competitionPenalty,
+      ),
+    );
+    const reputationGain = Math.max(
+      1,
+      Math.round(
+        template.baseReputation +
+          synergy / 40 +
+          popularity / 55 -
+          (homeCity?.competition ?? 50) / 90,
+      ),
+    );
+    const fatigueGain = Math.max(
+      1,
+      Math.round(
+        template.baseFatigue + memberCount * template.intensity + (template.requiresDebut ? 2 : 0),
+      ),
+    );
+    const expectedRevenue = Math.round(
+      fansGain * (0.015 + cityRevenueFactor * 0.006) +
+        reputationGain * 1_200_000 -
+        fatigueGain * 350_000,
+    );
+    const efficiencyScore = Math.max(
+      1,
+      Math.round((expectedRevenue / Math.max(cost, 1)) * 100),
+    );
+
+    return {
+      id: template.id,
+      name: template.name,
+      cost,
+      fansGain,
+      reputationGain,
+      fatigueGain,
+      durationHours: template.durationHours,
+      expectedRevenue,
+      efficiencyScore,
       target: group?.name ?? 'No group',
-      lockedReason,
-    },
-    {
-      id: 'dance',
-      name: 'Dance Challenge',
-      cost: Math.round(3_000_000 + memberScale * 1_000_000),
-      fans: `+${baseFans + 8}k`,
-      rep: '+2',
-      fatigue: '+5',
-      time: '5 days',
-      target: group?.name ?? 'No group',
-      lockedReason,
-    },
-    {
-      id: 'fan-meet',
-      name: 'Fan Meeting',
-      cost: Math.round(14_000_000 + memberScale * 2_500_000),
-      fans: `+${baseFans + 12}k`,
-      rep: '+5',
-      fatigue: '+12',
-      time: '1 day',
-      target: group?.name ?? 'No group',
-      lockedReason,
-    },
-    {
-      id: 'music-show',
-      name: 'Music Show Performance',
-      cost: Math.round(18_000_000 + popularity * 120_000),
-      fans: `+${baseFans + 16}k`,
-      rep: '+3',
-      fatigue: '+15',
-      time: '1 day',
-      target: group?.name ?? 'No group',
-      lockedReason: group?.status === 'Active' ? undefined : 'Debut the group before music show promotions.',
-    },
-  ];
+      lockedReason:
+        template.requiresDebut && group?.status !== 'Active'
+          ? 'Debut the group before music show promotions.'
+          : lockedReason,
+    };
+  });
 }
 
 export function selectMarketPulse(cities: City[], agency: Agency, idols: Idol[], groups: Group[]): MarketPulse[] {

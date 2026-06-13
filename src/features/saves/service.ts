@@ -7,6 +7,12 @@ function cloneDefaultTrainees(): Trainee[] {
     ...trainee,
     languages: [...trainee.languages],
     gradient: [...trainee.gradient],
+    personalityProfile: trainee.personalityProfile
+      ? {
+          ...trainee.personalityProfile,
+          traits: { ...trainee.personalityProfile.traits },
+        }
+      : undefined,
   }));
 }
 

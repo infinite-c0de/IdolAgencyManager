@@ -32,19 +32,39 @@ import { fmt } from '../utils/format';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
+function avg(values: number[]) {
+  return Math.round(values.reduce((sum, value) => sum + value, 0) / Math.max(values.length, 1));
+}
+
+function buildPerformanceStats(idols: ReturnType<typeof useGame>['idols']) {
+  if (idols.length === 0) {
+    return [
+      { label: 'Vocal', v: 0 },
+      { label: 'Dance', v: 0 },
+      { label: 'Rap', v: 0 },
+      { label: 'Visual', v: 0 },
+      { label: 'Charisma', v: 0 },
+    ];
+  }
+
+  return [
+    { label: 'Vocal', v: avg(idols.map(idol => idol.stats.vocal)) },
+    { label: 'Dance', v: avg(idols.map(idol => idol.stats.dance)) },
+    { label: 'Rap', v: avg(idols.map(idol => idol.stats.rap)) },
+    { label: 'Visual', v: avg(idols.map(idol => idol.stats.visual)) },
+    { label: 'Charisma', v: avg(idols.map(idol => idol.stats.charisma)) },
+  ];
+}
+
 export function AgencyDashboardScreen() {
   const navigation = useNavigation<Nav>();
-  const { agency, idols, trainees, groups, revenueHistory, agencyRadar } = useGame();
+  const { agency, idols, trainees, groups, revenueHistory } = useGame();
   const elevate = getPrimaryGroup(groups);
   const members = elevate ? getGroupMembers(elevate, idols) : [];
   const schedule = selectDynamicSchedule(idols, groups);
-  const stats = [
-    { label: 'Vocal', v: 92 },
-    { label: 'Dance', v: 95 },
-    { label: 'Rap', v: 78 },
-    { label: 'Visual', v: 89 },
-    { label: 'Charisma', v: 90 },
-  ];
+  const sourceIdols = members.length > 0 ? members : idols;
+  const stats = buildPerformanceStats(sourceIdols);
+  const radarData = stats.map(stat => ({ skill: stat.label.toUpperCase(), v: stat.v }));
 
   return (
     <AppShell title="Agency Dashboard" subtitle="Manage your agency growth">
@@ -136,7 +156,7 @@ export function AgencyDashboardScreen() {
         </SectionTitle>
         <View style={styles.perfRow}>
           <View style={styles.radarBox}>
-            <RadarChart data={agencyRadar} size={180} />
+            <RadarChart data={radarData} size={180} />
           </View>
           <View style={styles.vBars}>
             {stats.map(s => (

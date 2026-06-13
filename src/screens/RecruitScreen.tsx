@@ -78,8 +78,10 @@ export function RecruitScreen() {
             </TraineeArt>
             <View style={styles.info}>
               <InfoRow k="Skill" v={t.skill} />
+              <InfoRow k="Archetype" v={t.personalityProfile?.archetype ?? 'All-Rounder'} />
               <InfoRow k="Languages" v={t.languages.join(', ')} />
               <InfoRow k="Personality" v={t.personality} />
+              <InfoRow k="Dominance" v={`${t.personalityProfile?.dominance ?? 55}`} />
               <InfoRow k="Cost" v={fmt(t.cost)} c={colors.tealBright} />
             </View>
             <TouchableOpacity style={styles.recruitBtn} onPress={() => handleRecruit(t.id)} activeOpacity={0.8}>

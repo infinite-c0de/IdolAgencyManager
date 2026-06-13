@@ -4,6 +4,7 @@ import { CalendarDays, Lock, Megaphone, Sparkles } from 'lucide-react-native';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card, SectionTitle } from '../components/AppShell';
+import { formatCompactCount } from '../features/economy';
 import { selectDynamicSchedule, selectPromotionOptions } from '../features/simulation';
 import type { RootStackParamList } from '../navigation/types';
 import { useGame } from '../state/GameContext';
@@ -21,11 +22,19 @@ const eventColor = {
   mint: colors.mint,
 };
 
+function toDurationLabel(hours: number) {
+  if (hours >= 24 && hours % 24 === 0) {
+    const days = Math.round(hours / 24);
+    return `${days} day${days > 1 ? 's' : ''}`;
+  }
+  return `${hours}h`;
+}
+
 export function ScheduleScreen() {
   const navigation = useNavigation<Nav>();
-  const { agency, idols, groups } = useGame();
+  const { agency, cities, idols, groups } = useGame();
   const schedule = selectDynamicSchedule(idols, groups);
-  const promotions = selectPromotionOptions(agency, idols, groups);
+  const promotions = selectPromotionOptions(cities, agency, idols, groups);
 
   const releaseAction = (
     <TouchableOpacity style={styles.releaseBtn} onPress={() => navigation.navigate('Release')} activeOpacity={0.8}>
@@ -96,10 +105,12 @@ export function ScheduleScreen() {
               <Text style={styles.tinyMuted}>Target · {p.target}</Text>
               <View style={styles.statGrid}>
                 <Stat k="Cost" v={fmt(p.cost)} />
-                <Stat k="Fans" v={p.fans} c={colors.mint} />
-                <Stat k="Reputation" v={p.rep} c={colors.tealBright} />
-                <Stat k="Fatigue" v={p.fatigue} c="#FDA4AF" />
-                <Stat k="Duration" v={p.time} />
+                <Stat k="Fans" v={`+${formatCompactCount(p.fansGain)}`} c={colors.mint} />
+                <Stat k="Reputation" v={`+${p.reputationGain}`} c={colors.tealBright} />
+                <Stat k="Fatigue" v={`+${p.fatigueGain}`} c="#FDA4AF" />
+                <Stat k="Duration" v={toDurationLabel(p.durationHours)} />
+                <Stat k="Est. Revenue" v={fmt(p.expectedRevenue)} c={colors.violetBright} />
+                <Stat k="Efficiency" v={`${p.efficiencyScore}`} />
               </View>
               {p.lockedReason ? <Text style={styles.lockText}>{p.lockedReason}</Text> : null}
               <TouchableOpacity
