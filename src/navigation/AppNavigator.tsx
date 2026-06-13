@@ -22,6 +22,7 @@ function AppNavigator() {
   return (
     <Tab.Navigator
       initialRouteName="Home"
+      backBehavior="history"
       screenOptions={{
         headerTitleAlign: 'center',
         headerShown: false,
