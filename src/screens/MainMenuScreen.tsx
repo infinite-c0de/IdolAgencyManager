@@ -8,7 +8,7 @@ import { Gradient } from '../components/ui/Gradient';
 import type { RootStackParamList } from '../navigation/types';
 import { SaveSlot, useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
-import appIcon from '../assets/app_icon.png';
+import firstScreenLogo from '../assets/first_screen_logo.webp';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type SlotMode = 'new' | 'load';
@@ -72,7 +72,7 @@ export function MainMenuScreen() {
       <View style={[styles.content, { paddingTop: Math.max(insets.top, 24), paddingBottom: Math.max(insets.bottom, 24) }]}>
         <View style={styles.hero}>
           <View style={styles.logo}>
-            <Image source={appIcon} style={styles.logoImage} resizeMode="cover" />
+            <Image source={firstScreenLogo} style={styles.logoImage} resizeMode="cover" />
           </View>
           <Text style={styles.eyebrow}>GLOBAL IDOL MANAGEMENT EXPERIENCE</Text>
           <Text style={styles.title}>Idol Agency Manager</Text>
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
     borderRadius: radius['2xl'],
     borderWidth: 1,
     borderColor: 'rgba(34,211,238,0.65)',
-    backgroundColor: 'rgba(34,211,238,0.08)',
+    // backgroundColor: 'rgba(34,211,238,0.08)',
     shadowColor: colors.teal,
     shadowOpacity: 0.45,
     shadowRadius: 18,

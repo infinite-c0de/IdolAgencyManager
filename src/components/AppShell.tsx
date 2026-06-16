@@ -28,7 +28,7 @@ import { getCityByName } from '../features/cities';
 import { selectTopBarMetrics } from '../features/economy';
 import type { RootStackParamList } from '../navigation/types';
 import { useGame } from '../state/GameContext';
-import { colors, gradients, radius, spacing, statusColor } from '../theme';
+import { colors, radius, spacing, statusColor } from '../theme';
 import { fmt } from '../utils/format';
 import { AgencyLogoMark } from './ui/AgencyLogoMark';
 import { Gradient } from './ui/Gradient';
@@ -93,12 +93,6 @@ export function TopBar() {
             <Text style={styles.agencyName} numberOfLines={1}>
               {agency.name}
             </Text>
-            <View style={styles.lvBadge}>
-              <Text style={styles.lvText}>LV {agency.level}</Text>
-            </View>
-          </View>
-          <View style={styles.xpTrack}>
-            <Gradient colors={gradients.barTealFuchsia} style={styles.xpFill} />
           </View>
         </View>
       </View>
@@ -357,22 +351,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     flexShrink: 1,
   },
-  lvBadge: {
-    backgroundColor: colors.whiteA05,
-    borderRadius: radius.sm,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  lvText: { color: colors.tealBright, fontSize: 10, fontWeight: '700' },
-  xpTrack: {
-    marginTop: 6,
-    height: 4,
-    width: 128,
-    borderRadius: radius.full,
-    backgroundColor: colors.whiteA10,
-    overflow: 'hidden',
-  },
-  xpFill: { height: '100%', width: '66%' },
   topStats: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -4,7 +4,6 @@ import { ChevronRight, Search, SlidersHorizontal, UserPlus } from 'lucide-react-
 import React, { useMemo, useState } from 'react';
 import {
   Image,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -55,10 +54,7 @@ export function IdolsScreen() {
           />
           <SlidersHorizontal size={16} color={colors.mutedForeground} />
         </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterRow}>
+        <View style={styles.filterRow}>
           {IDOL_STATUSES.map(s => {
             const active = filter === s;
             return (
@@ -71,7 +67,7 @@ export function IdolsScreen() {
               </TouchableOpacity>
             );
           })}
-        </ScrollView>
+        </View>
       </Card>
 
       <View style={styles.grid}>
@@ -142,7 +138,7 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, color: colors.foreground, fontSize: 14, padding: 0 },
 
-  filterRow: { gap: spacing.sm, marginTop: spacing.md },
+  filterRow: { gap: spacing.sm, marginTop: spacing.md, flexDirection: 'row', flexWrap: 'wrap' },
   filterChip: { borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 6, borderWidth: 1 },
   chipIdle: { borderColor: colors.border, backgroundColor: colors.whiteA05 },
   chipActive: { borderColor: 'rgba(34,211,238,0.6)', backgroundColor: 'rgba(34,211,238,0.06)' },

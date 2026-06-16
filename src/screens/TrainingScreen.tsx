@@ -1,5 +1,5 @@
 import { Activity, Heart, Sparkles, Zap } from 'lucide-react-native';
-import React, { ComponentType, useState } from 'react';
+import React, { ComponentType, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Avatar, Card, SectionTitle } from '../components/AppShell';
 import { Gradient } from '../components/ui/Gradient';
@@ -12,15 +12,35 @@ const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
 export function TrainingScreen() {
   const { idols, trainingTypes } = useGame();
-  const [selectedIdol, setSelectedIdol] = useState(idols[0].id);
-  const [selectedType, setSelectedType] = useState(trainingTypes[0].id);
+  const [selectedIdol, setSelectedIdol] = useState(idols[0]?.id ?? '');
+  const [selectedType, setSelectedType] = useState(trainingTypes[0]?.id ?? '');
   const [grid, setGrid] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<string | null>(null);
+  const hasIdols = idols.length > 0;
+  const hasTrainingTypes = trainingTypes.length > 0;
+  const canPlan = hasIdols && hasTrainingTypes;
+
+  useEffect(() => {
+    if (!selectedIdol && idols[0]) {
+      setSelectedIdol(idols[0].id);
+    }
+  }, [idols, selectedIdol]);
+
+  useEffect(() => {
+    if (!selectedType && trainingTypes[0]) {
+      setSelectedType(trainingTypes[0].id);
+    }
+  }, [selectedType, trainingTypes]);
 
   const toggle = (key: string) =>
     setGrid(g => ({ ...g, [key]: g[key] === selectedType ? '' : selectedType }));
 
   const simulate = () => {
+    if (!canPlan) {
+      setToast('Recruit idols first to start weekly training.');
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
     setToast('Week simulated · +2 Vocal · +3 Dance · −18 Energy · +6 Morale');
     setTimeout(() => setToast(null), 3000);
   };
@@ -36,21 +56,25 @@ export function TrainingScreen() {
     <AppShell title="Weekly Training" subtitle="Tap a slot to schedule a session" action={simulateAction}>
       <Card>
         <SectionTitle>SELECT IDOL</SectionTitle>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.idolRow}>
-          {idols.map(i => {
-            const active = selectedIdol === i.id;
-            return (
-              <TouchableOpacity
-                key={i.id}
-                onPress={() => setSelectedIdol(i.id)}
-                style={[styles.idolPick, active ? styles.pickActive : styles.pickIdle]}
-                activeOpacity={0.8}>
-                <Avatar name={i.stageName} gradient={i.gradient} image={i.image} size={44} ring={active} />
-                <Text style={styles.idolPickName}>{i.stageName}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+        {hasIdols ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.idolRow}>
+            {idols.map(i => {
+              const active = selectedIdol === i.id;
+              return (
+                <TouchableOpacity
+                  key={i.id}
+                  onPress={() => setSelectedIdol(i.id)}
+                  style={[styles.idolPick, active ? styles.pickActive : styles.pickIdle]}
+                  activeOpacity={0.8}>
+                  <Avatar name={i.stageName} gradient={i.gradient} image={i.image} size={44} ring={active} />
+                  <Text style={styles.idolPickName}>{i.stageName}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        ) : (
+          <Text style={styles.emptyHint}>No idols available. Recruit idols first to unlock training.</Text>
+        )}
       </Card>
 
       <Card>
@@ -91,7 +115,11 @@ export function TrainingScreen() {
               return (
                 <TouchableOpacity
                   key={key}
-                  onPress={() => toggle(key)}
+                  onPress={() => {
+                    if (canPlan) {
+                      toggle(key);
+                    }
+                  }}
                   style={[styles.slot, v ? styles.slotActive : styles.slotIdle]}
                   activeOpacity={0.7}>
                   <Text style={[styles.slotText, v && styles.slotTextActive]} numberOfLines={1}>
@@ -148,6 +176,7 @@ const styles = StyleSheet.create({
   simulateText: { fontSize: 11, fontWeight: '700', color: colors.slate900 },
 
   idolRow: { gap: spacing.sm },
+  emptyHint: { fontSize: 11, color: colors.mutedForeground, lineHeight: 16 },
   idolPick: { alignItems: 'center', gap: 4, borderRadius: radius.lg, borderWidth: 1, padding: spacing.sm },
   pickIdle: { borderColor: colors.border, backgroundColor: colors.whiteA05 },
   pickActive: { borderColor: 'rgba(34,211,238,0.6)', backgroundColor: 'rgba(34,211,238,0.06)' },

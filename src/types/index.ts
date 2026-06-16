@@ -101,8 +101,10 @@ export type IdolStats = {
 
 export type Idol = {
   id: string;
+  artKey?: number | string;
   stageName: string;
   fullName: string;
+  gender?: 'male' | 'female';
   age: number;
   dob: string;
   nationality: string;
@@ -141,8 +143,13 @@ export type Group = {
 
 export type Trainee = {
   id: string;
+  artKey?: number | string;
+  gender?: 'male' | 'female';
+  isScoutingVisible?: boolean;
   name: string;
+  fullName?: string;
   age: number;
+  dob?: string;
   nationality: string;
   flag: string;
   languages: string[];

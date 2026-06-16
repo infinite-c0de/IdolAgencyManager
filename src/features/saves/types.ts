@@ -8,6 +8,7 @@ export type SaveData = {
   groups: Group[];
   isAgencyCreated: boolean;
   activeSlotId: number;
+  scoutingLastGrowthAt: string;
   updatedAt: string;
 };
 
@@ -27,10 +28,12 @@ export type UseSaveLifecycleParams = {
   groups: Group[];
   isAgencyCreated: boolean;
   activeSlotId: number | null;
+  scoutingLastGrowthAt: string;
   setAgency: Dispatch<SetStateAction<Agency>>;
   setIdols: Dispatch<SetStateAction<Idol[]>>;
   setTrainees: Dispatch<SetStateAction<Trainee[]>>;
   setGroups: Dispatch<SetStateAction<Group[]>>;
   setIsAgencyCreated: Dispatch<SetStateAction<boolean>>;
   setActiveSlotId: Dispatch<SetStateAction<number | null>>;
+  setScoutingLastGrowthAt: Dispatch<SetStateAction<string>>;
 };

@@ -15,7 +15,7 @@ import {
   Zap,
 } from 'lucide-react-native';
 import React, { ComponentType, ReactNode } from 'react';
-import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card, SectionTitle, SkillBar, StatusDot } from '../components/AppShell';
 import { RadarChart } from '../components/charts';
 import { Gradient } from '../components/ui/Gradient';
@@ -102,6 +102,7 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
           <Row k="Stage Name" v={i.stageName} />
           <Row k="Full Name" v={i.fullName} />
           <Row k="Age" v={`${i.age} (International)`} />
+          <Row k="Gender" v={i.gender === 'male' ? 'Male' : i.gender === 'female' ? 'Female' : '-'} />
           <Row k="Date of Birth" v={i.dob} />
           <Row k="Nationality" v={`${i.nationality} ${i.flag}`} />
           <Row k="Languages" v={i.languages.join(', ')} />
@@ -180,21 +181,10 @@ function HeroArt({
   gradient: string[];
   children: ReactNode;
 }) {
-  if (image) {
-    return (
-      <ImageBackground
-        source={image}
-        resizeMode="cover"
-        style={styles.hero}
-        imageStyle={styles.heroImage}>
-        <View style={styles.heroShade} />
-        {children}
-      </ImageBackground>
-    );
-  }
-
   return (
     <Gradient colors={gradient} style={styles.hero}>
+      {image ? <Image source={image} resizeMode="cover" style={styles.heroImage} /> : null}
+      <View style={styles.heroShade} />
       {children}
     </Gradient>
   );
@@ -244,17 +234,28 @@ const styles = StyleSheet.create({
   backText: { fontSize: 11, color: colors.foreground },
 
   heroCard: { padding: 0, overflow: 'hidden' },
-  hero: { height: 200, justifyContent: 'flex-end' },
-  heroImage: { borderRadius: radius['2xl'] },
+  hero: { height: 280, justifyContent: 'flex-end', overflow: 'hidden' },
+  heroImage: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    zIndex: 1,
+    elevation: 1,
+  },
   heroShade: {
     position: 'absolute',
     top: 0,
     right: 0,
     bottom: 0,
     left: 0,
+    zIndex: 2,
     backgroundColor: 'rgba(0,0,0,0.1)',
   },
-  heroFooter: { padding: spacing.lg, backgroundColor: 'rgba(0,0,0,0.35)' },
+  heroFooter: { zIndex: 3, padding: spacing.lg, backgroundColor: 'rgba(0,0,0,0.35)' },
   heroName: { fontSize: 28, fontWeight: '900', color: colors.tealBright },
   heroRole: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.8)' },
   heroStatus: {

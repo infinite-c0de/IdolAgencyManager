@@ -147,6 +147,14 @@ export function OnboardingScreen() {
             );
           })}
           </View>
+          {logo.kind === 'custom' ? (
+            <View style={styles.customLogoPreviewWrap}>
+              <Text style={styles.customLogoPreviewLabel}>IMPORTED LOGO PREVIEW</Text>
+              <View style={[styles.customLogoPreviewCard, styles.logoPresetActive]}>
+                <Image source={{ uri: logo.uri }} resizeMode="cover" style={styles.customLogoPreviewImage} />
+              </View>
+            </View>
+          ) : null}
         </Card>
 
         <Card>
@@ -319,4 +327,14 @@ const styles = StyleSheet.create({
   },
   importLogoPreview: { width: 18, height: 18, borderRadius: radius.sm },
   importLogoTitle: { fontSize: 11, color: colors.foreground, fontWeight: '700' },
+  customLogoPreviewWrap: { marginTop: spacing.md, gap: 6 },
+  customLogoPreviewLabel: { fontSize: 10, letterSpacing: 1, color: colors.mutedForeground },
+  customLogoPreviewCard: {
+    height: 120,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    overflow: 'hidden',
+    backgroundColor: colors.whiteA05,
+  },
+  customLogoPreviewImage: { width: '100%', height: '100%' },
 });

@@ -1,4 +1,4 @@
-import type { Agency, City, Group, PersonalityArchetype, PersonalityProfile, Trainee } from '../types';
+import type { Agency, City, Group } from '../types';
 
 const idolAnh = require('../assets/idols/idol_anh.webp');
 const idolJoon = require('../assets/idols/idol_joon.webp');
@@ -15,6 +15,31 @@ const idolRenjun = require('../assets/idols/idol_renjun.webp');
 const idolMai = require('../assets/idols/idol_mai.webp');
 const idolTheo = require('../assets/idols/idol_theo.webp');
 const idolSky = require('../assets/idols/idol_sky.webp');
+const idolHyeri = require('../assets/idols/idol_hyeri.webp');
+const idolKaito = require('../assets/idols/idol_kaito.webp');
+const idolXinyi = require('../assets/idols/idol_xinyi.webp');
+const idolPim = require('../assets/idols/idol_pim.webp');
+const idolMinhan = require('../assets/idols/idol_minhan.webp');
+const idolAkari = require('../assets/idols/idol_akari.webp');
+const idolDonghyun = require('../assets/idols/idol_donghyun.webp');
+const idolQuynh = require('../assets/idols/idol_quynh.webp');
+const idolMing = require('../assets/idols/idol_ming.webp');
+const idolFah = require('../assets/idols/idol_fah.webp');
+const idolYejun = require('../assets/idols/idol_yejun.webp');
+const idolNana = require('../assets/idols/idol_nana.webp');
+const idolLan = require('../assets/idols/idol_lan.webp');
+const idolTonkla = require('../assets/idols/idol_tonkla.webp');
+const idolTrang = require('../assets/idols/idol_trang.webp');
+const idolHyerin = require('../assets/idols/idol_hyerin.webp');
+const idolShion = require('../assets/idols/idol_shion.webp');
+const idolYue = require('../assets/idols/idol_yue.webp');
+const idolMint = require('../assets/idols/idol_mint.webp');
+const idolDuy = require('../assets/idols/idol_duy.webp');
+const idolSeojin = require('../assets/idols/idol_seojin.webp');
+const idolRen = require('../assets/idols/idol_ren.webp');
+const idolJia = require('../assets/idols/idol_jia.webp');
+const idolNamfon = require('../assets/idols/idol_namfon.webp');
+const idolBaominh = require('../assets/idols/idol_baominh.webp');
 
 export const initialAgency: Agency = {
   name: 'NEW AGENCY',
@@ -124,23 +149,6 @@ export const cities: City[] = [
   },
 ];
 
-const grads: string[][] = [
-  ['rgba(217,70,239,0.4)', 'rgba(139,92,246,0.4)', 'rgba(34,211,238,0.4)'],
-  ['rgba(34,211,238,0.4)', 'rgba(14,165,233,0.4)', 'rgba(139,92,246,0.4)'],
-  ['rgba(251,113,133,0.4)', 'rgba(217,70,239,0.4)', 'rgba(99,102,241,0.4)'],
-  ['rgba(52,211,153,0.4)', 'rgba(20,184,166,0.4)', 'rgba(6,182,212,0.4)'],
-  ['rgba(252,211,77,0.4)', 'rgba(251,113,133,0.4)', 'rgba(217,70,239,0.4)'],
-  ['rgba(129,140,248,0.4)', 'rgba(139,92,246,0.4)', 'rgba(236,72,153,0.4)'],
-];
-
-function profile(
-  archetype: PersonalityArchetype,
-  dominance: number,
-  traits: PersonalityProfile['traits'],
-): PersonalityProfile {
-  return { archetype, dominance, traits };
-}
-
 export const initialGroups: Group[] = [];
 
 export const initialRevenueHistory = [
@@ -163,23 +171,48 @@ export const initialTransactions: Array<{
   date: string;
 }> = [];
 
-export const initialTrainees: Trainee[] = [
-  { id: 'anh', name: 'Anh', age: 17, nationality: 'Vietnamese', flag: '🇻🇳', languages: ['Vietnamese', 'Korean'], potential: 86, skill: 'Visual', personality: 'Graceful, Ambitious', personalityProfile: profile('Mediator', 60, { ambition: 78, ego: 42, teamwork: 72, responsibility: 70, discipline: 66, adaptability: 64 }), cost: 52_000_000, gradient: grads[0], image: idolAnh },
-  { id: 'joon', name: 'Joon', age: 19, nationality: 'Korean', flag: '🇰🇷', languages: ['Korean', 'English'], potential: 90, skill: 'Vocal', personality: 'Focused, Charismatic', personalityProfile: profile('Strategist', 68, { ambition: 74, ego: 58, teamwork: 62, responsibility: 76, discipline: 82, adaptability: 60 }), cost: 72_000_000, gradient: grads[1], image: idolJoon },
-  { id: 'lena', name: 'Lena', age: 18, nationality: 'Korean', flag: '🇰🇷', languages: ['Korean', 'Japanese'], potential: 88, skill: 'Visual', personality: 'Elegant, Calm', personalityProfile: profile('Anchor', 52, { ambition: 64, ego: 40, teamwork: 70, responsibility: 68, discipline: 66, adaptability: 62 }), cost: 68_000_000, gradient: grads[2], image: idolLena },
-  { id: 'mina', name: 'Mina', age: 18, nationality: 'Korean', flag: '🇰🇷', languages: ['Korean', 'English'], potential: 85, skill: 'Dance', personality: 'Bright, Determined', personalityProfile: profile('Performer', 61, { ambition: 70, ego: 52, teamwork: 74, responsibility: 64, discipline: 70, adaptability: 76 }), cost: 58_000_000, gradient: grads[3], image: idolMina },
-  { id: 'narin', name: 'Narin', age: 17, nationality: 'Korean', flag: '🇰🇷', languages: ['Korean', 'English', 'Japanese'], potential: 94, skill: 'Vocal', personality: 'Confident, Warm', personalityProfile: profile('Center', 78, { ambition: 82, ego: 72, teamwork: 68, responsibility: 66, discipline: 70, adaptability: 65 }), cost: 92_000_000, gradient: grads[4], image: idolNarin },
-  { id: 'riku', name: 'Riku', age: 19, nationality: 'Japanese', flag: '🇯🇵', languages: ['Japanese', 'Korean'], potential: 89, skill: 'Dance', personality: 'Playful, Precise', personalityProfile: profile('Performer', 64, { ambition: 72, ego: 56, teamwork: 72, responsibility: 62, discipline: 78, adaptability: 74 }), cost: 70_000_000, gradient: grads[5], image: idolRiku },
-  { id: 'sora', name: 'Sora', age: 17, nationality: 'Korean', flag: '🇰🇷', languages: ['Korean'], potential: 82, skill: 'Charisma', personality: 'Quiet, Hardworking', personalityProfile: profile('Anchor', 45, { ambition: 60, ego: 35, teamwork: 70, responsibility: 78, discipline: 80, adaptability: 58 }), cost: 45_000_000, gradient: grads[0], image: idolSora },
-  { id: 'tao', name: 'Tao', age: 20, nationality: 'Chinese', flag: '🇨🇳', languages: ['Chinese', 'Korean', 'English'], potential: 87, skill: 'Rap', personality: 'Bold, Outgoing', personalityProfile: profile('Center', 80, { ambition: 78, ego: 74, teamwork: 60, responsibility: 58, discipline: 62, adaptability: 72 }), cost: 62_000_000, gradient: grads[1], image: idolTao },
-  { id: 'wei', name: 'Wei', age: 19, nationality: 'Chinese', flag: '🇨🇳', languages: ['Chinese', 'Korean'], potential: 91, skill: 'Rap', personality: 'Calm, Strategic', personalityProfile: profile('Strategist', 58, { ambition: 72, ego: 44, teamwork: 66, responsibility: 74, discipline: 82, adaptability: 60 }), cost: 78_000_000, gradient: grads[2], image: idolWei },
-  { id: 'yara', name: 'Yara', age: 17, nationality: 'Thai', flag: '🇹🇭', languages: ['Thai', 'Korean', 'English'], potential: 84, skill: 'Charisma', personality: 'Curious, Energetic', personalityProfile: profile('Performer', 63, { ambition: 68, ego: 52, teamwork: 76, responsibility: 60, discipline: 58, adaptability: 82 }), cost: 48_000_000, gradient: grads[3], image: idolYara },
-  { id: 'aria', name: 'Aria', age: 17, nationality: 'Japanese', flag: '🇯🇵', languages: ['Japanese', 'Korean', 'English'], potential: 92, skill: 'Vocal', personality: 'Quiet, Driven', personalityProfile: profile('Strategist', 66, { ambition: 84, ego: 48, teamwork: 62, responsibility: 74, discipline: 86, adaptability: 55 }), cost: 80_000_000, gradient: grads[0], image: idolAria },
-  { id: 'renjun', name: 'Renjun', age: 18, nationality: 'Chinese', flag: '🇨🇳', languages: ['Chinese', 'Korean'], potential: 88, skill: 'Dance', personality: 'Sharp, Bold', personalityProfile: profile('Center', 77, { ambition: 80, ego: 70, teamwork: 54, responsibility: 62, discipline: 76, adaptability: 60 }), cost: 65_000_000, gradient: grads[1], image: idolRenjun },
-  { id: 'mai', name: 'Mai', age: 16, nationality: 'Vietnamese', flag: '🇻🇳', languages: ['Vietnamese', 'Korean', 'English'], potential: 84, skill: 'Visual', personality: 'Bright, Curious', personalityProfile: profile('Mediator', 55, { ambition: 66, ego: 44, teamwork: 78, responsibility: 64, discipline: 56, adaptability: 84 }), cost: 42_000_000, gradient: grads[2], image: idolMai },
-  { id: 'theo', name: 'Theo', age: 19, nationality: 'Thai', flag: '🇹🇭', languages: ['Thai', 'English'], potential: 80, skill: 'Rap', personality: 'Calm, Witty', personalityProfile: profile('Strategist', 57, { ambition: 62, ego: 42, teamwork: 70, responsibility: 66, discipline: 72, adaptability: 76 }), cost: 36_000_000, gradient: grads[3], image: idolTheo },
-  { id: 'sky', name: 'Sky', age: 17, nationality: 'Korean', flag: '🇰🇷', languages: ['Korean', 'Japanese'], potential: 94, skill: 'Charisma', personality: 'Magnetic, Warm', personalityProfile: profile('Center', 82, { ambition: 84, ego: 76, teamwork: 68, responsibility: 70, discipline: 64, adaptability: 70 }), cost: 95_000_000, gradient: grads[4], image: idolSky },
-];
+export const traineeArtPool = [
+  { artKey: 1, gender: 'female', availableNationality: 'All', image: idolAnh },
+  { artKey: 2, gender: 'male', availableNationality: 'All', image: idolJoon },
+  { artKey: 3, gender: 'female', availableNationality: 'All', image: idolLena },
+  { artKey: 4, gender: 'female', availableNationality: 'All', image: idolMina },
+  { artKey: 5, gender: 'female', availableNationality: 'All', image: idolNarin },
+  { artKey: 6, gender: 'male', availableNationality: 'All', image: idolRiku },
+  { artKey: 7, gender: 'female', availableNationality: 'All', image: idolSora },
+  { artKey: 8, gender: 'male', availableNationality: 'All', image: idolTao },
+  { artKey: 9, gender: 'male', availableNationality: 'All', image: idolWei },
+  { artKey: 10, gender: 'female', availableNationality: 'All', image: idolYara },
+  { artKey: 11, gender: 'female', availableNationality: 'All', image: idolAria },
+  { artKey: 12, gender: 'male', availableNationality: 'All', image: idolRenjun },
+  { artKey: 13, gender: 'female', availableNationality: 'All', image: idolMai },
+  { artKey: 14, gender: 'male', availableNationality: 'All', image: idolTheo },
+  { artKey: 15, gender: 'female', availableNationality: 'All', image: idolSky },
+  { artKey: 16, gender: 'female', availableNationality: 'All', image: idolHyeri },
+  { artKey: 17, gender: 'male', availableNationality: 'All', image: idolKaito },
+  { artKey: 18, gender: 'female', availableNationality: 'All', image: idolXinyi },
+  { artKey: 19, gender: 'female', availableNationality: 'All', image: idolPim },
+  { artKey: 20, gender: 'male', availableNationality: 'All', image: idolMinhan },
+  { artKey: 21, gender: 'female', availableNationality: 'All', image: idolAkari },
+  { artKey: 22, gender: 'male', availableNationality: 'All', image: idolDonghyun },
+  { artKey: 23, gender: 'female', availableNationality: 'All', image: idolQuynh },
+  { artKey: 24, gender: 'male', availableNationality: 'All', image: idolMing },
+  { artKey: 25, gender: 'female', availableNationality: 'All', image: idolFah },
+  { artKey: 26, gender: 'male', availableNationality: 'All', image: idolYejun },
+  { artKey: 27, gender: 'female', availableNationality: 'Japanese', image: idolNana },
+  { artKey: 28, gender: 'female', availableNationality: 'All', image: idolLan },
+  { artKey: 29, gender: 'male', availableNationality: 'Thai, Chinese', image: idolTonkla },
+  { artKey: 30, gender: 'female', availableNationality: 'All', image: idolTrang },
+  { artKey: 31, gender: 'female', availableNationality: 'All', image: idolHyerin },
+  { artKey: 32, gender: 'male', availableNationality: 'All', image: idolShion },
+  { artKey: 33, gender: 'female', availableNationality: 'All', image: idolYue },
+  { artKey: 34, gender: 'female', availableNationality: 'All', image: idolMint },
+  { artKey: 35, gender: 'male', availableNationality: 'Vietnamese, Thai', image: idolDuy },
+  { artKey: 36, gender: 'female', availableNationality: 'All', image: idolSeojin },
+  { artKey: 37, gender: 'male', availableNationality: 'All', image: idolRen },
+  { artKey: 38, gender: 'female', availableNationality: 'All', image: idolJia },
+  { artKey: 39, gender: 'female', availableNationality: 'All', image: idolNamfon },
+  { artKey: 40, gender: 'male', availableNationality: 'All', image: idolBaominh },
+] as const;
 
 export const trainingTypes = [
   { id: 'vocal', name: 'Vocal Coaching', effect: '+Vocal', cost: '−Energy' },
@@ -193,3 +226,231 @@ export const trainingTypes = [
 
 export const conceptOptions = ['Girl Crush', 'Fresh', 'Elegant', 'Hip-Hop', 'Ballad', 'Experimental', 'Global Pop'];
 export const languageOptions = ['Korean', 'Japanese', 'Chinese', 'Vietnamese', 'English'];
+
+export const scoutingNationalityProfiles = [
+  {
+    nationality: 'Korean',
+    flag: '🇰🇷',
+    languages: ['Korean', 'English'],
+    stageNames: [
+      'Yuna',
+      'Jin',
+      'Sori',
+      'Nari',
+      'Min',
+      'Jae',
+      'Haneul',
+      'Ara',
+      'Hyun',
+      'Dami',
+      'Yeon',
+      'Taeyang',
+      'Rina',
+      'Eun',
+    ],
+    familyNames: ['Kim', 'Park', 'Lee', 'Choi', 'Ahn', 'Kang', 'Jung', 'Yoon', 'Shin', 'Im'],
+    givenNames: [
+      'Minji',
+      'Jisoo',
+      'Yujin',
+      'Hana',
+      'Seojun',
+      'Jiwon',
+      'Sora',
+      'Eunwoo',
+      'Chaeyoung',
+      'Hyerin',
+      'Taemin',
+      'Donghyun',
+      'Naeun',
+      'Yerin',
+    ],
+  },
+  {
+    nationality: 'Japanese',
+    flag: '🇯🇵',
+    languages: ['Japanese', 'Korean'],
+    stageNames: [
+      'Rin',
+      'Haru',
+      'Mio',
+      'Yuki',
+      'Noa',
+      'Sena',
+      'Riku',
+      'Aoi',
+      'Hina',
+      'Rei',
+      'Sora',
+      'Kou',
+      'Nana',
+      'Mao',
+    ],
+    familyNames: [
+      'Sato',
+      'Tanaka',
+      'Suzuki',
+      'Nakamura',
+      'Kobayashi',
+      'Ito',
+      'Yamamoto',
+      'Watanabe',
+      'Kato',
+      'Yoshida',
+    ],
+    givenNames: [
+      'Yuki',
+      'Haruka',
+      'Airi',
+      'Ren',
+      'Yuna',
+      'Kaito',
+      'Mina',
+      'Sora',
+      'Rina',
+      'Hinata',
+      'Takumi',
+      'Shion',
+      'Akari',
+      'Miyu',
+    ],
+  },
+  {
+    nationality: 'Chinese',
+    flag: '🇨🇳',
+    languages: ['Chinese', 'Korean'],
+    stageNames: [
+      'Lin',
+      'Mei',
+      'Yun',
+      'Wei',
+      'Tao',
+      'Rui',
+      'Jia',
+      'An',
+      'Xin',
+      'Qi',
+      'Lan',
+      'Bo',
+      'Yan',
+      'Ming',
+    ],
+    familyNames: ['Li', 'Wang', 'Zhang', 'Liu', 'Chen', 'Zhao', 'Huang', 'Wu', 'Xu', 'Sun'],
+    givenNames: [
+      'Mei',
+      'Xiao',
+      'Yun',
+      'Rui',
+      'Lin',
+      'An',
+      'Jia',
+      'Wei',
+      'Xin',
+      'Qian',
+      'Ming',
+      'Yue',
+      'Ting',
+      'Bo',
+    ],
+  },
+  {
+    nationality: 'Thai',
+    flag: '🇹🇭',
+    languages: ['Thai', 'Korean', 'English'],
+    stageNames: [
+      'Ning',
+      'Ploy',
+      'Mew',
+      'Rain',
+      'Nara',
+      'Tae',
+      'Yara',
+      'Beam',
+      'Fah',
+      'Mint',
+      'Nam',
+      'Pond',
+      'Aom',
+      'Ton',
+    ],
+    familyNames: [
+      'Chai',
+      'Suk',
+      'Viroj',
+      'Anan',
+      'Prasert',
+      'Kitt',
+      'Somchai',
+      'Niran',
+      'Suda',
+      'Wirot',
+    ],
+    givenNames: [
+      'Nara',
+      'Pim',
+      'Dao',
+      'Tawan',
+      'Mew',
+      'Kwan',
+      'Yara',
+      'Beam',
+      'Fah',
+      'Mint',
+      'Nok',
+      'Ploen',
+      'Namfon',
+      'Tonkla',
+    ],
+  },
+  {
+    nationality: 'Vietnamese',
+    flag: '🇻🇳',
+    languages: ['Vietnamese', 'Korean', 'English'],
+    stageNames: [
+      'Anh',
+      'Linh',
+      'Mai',
+      'Bao',
+      'Nhi',
+      'Huy',
+      'Lena',
+      'Vivi',
+      'Trang',
+      'Khanh',
+      'Quynh',
+      'Son',
+      'Thao',
+      'Nam',
+    ],
+    familyNames: [
+      'Nguyen',
+      'Tran',
+      'Le',
+      'Pham',
+      'Vo',
+      'Hoang',
+      'Bui',
+      'Dang',
+      'Do',
+      'Vu',
+    ],
+    givenNames: [
+      'Anh',
+      'Linh',
+      'Mai',
+      'Bao',
+      'Nhi',
+      'Thanh',
+      'Minh',
+      'Vy',
+      'Trang',
+      'Khanh',
+      'Quynh',
+      'Thao',
+      'Duy',
+      'Nam',
+    ],
+  },
+] as const;
+
+export const scoutingSkillOptions = ['Vocal', 'Dance', 'Rap', 'Visual', 'Charisma'] as const;

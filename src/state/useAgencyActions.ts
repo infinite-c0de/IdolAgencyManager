@@ -41,7 +41,14 @@ export function useAgencyActions({
       return { ok: false, reason: 'NOT_FOUND' };
     }
 
-    const alreadyExists = hasIdolWithStageName(idols, trainee.name);
+    const alreadyExists =
+      hasIdolWithStageName(idols, trainee.name) ||
+      idols.some(
+        idol =>
+          trainee.artKey !== undefined &&
+          idol.artKey !== undefined &&
+          String(idol.artKey) === String(trainee.artKey),
+      );
     if (alreadyExists) {
       return { ok: false, reason: 'ALREADY_RECRUITED' };
     }
@@ -52,7 +59,17 @@ export function useAgencyActions({
 
     const created = traineeToIdol(trainee);
     setIdols(current => sortIdolsNewestFirst(created, current));
-    setTrainees(current => current.filter(t => t.id !== traineeId));
+    setTrainees(current =>
+      current.filter(
+        t =>
+          t.id !== traineeId &&
+          !(
+            trainee.artKey !== undefined &&
+            t.artKey !== undefined &&
+            String(t.artKey) === String(trainee.artKey)
+          ),
+      ),
+    );
     setAgency(current => spendRecruitCost(current, trainee));
     return { ok: true, idolName: trainee.name };
   };

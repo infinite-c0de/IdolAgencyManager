@@ -14,7 +14,8 @@ export function RecruitScreen() {
   const [confirm, setConfirm] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState('All');
-  const list = trainees.filter(t => activeFilter === 'All' || t.skill === activeFilter);
+  const visibleCandidates = trainees.filter(t => t.isScoutingVisible !== false);
+  const list = visibleCandidates.filter(t => activeFilter === 'All' || t.skill === activeFilter);
 
   const handleRecruit = (traineeId: string) => {
     const result = recruitTrainee(traineeId);
@@ -78,6 +79,9 @@ export function RecruitScreen() {
             </TraineeArt>
             <View style={styles.info}>
               <InfoRow k="Skill" v={t.skill} />
+              <InfoRow k="Gender" v={t.gender === 'male' ? 'Male' : 'Female'} />
+              <InfoRow k="Full Name" v={t.fullName ?? t.name} />
+              <InfoRow k="Date of Birth" v={t.dob ?? 'Auto-assigned on recruit'} />
               <InfoRow k="Archetype" v={t.personalityProfile?.archetype ?? 'All-Rounder'} />
               <InfoRow k="Languages" v={t.languages.join(', ')} />
               <InfoRow k="Personality" v={t.personality} />
@@ -92,7 +96,7 @@ export function RecruitScreen() {
         ))}
         {list.length === 0 && (
           <Card>
-            <Text style={styles.emptyText}>No trainees available for this filter.</Text>
+            <Text style={styles.emptyText}>No visible trainees for this filter this week.</Text>
           </Card>
         )}
       </View>

@@ -7,6 +7,10 @@ export function filterIdols(idols: Idol[], query: string, status: IdolFilterStat
   return idols.filter(
     idol =>
       (status === 'All' || idol.status === status) &&
-      (normalizedQuery === '' || idol.stageName.toLowerCase().includes(normalizedQuery)),
+      (normalizedQuery === '' ||
+        idol.stageName.toLowerCase().includes(normalizedQuery) ||
+        idol.role.toLowerCase().includes(normalizedQuery) ||
+        idol.status.toLowerCase().includes(normalizedQuery) ||
+        (idol.group ?? '').toLowerCase().includes(normalizedQuery)),
   );
 }

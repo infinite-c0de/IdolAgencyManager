@@ -1,9 +1,10 @@
-import { initialAgency, initialTrainees } from '../../data/gameData';
+import { initialAgency, traineeArtPool } from '../../data/gameData';
+import { generateScoutingPoolFromArtPool } from '../idols';
 import type { Group, Idol, Trainee } from '../../types';
 import type { SaveData } from './types';
 
 function cloneDefaultTrainees(): Trainee[] {
-  return initialTrainees.map(trainee => ({
+  return generateScoutingPoolFromArtPool(traineeArtPool).map(trainee => ({
     ...trainee,
     languages: [...trainee.languages],
     gradient: [...trainee.gradient],
@@ -21,6 +22,7 @@ function cloneDefaultAgency() {
 }
 
 export function createDefaultSaveData(slotId: number): SaveData {
+  const now = new Date().toISOString();
   return {
     agency: cloneDefaultAgency(),
     idols: [],
@@ -28,7 +30,8 @@ export function createDefaultSaveData(slotId: number): SaveData {
     groups: [],
     isAgencyCreated: false,
     activeSlotId: slotId,
-    updatedAt: new Date().toISOString(),
+    scoutingLastGrowthAt: now,
+    updatedAt: now,
   };
 }
 
@@ -51,6 +54,10 @@ export function normalizeSaveData(raw: unknown, slotId: number): SaveData | null
     typeof raw.activeSlotId === 'number' && Number.isFinite(raw.activeSlotId)
       ? raw.activeSlotId
       : defaults.activeSlotId;
+  const scoutingLastGrowthAt =
+    typeof raw.scoutingLastGrowthAt === 'string'
+      ? raw.scoutingLastGrowthAt
+      : defaults.scoutingLastGrowthAt;
   const updatedAt = typeof raw.updatedAt === 'string' ? raw.updatedAt : defaults.updatedAt;
 
   return {
@@ -60,6 +67,7 @@ export function normalizeSaveData(raw: unknown, slotId: number): SaveData | null
     groups,
     isAgencyCreated,
     activeSlotId,
+    scoutingLastGrowthAt,
     updatedAt,
   };
 }

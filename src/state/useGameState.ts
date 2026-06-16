@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
   initialAgency,
-  initialTrainees,
   cities,
   initialGroups as baseGroups,
   initialRevenueHistory as revenueHistory,
@@ -15,6 +14,7 @@ import type { CreateGroupPayload, CreateGroupResult } from '../features/groups';
 import type { SaveSlotSummary } from '../features/saves';
 import type { Agency, Group, Idol, Trainee } from '../types';
 import { useAgencyActions } from './useAgencyActions';
+import { cloneInitialTrainees } from './gameStateHelpers';
 import { useGroupActions } from './useGroupActions';
 import { useSaveLifecycle } from './useSaveLifecycle';
 
@@ -34,6 +34,7 @@ export type GameState = {
   isAgencyCreated: boolean;
   isHydrated: boolean;
   activeSlotId: number | null;
+  scoutingLastGrowthAt: string;
   saveSlots: SaveSlot[];
   createAgency: (payload: CreateAgencyPayload) => boolean;
   recruitTrainee: (traineeId: string) => RecruitResult;
@@ -47,10 +48,13 @@ export type GameState = {
 export function useGameState(): GameState {
   const [agency, setAgency] = useState<Agency>(initialAgency);
   const [idols, setIdols] = useState<Idol[]>([]);
-  const [trainees, setTrainees] = useState<Trainee[]>(initialTrainees);
+  const [trainees, setTrainees] = useState<Trainee[]>(cloneInitialTrainees);
   const [groups, setGroups] = useState<Group[]>(baseGroups);
   const [activeSlotId, setActiveSlotId] = useState<number | null>(null);
   const [isAgencyCreated, setIsAgencyCreated] = useState(false);
+  const [scoutingLastGrowthAt, setScoutingLastGrowthAt] = useState<string>(
+    () => new Date().toISOString(),
+  );
 
   const {
     isHydrated,
@@ -66,12 +70,14 @@ export function useGameState(): GameState {
     groups,
     isAgencyCreated,
     activeSlotId,
+    scoutingLastGrowthAt,
     setAgency,
     setIdols,
     setTrainees,
     setGroups,
     setIsAgencyCreated,
     setActiveSlotId,
+    setScoutingLastGrowthAt,
   });
 
   const { createAgency, recruitTrainee } = useAgencyActions({
@@ -106,6 +112,7 @@ export function useGameState(): GameState {
       isAgencyCreated,
       isHydrated,
       activeSlotId,
+      scoutingLastGrowthAt,
       saveSlots,
       createAgency,
       recruitTrainee,
@@ -123,6 +130,7 @@ export function useGameState(): GameState {
       isAgencyCreated,
       isHydrated,
       activeSlotId,
+      scoutingLastGrowthAt,
       saveSlots,
       createAgency,
       recruitTrainee,

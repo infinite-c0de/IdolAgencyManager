@@ -8,12 +8,13 @@ import {
   removeSaveSlot,
   writeSaveSlot,
 } from '../features/saves';
-import { normalizePersonalityProfile } from '../features/idols';
+import { normalizeIdolIdentity, normalizePersonalityProfile, normalizeTraineeIdentity } from '../features/idols';
 import type { SaveData, SaveSlotSummary, UseSaveLifecycleParams } from '../features/saves';
 import {
   cloneInitialAgency,
   cloneInitialTrainees,
   createInitialSave,
+  unlockWeeklyScoutingCandidates,
   withCurrentTraineeAssets,
 } from './gameStateHelpers';
 
@@ -24,12 +25,14 @@ export function useSaveLifecycle({
   groups,
   isAgencyCreated,
   activeSlotId,
+  scoutingLastGrowthAt,
   setAgency,
   setIdols,
   setTrainees,
   setGroups,
   setIsAgencyCreated,
   setActiveSlotId,
+  setScoutingLastGrowthAt,
 }: UseSaveLifecycleParams) {
   const [isHydrated, setIsHydrated] = useState(false);
   const [saveSlots, setSaveSlots] = useState<SaveSlotSummary[]>(() => buildEmptySaveSlots());
@@ -42,24 +45,30 @@ export function useSaveLifecycle({
   const applySave = (save: SaveData) => {
     setAgency({ ...save.agency });
     setIdols(
-      save.idols.map(idol => ({
-        ...idol,
-        languages: [...idol.languages],
-        gradient: [...idol.gradient],
-        stats: { ...idol.stats },
-        personalityProfile: normalizePersonalityProfile(idol.personalityProfile, idol.personality),
-      })),
+      save.idols.map(idol => {
+        const normalized = normalizeIdolIdentity(idol);
+        return {
+          ...normalized,
+          languages: [...idol.languages],
+          gradient: [...idol.gradient],
+          stats: { ...idol.stats },
+          personalityProfile: normalizePersonalityProfile(idol.personalityProfile, idol.personality),
+        };
+      }),
     );
     setTrainees(
-      withCurrentTraineeAssets(save.trainees).map(trainee => ({
-        ...trainee,
-        languages: [...trainee.languages],
-        gradient: [...trainee.gradient],
-        personalityProfile: normalizePersonalityProfile(
-          trainee.personalityProfile,
-          trainee.personality,
-        ),
-      })),
+      withCurrentTraineeAssets(save.trainees).map(trainee => {
+        const normalized = normalizeTraineeIdentity(trainee);
+        return {
+          ...normalized,
+          languages: [...trainee.languages],
+          gradient: [...trainee.gradient],
+          personalityProfile: normalizePersonalityProfile(
+            trainee.personalityProfile,
+            trainee.personality,
+          ),
+        };
+      }),
     );
     setGroups(
       save.groups.map(group => ({
@@ -71,6 +80,7 @@ export function useSaveLifecycle({
     );
     setIsAgencyCreated(Boolean(save.isAgencyCreated));
     setActiveSlotId(save.activeSlotId);
+    setScoutingLastGrowthAt(save.scoutingLastGrowthAt);
   };
 
   useEffect(() => {
@@ -99,6 +109,28 @@ export function useSaveLifecycle({
   }, [isHydrated, setTrainees]);
 
   useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
+    const lastMs = Date.parse(scoutingLastGrowthAt);
+    if (!Number.isFinite(lastMs)) {
+      setScoutingLastGrowthAt(new Date().toISOString());
+      return;
+    }
+
+    const nowMs = Date.now();
+    const weekMs = 7 * 24 * 60 * 60 * 1000;
+    const elapsedWeeks = Math.floor((nowMs - lastMs) / weekMs);
+    if (elapsedWeeks <= 0) {
+      return;
+    }
+
+    setTrainees(current => unlockWeeklyScoutingCandidates(current, elapsedWeeks));
+    setScoutingLastGrowthAt(new Date(lastMs + elapsedWeeks * weekMs).toISOString());
+  }, [isHydrated, scoutingLastGrowthAt, setScoutingLastGrowthAt, setTrainees]);
+
+  useEffect(() => {
     const slotId = activeSlotId;
     if (!isHydrated || slotId === null) {
       return;
@@ -116,6 +148,7 @@ export function useSaveLifecycle({
         groups,
         isAgencyCreated,
         activeSlotId: slotId,
+        scoutingLastGrowthAt,
         updatedAt: new Date().toISOString(),
       };
       writeSaveSlot(slotId, payload).then(refreshSaveSlots).catch(() => {
@@ -128,7 +161,7 @@ export function useSaveLifecycle({
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [agency, idols, trainees, groups, isAgencyCreated, isHydrated, activeSlotId]);
+  }, [agency, idols, trainees, groups, isAgencyCreated, isHydrated, activeSlotId, scoutingLastGrowthAt]);
 
   const resetGame = async () => {
     setAgency(cloneInitialAgency());
@@ -137,6 +170,7 @@ export function useSaveLifecycle({
     setGroups([]);
     setIsAgencyCreated(false);
     setActiveSlotId(null);
+    setScoutingLastGrowthAt(new Date().toISOString());
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
@@ -177,6 +211,7 @@ export function useSaveLifecycle({
       setGroups([]);
       setIsAgencyCreated(false);
       setActiveSlotId(null);
+      setScoutingLastGrowthAt(new Date().toISOString());
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
