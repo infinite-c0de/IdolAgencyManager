@@ -71,6 +71,8 @@ const RANDOM_GRADIENTS = [
   ['rgba(129,140,248,0.4)', 'rgba(139,92,246,0.4)', 'rgba(236,72,153,0.4)'],
 ];
 
+const INITIAL_VISIBLE_SCOUTING_COUNT = 12;
+
 function getNationalityProfile(nationality?: string) {
   return (
     scoutingNationalityProfiles.find(profile => profile.nationality === nationality) ??
@@ -279,7 +281,7 @@ export function generateScoutingPoolFromArtPool(artPool: readonly TraineeArtSeed
       id,
       artKey: art.artKey,
       gender: art.gender,
-      isScoutingVisible: index < 10,
+      isScoutingVisible: index < INITIAL_VISIBLE_SCOUTING_COUNT,
       name: stageName,
       fullName: `${randomPick(nationality.familyNames)} ${randomPick(nationality.givenNames)}`,
       age,

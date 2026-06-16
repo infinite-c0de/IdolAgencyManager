@@ -8,7 +8,7 @@ import { Gradient } from '../components/ui/Gradient';
 import type { RootStackParamList } from '../navigation/types';
 import { SaveSlot, useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
-import firstScreenLogo from '../assets/first_screen_logo.webp';
+import firstScreenLogo from '../assets/app_icon.png';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type SlotMode = 'new' | 'load';
