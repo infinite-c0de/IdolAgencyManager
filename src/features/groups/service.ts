@@ -1,6 +1,11 @@
 import type { Group, GroupRole, Idol } from '../../types';
 import { normalizePersonalityProfile } from '../idols';
-import type { CreateGroupBuildResult, CreateGroupPayload } from './types';
+import type {
+  AddGroupMembersBuildResult,
+  AddGroupMembersPayload,
+  CreateGroupBuildResult,
+  CreateGroupPayload,
+} from './types';
 import type { GroupMember, GroupRadarPoint, GroupReadiness } from './types';
 
 const GROUP_GRADIENTS = [
@@ -118,6 +123,24 @@ function calculateRoleSynergy(
   return clampScore(avgRoleFit - missingCorePenalty);
 }
 
+function recalculateGroupMetrics(group: Group, members: Idol[]) {
+  const popularity = avg(members.map(member => member.popularity));
+  const performanceSynergy = Math.round(
+    (avg(members.map(member => member.morale)) +
+      avg(members.map(member => member.stats.charisma)) +
+      avg(members.map(member => member.stats.stamina))) /
+      3,
+  );
+  const personalitySynergy = calculatePersonalitySynergy(members);
+  const roleSynergy = calculateRoleSynergy(members, group.roleAssignments ?? {});
+  const synergy = clampScore(
+    performanceSynergy * 0.45 + personalitySynergy * 0.35 + roleSynergy * 0.2,
+  );
+  const monthlyRevenue = Math.round((popularity * 1_400_000 + synergy * 900_000) * members.length);
+
+  return { popularity, synergy, monthlyRevenue };
+}
+
 export function createGroupFromIdols(
   payload: CreateGroupPayload,
   idols: Idol[],
@@ -205,6 +228,59 @@ export function createGroupFromIdols(
   );
 
   return { ok: true, group, updatedIdols };
+}
+
+export function addMembersToExistingGroup(
+  payload: AddGroupMembersPayload,
+  idols: Idol[],
+  groups: Group[],
+): AddGroupMembersBuildResult {
+  const group = groups.find(item => item.id === payload.groupId);
+  if (!group) {
+    return { ok: false, reason: 'GROUP_NOT_FOUND' };
+  }
+
+  const requestedIds = uniq(payload.memberIds).filter(id => !group.memberIds.includes(id));
+  if (requestedIds.length === 0) {
+    return { ok: false, reason: 'NO_MEMBERS_SELECTED' };
+  }
+
+  const candidates = requestedIds
+    .map(id => idols.find(idol => idol.id === id && !idol.group))
+    .filter((idol): idol is Idol => Boolean(idol));
+  if (candidates.length !== requestedIds.length) {
+    return { ok: false, reason: 'MEMBER_UNAVAILABLE' };
+  }
+
+  const updatedGroupMemberIds = uniq([...group.memberIds, ...requestedIds]);
+  const updatedIdols = idols.map(idol =>
+    requestedIds.includes(idol.id)
+      ? {
+          ...idol,
+          group: group.name,
+          status: 'Active' as const,
+          role: idol.role.replace(' Trainee', ''),
+        }
+      : idol,
+  );
+  const updatedMembers = updatedGroupMemberIds
+    .map(id => updatedIdols.find(idol => idol.id === id))
+    .filter((idol): idol is Idol => Boolean(idol));
+  const metrics = recalculateGroupMetrics(group, updatedMembers);
+  const updatedGroup: Group = {
+    ...group,
+    memberIds: updatedGroupMemberIds,
+    popularity: metrics.popularity,
+    synergy: metrics.synergy,
+    monthlyRevenue: metrics.monthlyRevenue,
+  };
+
+  return {
+    ok: true,
+    group: updatedGroup,
+    updatedIdols,
+    addedCount: requestedIds.length,
+  };
 }
 
 export function buildGroupRadar(members: GroupMember[]): GroupRadarPoint[] {

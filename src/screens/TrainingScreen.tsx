@@ -11,7 +11,7 @@ type IconType = ComponentType<{ size?: number; color?: string }>;
 const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
 export function TrainingScreen() {
-  const { idols, groups, trainingTypes, trainingPlans, setTrainingPlan } = useGame();
+  const { idols, groups, trainingTypes, trainingPlans, setTrainingPlan, advanceWeek } = useGame();
   const [selectedIdol, setSelectedIdol] = useState(idols[0]?.id ?? '');
   const [selectedType, setSelectedType] = useState(trainingTypes[0]?.id ?? '');
   const [selectedTarget, setSelectedTarget] = useState<string>('SOLO_DEFAULT');
@@ -53,24 +53,25 @@ export function TrainingScreen() {
     });
 
   const simulate = () => {
-    if (!canPlan) {
-      setToast('Recruit idols first to start weekly training.');
+    advanceWeek();
+    if (!hasIdols) {
+      setToast('Week advanced. No idols yet, so only economy progressed.');
       setTimeout(() => setToast(null), 3000);
       return;
     }
-    setToast('Training plan saved. Use Next Week in Agency Dashboard to apply progression.');
+    setToast('Week advanced. Training plans applied to current idols/groups.');
     setTimeout(() => setToast(null), 3000);
   };
 
   const simulateAction = (
     <TouchableOpacity style={styles.simulateBtn} onPress={simulate} activeOpacity={0.8}>
       <Sparkles size={14} color={colors.slate900} />
-      <Text style={styles.simulateText}>Simulate Week</Text>
+      <Text style={styles.simulateText}>Next Week</Text>
     </TouchableOpacity>
   );
 
   return (
-    <AppShell title="Weekly Training" subtitle="Tap a slot to schedule a session" action={simulateAction}>
+      <AppShell title="Weekly Training" subtitle="Tap slots, then run week progression" action={simulateAction}>
       <Card>
         <SectionTitle>TRAINING TARGET</SectionTitle>
         <View style={styles.targetRow}>
@@ -114,7 +115,7 @@ export function TrainingScreen() {
             })}
           </ScrollView>
         ) : (
-          <Text style={styles.emptyHint}>No idols available. Recruit idols first to unlock training.</Text>
+          <Text style={styles.emptyHint}>No idols available yet. You can still advance the week from this screen.</Text>
         )}
       </Card>
 

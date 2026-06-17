@@ -45,6 +45,19 @@ export type CreateGroupBuildResult =
   | { ok: true; group: Group; updatedIdols: Idol[] }
   | Extract<CreateGroupResult, { ok: false }>;
 
+export type AddGroupMembersPayload = {
+  groupId: string;
+  memberIds: string[];
+};
+
+export type AddGroupMembersResult =
+  | { ok: true; groupName: string; addedCount: number }
+  | { ok: false; reason: 'GROUP_NOT_FOUND' | 'NO_MEMBERS_SELECTED' | 'MEMBER_UNAVAILABLE' };
+
+export type AddGroupMembersBuildResult =
+  | { ok: true; group: Group; updatedIdols: Idol[]; addedCount: number }
+  | Extract<AddGroupMembersResult, { ok: false }>;
+
 export type UseGroupActionsParams = {
   idols: Idol[];
   groups: Group[];

@@ -100,20 +100,36 @@ export function useAgencyActions({
       }
 
       const targetCount = Math.min(VISIBLE_CANDIDATE_COUNT, current.length);
+      const currentVisibleIndexes = current
+        .map((trainee, index) => ({ trainee, index }))
+        .filter(({ trainee }) => trainee.isScoutingVisible !== false)
+        .map(({ index }) => index);
+      const hiddenIndexes = current
+        .map((trainee, index) => ({ trainee, index }))
+        .filter(({ trainee }) => trainee.isScoutingVisible === false)
+        .map(({ index }) => index);
       const reset = current.map(trainee => ({ ...trainee, isScoutingVisible: false }));
-      const allIndexes = reset.map((_, index) => index);
-      const shuffledIndexes = allIndexes.sort(() => Math.random() - 0.5);
+      const shuffledHidden = [...hiddenIndexes].sort(() => Math.random() - 0.5);
+      const shuffledAll = reset.map((_, index) => index).sort(() => Math.random() - 0.5);
       const preferredIndexes =
         activeFilter === 'All'
           ? []
-          : shuffledIndexes.filter(index => reset[index].skill === activeFilter);
+          : shuffledHidden.filter(index => reset[index].skill === activeFilter);
 
       const selected = new Set<number>();
       if (preferredIndexes.length > 0) {
         selected.add(preferredIndexes[0]);
       }
 
-      for (const index of shuffledIndexes) {
+      for (const index of shuffledHidden) {
+        if (selected.size >= targetCount) {
+          break;
+        }
+        selected.add(index);
+      }
+
+      // If hidden pool is exhausted, fill remaining slots from all candidates.
+      for (const index of shuffledAll) {
         if (selected.size >= targetCount) {
           break;
         }
@@ -129,6 +145,24 @@ export function useAgencyActions({
         activeFilter === 'All'
           ? selected.size
           : [...selected].filter(index => reset[index].skill === activeFilter).length;
+
+      // Hard anti-stall: ensure refresh doesn't return identical set when alternatives exist.
+      const unchangedCount = [...selected].filter(index => currentVisibleIndexes.includes(index)).length;
+      if (selected.size === targetCount && unchangedCount === targetCount && hiddenIndexes.length > 0) {
+        const replacementPool = shuffledHidden.filter(index => !selected.has(index));
+        if (replacementPool.length > 0) {
+          const toReplace = [...selected][selected.size - 1];
+          selected.delete(toReplace);
+          selected.add(replacementPool[0]);
+          for (const index of reset.map((_, idx) => idx)) {
+            reset[index] = { ...reset[index], isScoutingVisible: selected.has(index) };
+          }
+          refreshedFilterMatches =
+            activeFilter === 'All'
+              ? selected.size
+              : [...selected].filter(index => reset[index].skill === activeFilter).length;
+        }
+      }
 
       return reset;
     });

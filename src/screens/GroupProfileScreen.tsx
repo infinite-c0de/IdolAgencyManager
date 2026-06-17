@@ -1,8 +1,8 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ChevronLeft, Sparkles } from 'lucide-react-native';
-import React from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ChevronLeft, Plus, Sparkles } from 'lucide-react-native';
+import React, { useMemo, useState } from 'react';
+import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Avatar, Card, SectionTitle } from '../components/AppShell';
 import { RadarChart } from '../components/charts';
 import { AgencyLogoMark } from '../components/ui/AgencyLogoMark';
@@ -78,7 +78,9 @@ function getSynergyTier(score: number) {
 export function GroupProfileScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute();
-  const { groups, idols } = useGame();
+  const { groups, idols, addGroupMembers } = useGame();
+  const [openAddModal, setOpenAddModal] = useState(false);
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const groupId = (route.params as RootStackParamList['GroupProfile'] | undefined)?.groupId;
   const group = groups.find(item => item.id === groupId) ?? groups[0];
 
@@ -93,10 +95,43 @@ export function GroupProfileScreen() {
   }
 
   const members = getGroupMembers(group, idols);
+  const availableMembers = useMemo(
+    () => idols.filter(idol => !idol.group || idol.group === ''),
+    [idols],
+  );
   const radar = buildGroupRadar(members);
   const readiness = buildGroupReadiness(members, group.status === 'Active');
   const stats = buildPerformanceStats(members);
   const synergyTier = getSynergyTier(group.synergy);
+
+  const closeAddModal = () => {
+    setSelectedMemberIds([]);
+    setOpenAddModal(false);
+  };
+
+  const toggleAddMember = (idolId: string) => {
+    setSelectedMemberIds(current =>
+      current.includes(idolId)
+        ? current.filter(id => id !== idolId)
+        : [...current, idolId],
+    );
+  };
+
+  const handleAddMembers = () => {
+    const result = addGroupMembers({ groupId: group.id, memberIds: selectedMemberIds });
+    if (!result.ok) {
+      const messages: Record<typeof result.reason, string> = {
+        GROUP_NOT_FOUND: 'Group not found.',
+        NO_MEMBERS_SELECTED: 'Select at least one idol to add.',
+        MEMBER_UNAVAILABLE: 'One or more selected idols are already assigned.',
+      };
+      Alert.alert('Cannot add members', messages[result.reason]);
+      return;
+    }
+
+    Alert.alert('Members added', `${result.addedCount} member(s) added to ${result.groupName}.`);
+    closeAddModal();
+  };
 
   return (
     <AppShell
@@ -183,7 +218,15 @@ export function GroupProfileScreen() {
       </Card>
 
       <Card>
-        <SectionTitle>MEMBERS</SectionTitle>
+        <SectionTitle
+          action={
+            <TouchableOpacity style={styles.addBtn} onPress={() => setOpenAddModal(true)} activeOpacity={0.8}>
+              <Plus size={12} color={colors.slate900} />
+              <Text style={styles.addBtnText}>Add Members</Text>
+            </TouchableOpacity>
+          }>
+          MEMBERS
+        </SectionTitle>
         <View style={styles.memberList}>
           {members.map(member => (
             <View key={member.id} style={styles.memberItem}>
@@ -197,6 +240,52 @@ export function GroupProfileScreen() {
           ))}
         </View>
       </Card>
+
+      <Modal visible={openAddModal} transparent animationType="fade" onRequestClose={closeAddModal}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Add members to {group.name}</Text>
+            <Text style={styles.subMuted}>
+              Select unassigned idols. Their group and performance metrics will update immediately.
+            </Text>
+            <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+              {availableMembers.length === 0 ? (
+                <Text style={styles.emptyText}>No unassigned idols available right now.</Text>
+              ) : (
+                <View style={styles.memberPickWrap}>
+                  {availableMembers.map(idol => {
+                    const active = selectedMemberIds.includes(idol.id);
+                    return (
+                      <TouchableOpacity
+                        key={idol.id}
+                        style={[styles.memberPick, active && styles.memberPickActive]}
+                        onPress={() => toggleAddMember(idol.id)}
+                        activeOpacity={0.8}>
+                        <Avatar name={idol.stageName} gradient={idol.gradient} image={idol.image} size={30} />
+                        <View style={styles.flex1}>
+                          <Text style={styles.memberName}>{idol.stageName}</Text>
+                          <Text style={styles.subMuted}>{idol.role}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+            </ScrollView>
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={closeAddModal} activeOpacity={0.8}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.createBtn, selectedMemberIds.length === 0 && styles.createBtnDisabled]}
+                onPress={handleAddMembers}
+                activeOpacity={0.8}>
+                <Text style={styles.createText}>Add selected</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </AppShell>
   );
 }
@@ -222,6 +311,16 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   backText: { fontSize: 11, fontWeight: '700', color: colors.slate900 },
+  addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: radius.lg,
+    backgroundColor: colors.teal,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+  },
+  addBtnText: { fontSize: 11, fontWeight: '700', color: colors.slate900 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   logoWrap: {
     width: 48,
@@ -281,6 +380,21 @@ const styles = StyleSheet.create({
   checkTextOn: { fontSize: 11, color: colors.foreground },
   checkTextOff: { fontSize: 11, color: colors.mutedForeground },
   memberList: { gap: spacing.sm },
+  memberPickWrap: { gap: spacing.sm, marginTop: spacing.sm },
+  memberPick: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.whiteA05,
+    padding: spacing.sm,
+  },
+  memberPickActive: {
+    borderColor: 'rgba(34,211,238,0.65)',
+    backgroundColor: 'rgba(34,211,238,0.12)',
+  },
   memberItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -292,5 +406,32 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
   },
   memberName: { fontSize: 12, fontWeight: '700', color: colors.foreground },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
+  modalCard: {
+    width: '100%',
+    maxWidth: 440,
+    maxHeight: '80%',
+    borderRadius: radius['2xl'],
+    backgroundColor: 'rgba(20,23,34,0.98)',
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    padding: spacing.lg,
+  },
+  modalTitle: { fontSize: 18, fontWeight: '900', color: colors.tealBright },
+  modalScroll: { marginTop: spacing.md },
+  modalActions: { marginTop: spacing.lg, flexDirection: 'row', gap: spacing.sm },
+  cancelBtn: {
+    flex: 1,
+    alignItems: 'center',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.whiteA05,
+    paddingVertical: spacing.sm,
+  },
+  cancelText: { fontSize: 14, color: colors.foreground },
+  createBtn: { flex: 1, alignItems: 'center', borderRadius: radius.lg, backgroundColor: colors.teal, paddingVertical: spacing.sm },
+  createBtnDisabled: { opacity: 0.5 },
+  createText: { fontSize: 14, fontWeight: '700', color: colors.slate900 },
   emptyText: { color: colors.mutedForeground, textAlign: 'center', fontSize: 12 },
 });

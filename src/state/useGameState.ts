@@ -12,7 +12,12 @@ import {
 import type { CreateAgencyPayload, RecruitResult, RefreshScoutingResult } from '../features/agency';
 import { getCityByName } from '../features/cities';
 import { applyWeeklyEconomyTick, defaultEconomyModifiers } from '../features/economy';
-import type { CreateGroupPayload, CreateGroupResult } from '../features/groups';
+import type {
+  AddGroupMembersPayload,
+  AddGroupMembersResult,
+  CreateGroupPayload,
+  CreateGroupResult,
+} from '../features/groups';
 import type { FinanceTransaction, RevenueHistoryPoint, SaveSlotSummary, TrainingPlans } from '../features/saves';
 import { calculateWeeklyProgression } from '../features/simulation';
 import type { Agency, Group, Idol, Trainee } from '../types';
@@ -45,6 +50,7 @@ export type GameState = {
   recruitTrainee: (traineeId: string) => RecruitResult;
   refreshScoutingCandidates: (activeFilter: string) => RefreshScoutingResult;
   createGroup: (payload: CreateGroupPayload) => CreateGroupResult;
+  addGroupMembers: (payload: AddGroupMembersPayload) => AddGroupMembersResult;
   setTrainingPlan: (targetId: string, plan: Record<string, string>) => void;
   advanceWeek: () => void;
   startNewGameInSlot: (slotId: number) => Promise<void>;
@@ -114,7 +120,7 @@ export function useGameState(): GameState {
     setIsAgencyCreated,
   });
 
-  const { createGroup } = useGroupActions({
+  const { createGroup, addGroupMembers } = useGroupActions({
     idols,
     groups,
     setIdols,
@@ -207,6 +213,7 @@ export function useGameState(): GameState {
       recruitTrainee,
       refreshScoutingCandidates,
       createGroup,
+      addGroupMembers,
       setTrainingPlan,
       advanceWeek,
       startNewGameInSlot,
@@ -232,6 +239,7 @@ export function useGameState(): GameState {
       recruitTrainee,
       refreshScoutingCandidates,
       createGroup,
+      addGroupMembers,
       setTrainingPlan,
       advanceWeek,
       startNewGameInSlot,

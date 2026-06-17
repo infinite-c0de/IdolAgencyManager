@@ -17,6 +17,7 @@ export type EconomyModifiers = {
 
 export type EconomyTransaction = {
   amount: number;
+  date?: string;
 };
 
 export type CityEconomyProjection = WeeklyEconomy & {

@@ -59,7 +59,11 @@ function buildPersonalitySummary(profile: PersonalityProfile) {
   if (profile.traits.ego >= 70) words.push('Assertive');
   if (profile.traits.adaptability >= 72) words.push('Adaptive');
   if (words.length === 0) words.push('Balanced');
-  return `${words[0]}, ${words[Math.min(1, words.length - 1)]}`;
+  const uniqueWords = [...new Set(words)];
+  if (uniqueWords.length === 1) {
+    return uniqueWords[0];
+  }
+  return `${uniqueWords[0]}, ${uniqueWords[1]}`;
 }
 
 const RANDOM_GRADIENTS = [
