@@ -50,12 +50,38 @@ const idolZefeng = require('../assets/idols/idol_zefeng.webp');
 const idolPraew = require('../assets/idols/idol_praew.webp');
 const idolHayato = require('../assets/idols/idol_hayato.webp');
 const idolBich = require('../assets/idols/idol_bich.webp');
+const idolSooyeon = require('../assets/idols/idol_sooyeon.webp');
+const idolDawon = require('../assets/idols/idol_dawon.webp');
+const idolHaruto = require('../assets/idols/idol_haruto.webp');
+const idolReina = require('../assets/idols/idol_reina.webp');
+const idolTaewoo = require('../assets/idols/idol_taewoo.webp');
+const idolYuting = require('../assets/idols/idol_yuting.webp');
+const idolChenxi = require('../assets/idols/idol_chenxi.webp');
+const idolBusaba = require('../assets/idols/idol_busaba.webp');
+const idolManow = require('../assets/idols/idol_manow.webp');
+const idolChakri = require('../assets/idols/idol_chakri.webp');
+const idolCamtu = require('../assets/idols/idol_camtu.webp');
+const idolPhong = require('../assets/idols/idol_phong.webp');
+const idolThanhlong = require('../assets/idols/idol_thanhlong.webp');
+const idolJunho = require('../assets/idols/idol_junho.webp');
+const idolWoojin = require('../assets/idols/idol_woojin.webp');
+const idolHana = require('../assets/idols/idol_hana.webp');
+const idolSota = require('../assets/idols/idol_sota.webp');
+const idolXiaoxia = require('../assets/idols/idol_xiaoxia.webp');
+const idolLinh = require('../assets/idols/idol_linh.webp');
+const idolWeiming = require('../assets/idols/idol_weiming.webp');
 
 // const idolMina = require('../assets/idols/idol_mina.webp');
 // const idolRiku = require('../assets/idols/idol_riku.webp');
 // const idolTao = require('../assets/idols/idol_tao.webp');
 // const idolAria = require('../assets/idols/idol_aria.webp');
 // const idolRenjun = require('../assets/idols/idol_renjun.webp');
+// const idolBee = require('../assets/idols/idol_bee.webp');
+// const idolEm = require('../assets/idols/idol_em.webp');
+// const idolSaOn = require('../assets/idols/idol_saon.webp');
+// const idolSeR = require('../assets/idols/idol_ser.webp');
+// const idolTos = require('../assets/idols/idol_tos.webp');
+
 
 export const initialAgency: Agency = {
   name: 'NEW AGENCY',
@@ -238,12 +264,27 @@ export const traineeArtPool = [
   { artKey: 48, gender: 'female', availableNationality: 'Chinese', image: idolWanling },
   { artKey: 49, gender: 'female', availableNationality: 'Japanese, Korean, Chinese', image: idolKanon },
   { artKey: 50, gender: 'male', availableNationality: 'Vietnamese, Thai, Chinese', image: idolKiet },
- 
-  // { artKey: 4, gender: 'female', availableNationality: 'All', image: idolMina },
-  // { artKey: 6, gender: 'male', availableNationality: 'All', image: idolRiku },
-  // { artKey: 8, gender: 'male', availableNationality: 'All', image: idolTao },
-  // { artKey: 11, gender: 'female', availableNationality: 'All', image: idolAria },
-  // { artKey: 12, gender: 'male', availableNationality: 'All', image: idolRenjun },
+  { artKey: 51, gender: 'female', availableNationality: 'Korean', image: idolSooyeon },
+  { artKey: 52, gender: 'female', availableNationality: 'Korean, Japanese', image: idolDawon },
+  { artKey: 53, gender: 'male', availableNationality: 'Japanese', image: idolHaruto },
+  { artKey: 54, gender: 'female', availableNationality: 'Japanese', image: idolReina },
+  { artKey: 55, gender: 'male', availableNationality: 'Korean', image: idolTaewoo },
+  { artKey: 56, gender: 'female', availableNationality: 'Chinese', image: idolYuting },
+  { artKey: 57, gender: 'male', availableNationality: 'Chinese, Korean', image: idolChenxi },
+  { artKey: 58, gender: 'female', availableNationality: 'Thai', image: idolBusaba },
+  { artKey: 59, gender: 'female', availableNationality: 'Thai, Vietnamese', image: idolManow },
+  { artKey: 60, gender: 'male', availableNationality: 'Thai', image: idolChakri },
+  { artKey: 61, gender: 'female', availableNationality: 'Vietnamese', image: idolCamtu },
+  { artKey: 62, gender: 'male', availableNationality: 'Vietnamese', image: idolPhong },
+  { artKey: 63, gender: 'male', availableNationality: 'Vietnamese, Chinese', image: idolThanhlong },
+  { artKey: 64, gender: 'male', availableNationality: 'Korean', image: idolJunho },
+  { artKey: 65, gender: 'male', availableNationality: 'Korean', image: idolWoojin },
+  { artKey: 66, gender: 'female', availableNationality: 'Japanese', image: idolHana },
+  { artKey: 67, gender: 'male', availableNationality: 'Japanese', image: idolSota },
+  { artKey: 68, gender: 'female', availableNationality: 'Chinese', image: idolXiaoxia },
+  { artKey: 69, gender: 'female', availableNationality: 'Vietnamese', image: idolLinh },
+  { artKey: 70, gender: 'male', availableNationality: 'Chinese', image: idolWeiming },
+
 ] as const;
 
 export const trainingTypes = [
@@ -265,223 +306,120 @@ export const scoutingNationalityProfiles = [
     flag: '🇰🇷',
     languages: ['Korean', 'English'],
     stageNames: [
-      'Yuna',
-      'Jin',
-      'Sori',
-      'Nari',
-      'Min',
-      'Jae',
-      'Haneul',
-      'Ara',
-      'Hyun',
-      'Dami',
-      'Yeon',
-      'Taeyang',
-      'Rina',
-      'Eun',
+      'Yuna', 'Jin', 'Sori', 'Nari', 'Min', 'Jae', 'Haneul', 'Ara', 'Hyun', 'Dami', 'Yeon', 'Taeyang',
+      'Rina', 'Eun', 'Nabi', 'Byul', 'Haru', 'Noel', 'Hobin', 'Sian', 'Roa', 'Jiyu', 'Mira', 'Doha',
+      'Eden', 'Yul', 'Ian', 'Rion', 'Nuru', 'Bora', 'Taeho', 'Gyuri', 'Hwan',
     ],
-    familyNames: ['Kim', 'Park', 'Lee', 'Choi', 'Ahn', 'Kang', 'Jung', 'Yoon', 'Shin', 'Im'],
+    familyNames: ['Kim', 'Park', 'Lee', 'Choi', 'Ahn', 'Kang', 'Jung', 'Yoon', 'Shin', 'Im', 'Han', 'Seo', 'Lim', 'Moon', 'Baek', 'Jeon', 'Kwon', 'Nam', 'Oh', 'Song', 'Hwang'],
     givenNames: [
-      'Minji',
-      'Jisoo',
-      'Yujin',
-      'Hana',
-      'Seojun',
-      'Jiwon',
-      'Sora',
-      'Eunwoo',
-      'Chaeyoung',
-      'Hyerin',
-      'Taemin',
-      'Donghyun',
-      'Naeun',
-      'Yerin',
+      'Minji', 'Jisoo', 'Yujin', 'Hana', 'Seojun', 'Jiwon', 'Sora', 'Eunwoo', 'Chaeyoung', 'Hyerin',
+      'Taemin', 'Donghyun', 'Naeun', 'Yerin', 'Yubin', 'Haerin', 'Siwoo', 'Joonho', 'Sumin', 'Wonhee',
+      'Jiyu', 'Mira', 'Doha', 'Yul', 'Roa', 'Eden', 'Rion', 'Ian', 'Yoonji', 'Seina', 'Gyuri', 'Hyobin', 'Minseok',
     ],
+    male: {
+      stageNames: ['Jin', 'Min', 'Jae', 'Hyun', 'Taeyang', 'Seojun', 'Eunwoo', 'Donghyun', 'Taemin', 'Jihwan', 'Siwoo', 'Joonho', 'Hobin', 'Noel', 'Yul', 'Ian', 'Rion', 'Doha', 'Minseok', 'Taeho', 'Geon', 'Yong', 'Hwan'],
+      givenNames: ['Seojun', 'Eunwoo', 'Taemin', 'Donghyun', 'Jihwan', 'Minho', 'Joon', 'Sungmin', 'Siwoo', 'Joonho', 'Hobin', 'Noel', 'Yul', 'Ian', 'Rion', 'Doha', 'Minseok', 'Taeho', 'Geon', 'Yong', 'Hwan'],
+    },
+    female: {
+      stageNames: ['Yuna', 'Sori', 'Nari', 'Haneul', 'Ara', 'Dami', 'Yeon', 'Rina', 'Hana', 'Subin', 'Nabi', 'Byul', 'Yerin', 'Haerin', 'Roa', 'Jiyu', 'Mira', 'Eden', 'Seina', 'Gyuri', 'Yoonji', 'Bora', 'Haruin'],
+      givenNames: ['Minji', 'Jisoo', 'Yujin', 'Hana', 'Jiwon', 'Sora', 'Naeun', 'Yerin', 'Chaeyoung', 'Subin', 'Yubin', 'Haerin', 'Wonhee', 'Dahye', 'Roa', 'Jiyu', 'Mira', 'Eden', 'Seina', 'Gyuri', 'Yoonji', 'Bora', 'Haruin'],
+    },
   },
   {
     nationality: 'Japanese',
     flag: '🇯🇵',
     languages: ['Japanese', 'Korean'],
     stageNames: [
-      'Rin',
-      'Haru',
-      'Mio',
-      'Yuki',
-      'Noa',
-      'Sena',
-      'Riku',
-      'Aoi',
-      'Hina',
-      'Rei',
-      'Sora',
-      'Kou',
-      'Nana',
-      'Mao',
+      'Rin', 'Haru', 'Mio', 'Yuki', 'Noa', 'Sena', 'Riku', 'Aoi', 'Hina', 'Rei', 'Sora', 'Kou',
+      'Nana', 'Mao', 'Kira', 'Niko', 'Rui', 'Asa', 'Toma', 'Yori', 'Mika', 'Yui', 'Ami', 'Kei',
+      'Rio', 'Ayu', 'Koko', 'Jun', 'Rena', 'Suzu', 'Kai', 'Hiro', 'Miku',
     ],
-    familyNames: [
-      'Sato',
-      'Tanaka',
-      'Suzuki',
-      'Nakamura',
-      'Kobayashi',
-      'Ito',
-      'Yamamoto',
-      'Watanabe',
-      'Kato',
-      'Yoshida',
-    ],
+    familyNames: ['Sato', 'Tanaka', 'Suzuki', 'Nakamura', 'Kobayashi', 'Ito', 'Yamamoto', 'Watanabe', 'Kato', 'Yoshida', 'Shimizu', 'Abe', 'Saito', 'Mori', 'Fujita', 'Inoue', 'Nakajima', 'Okada', 'Hashimoto', 'Ishikawa', 'Nakano'],
     givenNames: [
-      'Yuki',
-      'Haruka',
-      'Airi',
-      'Ren',
-      'Yuna',
-      'Kaito',
-      'Mina',
-      'Sora',
-      'Rina',
-      'Hinata',
-      'Takumi',
-      'Shion',
-      'Akari',
-      'Miyu',
+      'Yuki', 'Haruka', 'Airi', 'Ren', 'Yuna', 'Kaito', 'Mina', 'Sora', 'Rina', 'Hinata',
+      'Takumi', 'Shion', 'Akari', 'Miyu', 'Kanna', 'Rui', 'Asahi', 'Toma', 'Yori', 'Niko',
+      'Mika', 'Yui', 'Ami', 'Kei', 'Rio', 'Ayu', 'Koko', 'Jun', 'Rena', 'Suzu', 'Miku', 'Hiroto', 'Kai',
     ],
+    male: {
+      stageNames: ['Haru', 'Riku', 'Kou', 'Ren', 'Kaito', 'Takumi', 'Shion', 'Hayato', 'Daichi', 'Sena', 'Rui', 'Asa', 'Toma', 'Yori', 'Kei', 'Rio', 'Jun', 'Asahi', 'Hiro', 'Kai', 'Yuto', 'Rento', 'Soma'],
+      givenNames: ['Ren', 'Kaito', 'Takumi', 'Shion', 'Hayato', 'Daichi', 'Kou', 'Sora', 'Rui', 'Asahi', 'Toma', 'Yori', 'Kei', 'Rio', 'Jun', 'Aoi', 'Hiroto', 'Kai', 'Yuto', 'Rento', 'Soma'],
+    },
+    female: {
+      stageNames: ['Rin', 'Mio', 'Yuki', 'Noa', 'Aoi', 'Hina', 'Rei', 'Nana', 'Mao', 'Kiyomi', 'Kira', 'Niko', 'Mina', 'Akari', 'Mika', 'Yui', 'Ami', 'Koko', 'Rena', 'Miku', 'Suzu', 'Yua', 'Aina'],
+      givenNames: ['Yuki', 'Haruka', 'Airi', 'Yuna', 'Mina', 'Rina', 'Akari', 'Miyu', 'Kiyomi', 'Kanon', 'Kanna', 'Noa', 'Mika', 'Yui', 'Ami', 'Koko', 'Rena', 'Miku', 'Suzu', 'Yua', 'Aina'],
+    },
   },
   {
     nationality: 'Chinese',
     flag: '🇨🇳',
     languages: ['Chinese', 'Korean'],
     stageNames: [
-      'Lin',
-      'Mei',
-      'Yun',
-      'Wei',
-      'Tao',
-      'Rui',
-      'Jia',
-      'An',
-      'Xin',
-      'Qi',
-      'Lan',
-      'Bo',
-      'Yan',
-      'Ming',
+      'Lin', 'Mei', 'Yun', 'Wei', 'Tao', 'Rui', 'Jia', 'An', 'Xin', 'Qi', 'Lan', 'Bo',
+      'Yan', 'Ming', 'Nuo', 'Chen', 'Yu', 'Lei', 'Tian', 'Shu', 'Xuan', 'Qiu', 'Mo', 'Fei',
+      'Jin', 'Ping', 'Luo', 'Han', 'Xing', 'Rong', 'Kai', 'Lian', 'Zhi',
     ],
-    familyNames: ['Li', 'Wang', 'Zhang', 'Liu', 'Chen', 'Zhao', 'Huang', 'Wu', 'Xu', 'Sun'],
+    familyNames: ['Li', 'Wang', 'Zhang', 'Liu', 'Chen', 'Zhao', 'Huang', 'Wu', 'Xu', 'Sun', 'Zhou', 'Guo', 'Ma', 'He', 'Lin', 'Feng', 'Tang', 'Cao', 'Deng', 'Xie', 'Song'],
     givenNames: [
-      'Mei',
-      'Xiao',
-      'Yun',
-      'Rui',
-      'Lin',
-      'An',
-      'Jia',
-      'Wei',
-      'Xin',
-      'Qian',
-      'Ming',
-      'Yue',
-      'Ting',
-      'Bo',
+      'Mei', 'Xiao', 'Yun', 'Rui', 'Lin', 'An', 'Jia', 'Wei', 'Xin', 'Qian',
+      'Ming', 'Yue', 'Ting', 'Bo', 'Nuo', 'Yu', 'Lei', 'Tian', 'Shu', 'Yao',
+      'Xuan', 'Qiu', 'Mo', 'Fei', 'Jin', 'Ping', 'Luo', 'Han', 'Xing', 'Rong', 'Kai', 'Lian', 'Zhi',
     ],
+    male: {
+      stageNames: ['Wei', 'Tao', 'Bo', 'Ming', 'Zefeng', 'Rui', 'An', 'Yun', 'Qi', 'Lin', 'Lei', 'Tian', 'Shu', 'Yu', 'Han', 'Jin', 'Fei', 'Qiu', 'Kai', 'Zhi', 'Rong', 'Xing', 'Hao'],
+      givenNames: ['Wei', 'Bo', 'Ming', 'Zefeng', 'Rui', 'An', 'Yun', 'Qi', 'Lei', 'Tian', 'Shu', 'Yu', 'Han', 'Jin', 'Fei', 'Qiu', 'Kai', 'Zhi', 'Rong', 'Xing', 'Hao'],
+    },
+    female: {
+      stageNames: ['Mei', 'Jia', 'Lan', 'Yue', 'Xin', 'Qian', 'Ting', 'Wanling', 'Meilin', 'Xinyi', 'Nuo', 'Yao', 'Yan', 'Shu', 'Xuan', 'Luo', 'Ping', 'Mo', 'Lian', 'Ying', 'Na', 'Xue', 'Qi'],
+      givenNames: ['Mei', 'Xiao', 'Yun', 'Jia', 'Xin', 'Qian', 'Yue', 'Ting', 'Wanling', 'Meilin', 'Nuo', 'Yao', 'Xuan', 'Luo', 'Ping', 'Mo', 'Lian', 'Ying', 'Na', 'Xue', 'Qi'],
+    },
   },
   {
     nationality: 'Thai',
     flag: '🇹🇭',
     languages: ['Thai', 'Korean', 'English'],
     stageNames: [
-      'Ning',
-      'Ploy',
-      'Mew',
-      'Rain',
-      'Nara',
-      'Tae',
-      'Yara',
-      'Beam',
-      'Fah',
-      'Mint',
-      'Nam',
-      'Pond',
-      'Aom',
-      'Ton',
+      'Ning', 'Ploy', 'Mew', 'Rain', 'Nara', 'Tae', 'Yara', 'Beam', 'Fah', 'Mint', 'Nam', 'Pond',
+      'Aom', 'Ton', 'Prao', 'Lune', 'Bam', 'Korn', 'Aun', 'Nook', 'Rin', 'May', 'Bell', 'Pete',
+      'Pang', 'Win', 'June', 'Film', 'Sky', 'Mali', 'Nine', 'Fonn', 'Pimmy',
     ],
-    familyNames: [
-      'Chai',
-      'Suk',
-      'Viroj',
-      'Anan',
-      'Prasert',
-      'Kitt',
-      'Somchai',
-      'Niran',
-      'Suda',
-      'Wirot',
-    ],
+    familyNames: ['Chai', 'Suk', 'Viroj', 'Anan', 'Prasert', 'Kitt', 'Somchai', 'Niran', 'Suda', 'Wirot', 'Preecha', 'Somsak', 'Thanin', 'Kamon', 'Rattan', 'Sirin', 'Chantara', 'Nattapong', 'Siriya', 'Phrom', 'Lertchai'],
     givenNames: [
-      'Nara',
-      'Pim',
-      'Dao',
-      'Tawan',
-      'Mew',
-      'Kwan',
-      'Yara',
-      'Beam',
-      'Fah',
-      'Mint',
-      'Nok',
-      'Ploen',
-      'Namfon',
-      'Tonkla',
+      'Nara', 'Pim', 'Dao', 'Tawan', 'Mew', 'Kwan', 'Yara', 'Beam', 'Fah', 'Mint',
+      'Nok', 'Ploen', 'Namfon', 'Tonkla', 'Prao', 'Lune', 'Aun', 'Korn', 'Nook', 'Bam',
+      'Rin', 'May', 'Bell', 'Pete', 'Pang', 'Win', 'June', 'Film', 'Sky', 'Mali', 'Nine', 'Fonn', 'Pimmy',
     ],
+    male: {
+      stageNames: ['Tae', 'Pond', 'Ton', 'Arun', 'Niran', 'Tonkla', 'Beam', 'Nam', 'Kitt', 'Anan', 'Korn', 'Aun', 'Bam', 'Wit', 'Win', 'Pete', 'Film', 'June', 'Nine', 'Sky', 'Jett', 'Krit', 'Mek'],
+      givenNames: ['Tae', 'Pond', 'Ton', 'Arun', 'Niran', 'Tonkla', 'Nam', 'Anan', 'Korn', 'Aun', 'Wit', 'Bam', 'Win', 'Pete', 'Film', 'June', 'Nine', 'Sky', 'Jett', 'Krit', 'Mek'],
+    },
+    female: {
+      stageNames: ['Ning', 'Ploy', 'Mew', 'Rain', 'Nara', 'Yara', 'Fah', 'Mint', 'Praew', 'Namfon', 'Prao', 'Lune', 'Nook', 'Dao', 'Rin', 'May', 'Bell', 'Pang', 'Mali', 'Fonn', 'Pimmy', 'Lita', 'Ging'],
+      givenNames: ['Nara', 'Pim', 'Dao', 'Tawan', 'Mew', 'Kwan', 'Yara', 'Fah', 'Mint', 'Praew', 'Namfon', 'Nook', 'Rin', 'May', 'Bell', 'Pang', 'Mali', 'Fonn', 'Pimmy', 'Lita', 'Ging'],
+    },
   },
   {
     nationality: 'Vietnamese',
     flag: '🇻🇳',
     languages: ['Vietnamese', 'Korean', 'English'],
     stageNames: [
-      'Anh',
-      'Linh',
-      'Mai',
-      'Bao',
-      'Nhi',
-      'Huy',
-      'Lena',
-      'Vivi',
-      'Trang',
-      'Khanh',
-      'Quynh',
-      'Son',
-      'Thao',
-      'Nam',
+      'Anh', 'Linh', 'Mai', 'Bao', 'Nhi', 'Huy', 'Lena', 'Vivi', 'Trang', 'Khanh', 'Quynh', 'Son',
+      'Thao', 'Nam', 'Bich', 'An', 'Hieu', 'Kiet', 'Tina', 'My', 'Ngan', 'Vy', 'Phuc', 'Lam',
+      'Quoc', 'Luan', 'NhiNhi', 'Bomi', 'Truc', 'Khoa', 'Nhat', 'Yen', 'Hoai',
     ],
-    familyNames: [
-      'Nguyen',
-      'Tran',
-      'Le',
-      'Pham',
-      'Vo',
-      'Hoang',
-      'Bui',
-      'Dang',
-      'Do',
-      'Vu',
-    ],
+    familyNames: ['Nguyen', 'Tran', 'Le', 'Pham', 'Vo', 'Hoang', 'Bui', 'Dang', 'Do', 'Vu', 'Trinh', 'Phan', 'Ngo', 'Duong', 'Huynh', 'Ta', 'Mai', 'Ly', 'Luu', 'Ton', 'Cao'],
     givenNames: [
-      'Anh',
-      'Linh',
-      'Mai',
-      'Bao',
-      'Nhi',
-      'Thanh',
-      'Minh',
-      'Vy',
-      'Trang',
-      'Khanh',
-      'Quynh',
-      'Thao',
-      'Duy',
-      'Nam',
+      'Anh', 'Linh', 'Mai', 'Bao', 'Nhi', 'Thanh', 'Minh', 'Vy', 'Trang', 'Khanh',
+      'Quynh', 'Thao', 'Duy', 'Nam', 'Bich', 'Hieu', 'Kiet', 'An', 'My', 'Tina',
+      'Ngan', 'Vy', 'Phuc', 'Lam', 'Quoc', 'Luan', 'NhiNhi', 'Bomi', 'Truc', 'Khoa', 'Nhat', 'Yen', 'Hoai',
     ],
+    male: {
+      stageNames: ['Bao', 'Huy', 'Son', 'Nam', 'Duy', 'Kiet', 'Minh', 'Thanh', 'Hai', 'Phong', 'Hieu', 'An', 'Khanh', 'Long', 'Phuc', 'Lam', 'Quoc', 'Luan', 'Khoa', 'Nhat', 'Quang', 'Hao', 'Viet'],
+      givenNames: ['Bao', 'Huy', 'Son', 'Nam', 'Duy', 'Kiet', 'Minh', 'Thanh', 'Hieu', 'An', 'Khanh', 'Long', 'Phuc', 'Lam', 'Quoc', 'Luan', 'Khoa', 'Nhat', 'Quang', 'Hao', 'Viet'],
+    },
+    female: {
+      stageNames: ['Anh', 'Linh', 'Mai', 'Nhi', 'Trang', 'Quynh', 'Thao', 'Vy', 'Bich', 'Hai Anh', 'My', 'Tina', 'Lena', 'Vivi', 'Ngan', 'Bomi', 'NhiNhi', 'Annie', 'Truc', 'Yen', 'Hoai', 'Nhu', 'Moc'],
+      givenNames: ['Anh', 'Linh', 'Mai', 'Nhi', 'Trang', 'Quynh', 'Thao', 'Vy', 'Bich', 'Hai Anh', 'My', 'Tina', 'Ngan', 'Bomi', 'NhiNhi', 'Annie', 'Truc', 'Yen', 'Hoai', 'Nhu', 'Moc'],
+    },
   },
 ] as const;
 

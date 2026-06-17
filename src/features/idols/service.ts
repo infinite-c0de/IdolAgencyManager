@@ -73,65 +73,6 @@ const RANDOM_GRADIENTS = [
 
 const INITIAL_VISIBLE_SCOUTING_COUNT = 10;
 
-const GENDERED_NAME_POOLS: Record<
-  string,
-  {
-    male: { stageNames: readonly string[]; givenNames: readonly string[] };
-    female: { stageNames: readonly string[]; givenNames: readonly string[] };
-  }
-> = {
-  Korean: {
-    male: {
-      stageNames: ['Jin', 'Min', 'Jae', 'Hyun', 'Taeyang', 'Seojun', 'Eunwoo', 'Donghyun', 'Taemin', 'Jihwan'],
-      givenNames: ['Seojun', 'Eunwoo', 'Taemin', 'Donghyun', 'Jihwan', 'Minho', 'Joon', 'Sungmin'],
-    },
-    female: {
-      stageNames: ['Yuna', 'Sori', 'Nari', 'Haneul', 'Ara', 'Dami', 'Yeon', 'Rina', 'Hana', 'Subin'],
-      givenNames: ['Minji', 'Jisoo', 'Yujin', 'Hana', 'Jiwon', 'Sora', 'Naeun', 'Yerin', 'Chaewon', 'Subin'],
-    },
-  },
-  Japanese: {
-    male: {
-      stageNames: ['Haru', 'Riku', 'Kou', 'Ren', 'Kaito', 'Takumi', 'Shion', 'Hayato', 'Daichi', 'Sena'],
-      givenNames: ['Ren', 'Kaito', 'Takumi', 'Shion', 'Hayato', 'Daichi', 'Kou', 'Sora'],
-    },
-    female: {
-      stageNames: ['Rin', 'Mio', 'Yuki', 'Noa', 'Aoi', 'Hina', 'Rei', 'Nana', 'Mao', 'Kiyomi'],
-      givenNames: ['Yuki', 'Haruka', 'Airi', 'Yuna', 'Mina', 'Rina', 'Akari', 'Miyu', 'Kiyomi', 'Kanon'],
-    },
-  },
-  Chinese: {
-    male: {
-      stageNames: ['Wei', 'Tao', 'Bo', 'Ming', 'Zefeng', 'Rui', 'An', 'Yun', 'Qi', 'Lin'],
-      givenNames: ['Wei', 'Bo', 'Ming', 'Zefeng', 'Rui', 'An', 'Yun', 'Qi'],
-    },
-    female: {
-      stageNames: ['Mei', 'Jia', 'Lan', 'Yue', 'Xin', 'Qian', 'Ting', 'Wanling', 'Meilin', 'Xinyi'],
-      givenNames: ['Mei', 'Xiao', 'Yun', 'Jia', 'Xin', 'Qian', 'Yue', 'Ting', 'Wanling', 'Meilin'],
-    },
-  },
-  Thai: {
-    male: {
-      stageNames: ['Tae', 'Pond', 'Ton', 'Arun', 'Niran', 'Tonkla', 'Beam', 'Nam', 'Kitt', 'Anan'],
-      givenNames: ['Tae', 'Pond', 'Ton', 'Arun', 'Niran', 'Tonkla', 'Nam', 'Anan'],
-    },
-    female: {
-      stageNames: ['Ning', 'Ploy', 'Mew', 'Rain', 'Nara', 'Yara', 'Fah', 'Mint', 'Praew', 'Namfon'],
-      givenNames: ['Nara', 'Pim', 'Dao', 'Tawan', 'Mew', 'Kwan', 'Yara', 'Fah', 'Mint', 'Praew'],
-    },
-  },
-  Vietnamese: {
-    male: {
-      stageNames: ['Bao', 'Huy', 'Son', 'Nam', 'Duy', 'Kiet', 'Minh', 'Thanh', 'Hai', 'Phong'],
-      givenNames: ['Bao', 'Huy', 'Son', 'Nam', 'Duy', 'Kiet', 'Minh', 'Thanh'],
-    },
-    female: {
-      stageNames: ['Anh', 'Linh', 'Mai', 'Nhi', 'Trang', 'Quynh', 'Thao', 'Vy', 'Bich', 'Hai Anh'],
-      givenNames: ['Anh', 'Linh', 'Mai', 'Nhi', 'Trang', 'Quynh', 'Thao', 'Vy', 'Bich', 'Hai Anh'],
-    },
-  },
-};
-
 function getNationalityProfile(nationality?: string) {
   return (
     scoutingNationalityProfiles.find(profile => profile.nationality === nationality) ??
@@ -153,18 +94,15 @@ function sanitizeStageName(value: string) {
 }
 
 function pickGenderedNames(nationality: string, gender: 'male' | 'female') {
-  const pool = GENDERED_NAME_POOLS[nationality]?.[gender];
+  const profile = scoutingNationalityProfiles.find(item => item.nationality === nationality);
+  const pool = profile?.[gender];
   if (pool) {
     return pool;
   }
 
   return {
-    stageNames: scoutingNationalityProfiles
-      .find(profile => profile.nationality === nationality)
-      ?.stageNames.slice(0, 10) ?? ['Star'],
-    givenNames: scoutingNationalityProfiles
-      .find(profile => profile.nationality === nationality)
-      ?.givenNames.slice(0, 10) ?? ['Name'],
+    stageNames: profile?.stageNames.slice(0, 10) ?? ['Star'],
+    givenNames: profile?.givenNames.slice(0, 10) ?? ['Name'],
   };
 }
 
@@ -180,7 +118,7 @@ function pickUniqueStageName(
   }
 
   const globalPool = shuffle(
-    Object.values(GENDERED_NAME_POOLS).flatMap(pool => [...pool[gender].stageNames]),
+    scoutingNationalityProfiles.flatMap(profile => [...profile[gender].stageNames]),
   ).map(sanitizeStageName);
   const globalUnique = globalPool.find(candidate => candidate && !usedStageNames.has(candidate));
   if (globalUnique) {
