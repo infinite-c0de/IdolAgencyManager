@@ -2,7 +2,7 @@ import type { Agency, City, Group, Idol } from '../../types';
 import type { CityEconomyProjection, EconomyModifiers, EconomyTransaction, WeeklyEconomy } from './types';
 
 const BASE_REPUTATION = 50;
-const BASE_MONTHLY_INCOME = 140_000_000;
+const BASE_MONTHLY_INCOME = 58_000_000;
 
 export const defaultEconomyModifiers: EconomyModifiers = {
   incomeMultiplier: 1,

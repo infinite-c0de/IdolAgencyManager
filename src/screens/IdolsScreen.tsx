@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import { AppShell, Card, StatusDot } from '../components/AppShell';
-import { Gradient } from '../components/ui/Gradient';
+import { AgencyLogoMark } from '../components/ui/AgencyLogoMark';
 import { filterIdols, IDOL_STATUSES, type IdolFilterStatus } from '../features/idols';
 import type { RootStackParamList } from '../navigation/types';
 import { useGame } from '../state/GameContext';
@@ -19,9 +19,22 @@ import { colors, radius, spacing } from '../theme';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
+function resolveImageAspectRatio(source?: number) {
+  if (!source) {
+    return 0.72;
+  }
+
+  const asset = Image.resolveAssetSource(source);
+  if (!asset?.width || !asset?.height) {
+    return 0.72;
+  }
+
+  return asset.width / asset.height;
+}
+
 export function IdolsScreen() {
   const navigation = useNavigation<Nav>();
-  const { idols } = useGame();
+  const { idols, groups } = useGame();
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<IdolFilterStatus>('All');
 
@@ -71,40 +84,58 @@ export function IdolsScreen() {
       </Card>
 
       <View style={styles.grid}>
-        {list.map(i => (
-          <TouchableOpacity
-            key={i.id}
-            style={[styles.idolCard, i.status === 'Active' ? styles.glowTeal : styles.cardBorder]}
-            onPress={() => navigation.navigate('IdolProfile', { id: i.id })}
-            activeOpacity={0.85}>
-            <Gradient colors={i.gradient} style={styles.idolImage}>
-              {i.image ? <Image source={i.image} resizeMode="cover" style={styles.idolImagePhoto} /> : null}
-              <View style={styles.rankBadge}>
-                <Text style={styles.rankText}>#{i.rank}</Text>
-              </View>
-              <Text style={styles.flag}>{i.flag}</Text>
-              <View style={styles.idolImageFooter}>
-                <View style={styles.statusRow}>
-                  <StatusDot status={i.status} />
-                  <Text style={styles.statusText}> {i.status}</Text>
+        {list.map(i => {
+          const groupForIdol = i.group ? groups.find(group => group.name === i.group) : undefined;
+          const imageAspectRatio = resolveImageAspectRatio(i.image);
+          return (
+            <TouchableOpacity
+              key={i.id}
+              style={styles.idolCardContainer}
+              onPress={() => navigation.navigate('IdolProfile', { id: i.id })}
+              activeOpacity={0.85}>
+              <View style={[styles.idolCard, i.status === 'Active' ? styles.glowTeal : styles.cardBorder]}>
+                <View style={[styles.idolImage, { aspectRatio: imageAspectRatio }]}>
+                  {i.image ? (
+                    <Image source={i.image} resizeMode="contain" style={styles.idolImagePhoto} />
+                  ) : (
+                    <Text style={styles.emptyArtText}>{i.stageName}</Text>
+                  )}
+                  {i.group ? (
+                    <View style={styles.groupLogoWatermark}>
+                      <AgencyLogoMark
+                        preset={groupForIdol?.logo?.kind === 'preset' ? groupForIdol.logo.preset : 'NEON_STAR'}
+                        size={60}
+                      />
+                    </View>
+                  ) : null}
+                  <View style={styles.rankBadge}>
+                    <Text style={styles.rankText}>#{i.rank}</Text>
+                  </View>
+                  <Text style={styles.flag}>{i.flag}</Text>
+                  <View style={styles.idolImageFooter}>
+                    <View style={styles.statusRow}>
+                      <StatusDot status={i.status} />
+                      <Text style={styles.statusText}> {i.status}</Text>
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.idolBody}>
+                  <View style={styles.rowBetween}>
+                    <Text style={styles.idolName}>{i.stageName}</Text>
+                    <Text style={styles.idolPop}>{i.popularity}%</Text>
+                  </View>
+                  <Text style={styles.idolRole} numberOfLines={1}>
+                    {i.role}
+                  </Text>
+                  <View style={styles.rowBetween}>
+                    <Text style={styles.tinyMuted}>{i.group ?? 'Solo'}</Text>
+                    <ChevronRight size={12} color={colors.mutedForeground} />
+                  </View>
                 </View>
               </View>
-            </Gradient>
-            <View style={styles.idolBody}>
-              <View style={styles.rowBetween}>
-                <Text style={styles.idolName}>{i.stageName}</Text>
-                <Text style={styles.idolPop}>{i.popularity}%</Text>
-              </View>
-              <Text style={styles.idolRole} numberOfLines={1}>
-                {i.role}
-              </Text>
-              <View style={styles.rowBetween}>
-                <Text style={styles.tinyMuted}>{i.group ?? 'Solo'}</Text>
-                <ChevronRight size={12} color={colors.mutedForeground} />
-              </View>
-            </View>
-          </TouchableOpacity>
-        ))}
+            </TouchableOpacity>
+          );
+        })}
       </View>
     </AppShell>
   );
@@ -145,10 +176,12 @@ const styles = StyleSheet.create({
   filterChipText: { fontSize: 11, fontWeight: '600', color: colors.mutedForeground },
   filterChipTextActive: { color: colors.tealBright },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+  grid: { flexDirection: 'row', flexWrap: 'wrap' },
+  idolCardContainer: {
+    padding: spacing.sm,
+    width: '50%',
+  },
   idolCard: {
-    width: '47.8%',
-    flexGrow: 1,
     borderRadius: radius.xl,
     backgroundColor: 'rgba(28,32,48,0.7)',
     padding: spacing.md,
@@ -163,7 +196,14 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
     elevation: 5,
   },
-  idolImage: { height: 128, borderRadius: radius.lg, overflow: 'hidden' },
+  idolImage: {
+    width: '100%',
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(8,10,18,0.85)',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
   idolImagePhoto: {
     position: 'absolute',
     top: 0,
@@ -174,6 +214,20 @@ const styles = StyleSheet.create({
     height: '100%',
     zIndex: 1,
     elevation: 1,
+  },
+  emptyArtText: {
+    alignSelf: 'center',
+    marginTop: spacing.lg,
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.mutedForeground,
+  },
+  groupLogoWatermark: {
+    position: 'absolute',
+    right: -8,
+    bottom: -10,
+    opacity: 0.22,
+    zIndex: 1,
   },
   rankBadge: {
     position: 'absolute',

@@ -27,6 +27,19 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 type IconType = ComponentType<{ size?: number; color?: string }>;
 
+function resolveImageAspectRatio(source?: number) {
+  if (!source) {
+    return 0.72;
+  }
+
+  const asset = Image.resolveAssetSource(source);
+  if (!asset?.width || !asset?.height) {
+    return 0.72;
+  }
+
+  return asset.width / asset.height;
+}
+
 export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>) {
   const navigation = useNavigation<Nav>();
   const { idols } = useGame();
@@ -77,7 +90,7 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
     <AppShell title={i.stageName} subtitle={`${i.role} · ${i.group ?? 'Solo'}`} action={backAction}>
       {/* Hero portrait */}
       <Card glow="teal" style={styles.heroCard}>
-        <HeroArt image={i.image} gradient={i.gradient}>
+        <HeroArt image={i.image} stageName={i.stageName}>
           <View style={styles.heroFooter}>
             <View style={styles.rowBetweenEnd}>
               <View>
@@ -174,19 +187,24 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
 
 function HeroArt({
   image,
-  gradient,
+  stageName,
   children,
 }: {
   image?: number;
-  gradient: string[];
+  stageName: string;
   children: ReactNode;
 }) {
+  const imageAspectRatio = resolveImageAspectRatio(image);
   return (
-    <Gradient colors={gradient} style={styles.hero}>
-      {image ? <Image source={image} resizeMode="cover" style={styles.heroImage} /> : null}
+    <View style={[styles.hero, { aspectRatio: imageAspectRatio }]}>
+      {image ? (
+        <Image source={image} resizeMode="contain" style={styles.heroImage} />
+      ) : (
+        <Text style={styles.heroEmptyText}>{stageName}</Text>
+      )}
       <View style={styles.heroShade} />
       {children}
-    </Gradient>
+    </View>
   );
 }
 
@@ -234,7 +252,12 @@ const styles = StyleSheet.create({
   backText: { fontSize: 11, color: colors.foreground },
 
   heroCard: { padding: 0, overflow: 'hidden' },
-  hero: { height: 280, justifyContent: 'flex-end', overflow: 'hidden' },
+  hero: {
+    width: '100%',
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+    backgroundColor: 'rgba(8,10,18,0.85)',
+  },
   heroImage: {
     position: 'absolute',
     top: 0,
@@ -245,6 +268,13 @@ const styles = StyleSheet.create({
     height: '100%',
     zIndex: 1,
     elevation: 1,
+  },
+  heroEmptyText: {
+    alignSelf: 'center',
+    marginTop: spacing.lg,
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.mutedForeground,
   },
   heroShade: {
     position: 'absolute',

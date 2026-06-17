@@ -1,11 +1,32 @@
 import type { Dispatch, SetStateAction } from 'react';
 import type { Agency, Group, Idol, Trainee } from '../../types';
 
+export type RevenueHistoryPoint = {
+  m: string;
+  group: number;
+  solo: number;
+  merch: number;
+};
+
+export type FinanceTransaction = {
+  id: number;
+  label: string;
+  type: 'income' | 'expense';
+  amount: number;
+  date: string;
+};
+
+export type TrainingPlans = Record<string, Record<string, string>>;
+
 export type SaveData = {
   agency: Agency;
   idols: Idol[];
   trainees: Trainee[];
   groups: Group[];
+  revenueHistory: RevenueHistoryPoint[];
+  transactions: FinanceTransaction[];
+  trainingPlans: TrainingPlans;
+  currentWeek: number;
   isAgencyCreated: boolean;
   activeSlotId: number;
   scoutingLastGrowthAt: string;
@@ -26,6 +47,10 @@ export type UseSaveLifecycleParams = {
   idols: Idol[];
   trainees: Trainee[];
   groups: Group[];
+  revenueHistory: RevenueHistoryPoint[];
+  transactions: FinanceTransaction[];
+  trainingPlans: TrainingPlans;
+  currentWeek: number;
   isAgencyCreated: boolean;
   activeSlotId: number | null;
   scoutingLastGrowthAt: string;
@@ -33,6 +58,10 @@ export type UseSaveLifecycleParams = {
   setIdols: Dispatch<SetStateAction<Idol[]>>;
   setTrainees: Dispatch<SetStateAction<Trainee[]>>;
   setGroups: Dispatch<SetStateAction<Group[]>>;
+  setRevenueHistory: Dispatch<SetStateAction<RevenueHistoryPoint[]>>;
+  setTransactions: Dispatch<SetStateAction<FinanceTransaction[]>>;
+  setTrainingPlans: Dispatch<SetStateAction<TrainingPlans>>;
+  setCurrentWeek: Dispatch<SetStateAction<number>>;
   setIsAgencyCreated: Dispatch<SetStateAction<boolean>>;
   setActiveSlotId: Dispatch<SetStateAction<number | null>>;
   setScoutingLastGrowthAt: Dispatch<SetStateAction<string>>;

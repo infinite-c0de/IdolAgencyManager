@@ -1,3 +1,5 @@
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Crown, Plus, Sparkles } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
@@ -11,14 +13,18 @@ import {
   View,
 } from 'react-native';
 import { AppShell, Avatar, Card } from '../components/AppShell';
-import { RadarChart } from '../components/charts';
+import { AgencyLogoMark } from '../components/ui/AgencyLogoMark';
 import { Gradient } from '../components/ui/Gradient';
+import { agencyLogoPresets } from '../features/agency';
 import type { CreateGroupResult } from '../features/groups';
-import { buildGroupRadar, buildGroupReadiness, getGroupMembers } from '../features/groups';
+import { buildGroupReadiness, getGroupMembers } from '../features/groups';
+import type { RootStackParamList } from '../navigation/types';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
-import type { GroupRole } from '../types';
+import type { AgencyLogo, GroupRole, Idol } from '../types';
 import { fmt } from '../utils/format';
+
+type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const GROUP_ROLES: GroupRole[] = [
   'Leader',
@@ -30,7 +36,23 @@ const GROUP_ROLES: GroupRole[] = [
 ];
 const REQUIRED_ROLES: GroupRole[] = ['Leader', 'Main Vocal', 'Main Dancer'];
 
+function scoreRoleFit(idol: Idol, role: GroupRole) {
+  if (role === 'Leader') {
+    return Math.round(
+      idol.stats.charisma * 0.35 +
+        idol.stats.stamina * 0.2 +
+        (idol.personalityProfile?.traits.responsibility ?? 60) * 0.45,
+    );
+  }
+  if (role === 'Main Vocal') return idol.stats.vocal;
+  if (role === 'Main Dancer') return idol.stats.dance;
+  if (role === 'Main Rapper') return idol.stats.rap;
+  if (role === 'Visual') return idol.stats.visual;
+  return Math.round(idol.stats.charisma * 0.6 + idol.stats.visual * 0.4);
+}
+
 export function GroupsScreen() {
+  const navigation = useNavigation<Nav>();
   const { groups, idols, conceptOptions, createGroup } = useGame();
   const [open, setOpen] = useState(false);
   const active = groups.filter(g => g.status === 'Active').length;
@@ -64,15 +86,21 @@ export function GroupsScreen() {
 
       {groups.map(g => {
         const members = getGroupMembers(g, idols);
-        const radar = buildGroupRadar(members);
         const readiness = buildGroupReadiness(members, g.status === 'Active');
 
         return (
-          <Card key={g.id} glow={g.status === 'Active' ? 'teal' : 'violet'}>
+          <TouchableOpacity
+            key={g.id}
+            onPress={() => navigation.navigate('GroupProfile', { groupId: g.id })}
+            activeOpacity={0.92}>
+            <Card glow={g.status === 'Active' ? 'teal' : 'violet'}>
             <View style={styles.headerRow}>
               <View style={styles.headerLeft}>
                 <Gradient colors={g.gradient} style={styles.groupIcon}>
-                  <Sparkles size={20} color="rgba(255,255,255,0.9)" />
+                  <AgencyLogoMark
+                    preset={g.logo?.kind === 'preset' ? g.logo.preset : 'NEON_STAR'}
+                    size={20}
+                  />
                 </Gradient>
                 <View style={styles.flex1}>
                   <Text style={styles.groupName} numberOfLines={1}>
@@ -96,36 +124,28 @@ export function GroupsScreen() {
 
             <View style={styles.miniRow}>
               <Mini label="Popularity" v={`${g.popularity}%`} />
-              <Mini label="Synergy" v={`${g.synergy}`} />
+              <Mini label="Members" v={`${members.length}`} />
               <Mini label="Income" v={g.monthlyRevenue ? fmt(g.monthlyRevenue) : '—'} />
             </View>
 
             <View style={styles.bodyRow}>
-              <View style={styles.flex1}>
-                <Text style={styles.subLabel}>MEMBERS & ROLES</Text>
-                <View style={styles.memberList}>
-                  {members.map(m => {
-                    const hasLeaderRole = m.role.includes('Leader');
-                    return (
-                      <View key={m.id} style={styles.memberItem}>
-                        <Avatar name={m.stageName} gradient={m.gradient} image={m.image} size={32} />
-                        <View style={styles.flex1}>
-                          <View style={styles.memberNameRow}>
-                            {hasLeaderRole && <Crown size={12} color={colors.amber} />}
-                            <Text style={styles.memberName}> {m.stageName}</Text>
-                          </View>
-                          <Text style={styles.tinyMuted}>{m.role}</Text>
+              <Text style={styles.subLabel}>MEMBERS & ROLES</Text>
+              <View style={styles.memberList}>
+                {members.map(m => {
+                  const hasLeaderRole = m.role.includes('Leader');
+                  return (
+                    <View key={m.id} style={styles.memberItem}>
+                      <Avatar name={m.stageName} gradient={m.gradient} image={m.image} size={32} />
+                      <View style={styles.flex1}>
+                        <View style={styles.memberNameRow}>
+                          {hasLeaderRole && <Crown size={12} color={colors.amber} />}
+                          <Text style={styles.memberName}> {m.stageName}</Text>
                         </View>
+                        <Text style={styles.tinyMuted}>{m.role}</Text>
                       </View>
-                    );
-                  })}
-                </View>
-              </View>
-              <View style={styles.synergyCol}>
-                <Text style={styles.subLabel}>SYNERGY</Text>
-                <View style={styles.radarBox}>
-                  <RadarChart data={radar} size={150} fillStops={[colors.teal, colors.violet]} />
-                </View>
+                    </View>
+                  );
+                })}
               </View>
             </View>
 
@@ -146,8 +166,12 @@ export function GroupsScreen() {
                   <Text style={styles.amberText}>Almost there</Text>
                 )}
               </Text>
+              <Text style={styles.readinessHint}>
+                Trigger rules: 3+ members, leader assigned, balanced performance stats, debut content, promotion plan.
+              </Text>
             </View>
-          </Card>
+            </Card>
+          </TouchableOpacity>
         );
       })}
 
@@ -187,6 +211,7 @@ function NewGroupModal({
   const [name, setName] = useState('');
   const [fan, setFan] = useState('');
   const [concept, setConcept] = useState(concepts[0] ?? '');
+  const [logo, setLogo] = useState<AgencyLogo>({ kind: 'preset', preset: agencyLogoPresets[0].id });
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [roleAssignments, setRoleAssignments] = useState<Partial<Record<GroupRole, string>>>({});
   const available = idols.filter(i => !i.group);
@@ -202,6 +227,7 @@ function NewGroupModal({
     setName('');
     setFan('');
     setConcept(concepts[0] ?? '');
+    setLogo({ kind: 'preset', preset: agencyLogoPresets[0].id });
     setSelectedIds([]);
     setRoleAssignments({});
     onClose();
@@ -245,6 +271,7 @@ function NewGroupModal({
       name,
       fanName: fan,
       concept,
+      logo,
       memberIds: selectedIds,
       roleAssignments,
     });
@@ -280,6 +307,23 @@ function NewGroupModal({
                         onPress={() => setConcept(option)}
                         activeOpacity={0.8}>
                         <Text style={[styles.roleChipText, active && styles.selectedChipText]}>{option}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+              <View>
+                <Text style={styles.fieldLabel}>GROUP LOGO</Text>
+                <View style={styles.logoWrap}>
+                  {agencyLogoPresets.map(preset => {
+                    const active = logo.kind === 'preset' && logo.preset === preset.id;
+                    return (
+                      <TouchableOpacity
+                        key={preset.id}
+                        style={[styles.logoOption, active && styles.selectedChip]}
+                        onPress={() => setLogo({ kind: 'preset', preset: preset.id })}
+                        activeOpacity={0.8}>
+                        <AgencyLogoMark preset={preset.id} size={22} />
                       </TouchableOpacity>
                     );
                   })}
@@ -336,7 +380,7 @@ function NewGroupModal({
                                     onPress={() => assignRole(role, member.id)}
                                     activeOpacity={0.8}>
                                     <Text style={[styles.roleChipText, active && styles.selectedChipText]}>
-                                      {member.stageName}
+                                      {member.stageName} ({scoreRoleFit(member, role)})
                                     </Text>
                                   </TouchableOpacity>
                                 );
@@ -448,8 +492,6 @@ const styles = StyleSheet.create({
   },
   memberNameRow: { flexDirection: 'row', alignItems: 'center' },
   memberName: { fontSize: 12, fontWeight: '600', color: colors.foreground },
-  synergyCol: {},
-  radarBox: { alignItems: 'center' },
 
   readiness: {
     marginTop: spacing.md,
@@ -467,6 +509,7 @@ const styles = StyleSheet.create({
   checkTextOn: { fontSize: 11, color: colors.foreground },
   checkTextOff: { fontSize: 11, color: colors.mutedForeground },
   readyText: { textAlign: 'right', fontSize: 11 },
+  readinessHint: { marginTop: 6, fontSize: 10, lineHeight: 14, color: colors.mutedForeground },
 
   // Modal
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
@@ -510,6 +553,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.whiteA05,
   },
   chipWrap: { marginTop: spacing.sm, flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  logoWrap: { marginTop: spacing.sm, flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  logoOption: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.whiteA05,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   memberChip: {
     flexDirection: 'row',
     alignItems: 'center',

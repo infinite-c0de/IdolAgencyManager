@@ -5,6 +5,7 @@ import {
   CalendarCheck,
   CheckCircle2,
   ChevronRight,
+  FastForward,
   Heart,
   MoreHorizontal,
   Pin,
@@ -58,7 +59,7 @@ function buildPerformanceStats(idols: ReturnType<typeof useGame>['idols']) {
 
 export function AgencyDashboardScreen() {
   const navigation = useNavigation<Nav>();
-  const { agency, idols, trainees, groups, revenueHistory } = useGame();
+  const { agency, idols, trainees, groups, revenueHistory, currentWeek, advanceWeek } = useGame();
   const elevate = getPrimaryGroup(groups);
   const members = elevate ? getGroupMembers(elevate, idols) : [];
   const schedule = selectDynamicSchedule(idols, groups);
@@ -67,7 +68,7 @@ export function AgencyDashboardScreen() {
   const radarData = stats.map(stat => ({ skill: stat.label.toUpperCase(), v: stat.v }));
 
   return (
-    <AppShell title="Agency Dashboard" subtitle="Manage your agency growth">
+    <AppShell title="Agency Dashboard" subtitle={`Manage your agency growth · Week ${currentWeek}`}>
       <Card glow="teal">
         <View style={styles.rowBetweenStart}>
           <View style={styles.groupHeading}>
@@ -90,6 +91,10 @@ export function AgencyDashboardScreen() {
             <Text style={styles.activeBadgeText}>Career</Text>
           </View>
         </View>
+        <TouchableOpacity style={styles.nextWeekBtn} onPress={advanceWeek} activeOpacity={0.85}>
+          <FastForward size={14} color={colors.slate900} />
+          <Text style={styles.nextWeekText}>Next Week</Text>
+        </TouchableOpacity>
         <View style={styles.kpiRow}>
           <KPI icon={<Wallet size={12} color={colors.mint} />} label="Cash" value={fmt(agency.money)} />
           <KPI icon={<Heart size={12} color="#FDA4AF" />} label="Reputation" value={`${agency.reputation}`} sub="/100" />
@@ -124,28 +129,33 @@ export function AgencyDashboardScreen() {
         ) : null}
       </Card>
 
-      {elevate ? (
+      {groups.length > 0 ? (
         <Card glow="teal">
           <View style={styles.rowBetweenStart}>
-            <View>
-              <Text style={styles.groupTitle}>{elevate.name}</Text>
-              <Text style={styles.tinyMuted}>{members.length} members · {elevate.status}</Text>
-            </View>
-            <View style={styles.activeBadge}>
-              <Text style={styles.activeBadgeText}>{elevate.status}</Text>
-            </View>
+            <Text style={styles.groupTitle}>GROUPS OVERVIEW</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Groups')} activeOpacity={0.8}>
+              <Text style={styles.linkText}>Manage</Text>
+            </TouchableOpacity>
           </View>
-          <View style={styles.memberStrip}>
-            {members.map(m => (
-              <Gradient key={m.id} colors={m.gradient} style={styles.memberCell}>
-                {m.image ? <Image source={m.image} resizeMode="cover" style={styles.memberCellImage} /> : null}
-                <View style={styles.memberCellNameWrap}>
-                  <Text style={styles.memberCellName} numberOfLines={1}>
-                    {m.stageName}
-                  </Text>
-                </View>
-              </Gradient>
-            ))}
+          <View style={styles.groupListWrap}>
+            {groups.slice(0, 3).map(group => {
+              const groupMembers = getGroupMembers(group, idols);
+              return (
+                <TouchableOpacity
+                  key={group.id}
+                  style={styles.groupListItem}
+                  onPress={() => navigation.navigate('GroupProfile', { groupId: group.id })}
+                  activeOpacity={0.84}>
+                  <View>
+                    <Text style={styles.groupListName}>{group.name}</Text>
+                    <Text style={styles.tinyMuted}>
+                      {groupMembers.length} members · {group.status} · synergy {group.synergy}
+                    </Text>
+                  </View>
+                  <ChevronRight size={14} color={colors.mutedForeground} />
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </Card>
       ) : null}
@@ -363,6 +373,7 @@ const styles = StyleSheet.create({
     color: colors.mutedForeground,
   },
   groupTitle: { color: colors.tealBright, fontSize: 22, fontWeight: '900', letterSpacing: -0.4 },
+  linkText: { color: colors.tealBright, fontSize: 11, fontWeight: '700' },
   activeBadge: {
     borderRadius: radius.full,
     borderWidth: 1,
@@ -371,6 +382,18 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   activeBadgeText: { color: colors.tealBright, fontSize: 10, fontWeight: '600' },
+  nextWeekBtn: {
+    marginTop: spacing.md,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: radius.lg,
+    backgroundColor: colors.teal,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  nextWeekText: { fontSize: 12, fontWeight: '800', color: colors.slate900 },
 
   memberStrip: {
     marginTop: spacing.md,
@@ -407,6 +430,19 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.95)',
     textAlign: 'center',
   },
+  groupListWrap: { marginTop: spacing.md, gap: spacing.sm },
+  groupListItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.whiteA05,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  groupListName: { color: colors.foreground, fontSize: 13, fontWeight: '700' },
 
   kpiRow: { marginTop: spacing.lg, flexDirection: 'row', gap: spacing.sm },
   kpi: {
@@ -444,14 +480,14 @@ const styles = StyleSheet.create({
   },
   nextStepButtonText: { fontSize: 11, fontWeight: '800', color: colors.slate900 },
 
-  perfRow: { flexDirection: 'row', gap: spacing.md, alignItems: 'center' },
-  radarBox: { flex: 1, alignItems: 'center' },
-  vBars: { flexDirection: 'row', gap: 6 },
+  perfRow: { alignItems: 'center', gap: spacing.md },
+  radarBox: { alignItems: 'center' },
+  vBars: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.xl },
   vBarCol: { alignItems: 'center', gap: 6 },
-  vBarLabel: { fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, color: colors.mutedForeground },
+  vBarLabel: { fontSize: 8, textTransform: 'uppercase', letterSpacing: 0.6, color: colors.mutedForeground },
   vBarTrack: {
-    height: 96,
-    width: 12,
+    height: 74,
+    width: 10,
     borderRadius: radius.full,
     backgroundColor: colors.whiteA10,
     overflow: 'hidden',

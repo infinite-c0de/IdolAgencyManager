@@ -132,6 +132,7 @@ export type Group = {
   name: string;
   fanName: string;
   concept: string;
+  logo?: AgencyLogo;
   status: 'Active' | 'Pre-debut' | 'Disbanded';
   popularity: number;
   monthlyRevenue: number;

@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { AgencyDashboardScreen } from '../screens/AgencyDashboardScreen';
 import { FinanceScreen } from '../screens/FinanceScreen';
 import { GroupsScreen } from '../screens/GroupsScreen';
+import { GroupProfileScreen } from '../screens/GroupProfileScreen';
 import { MainMenuScreen } from '../screens/MainMenuScreen';
 import { IdolProfileScreen } from '../screens/IdolProfileScreen';
 import { IdolsScreen } from '../screens/IdolsScreen';
@@ -38,6 +39,7 @@ function AppNavigator() {
       <Tab.Screen name="Idols" component={IdolsScreen} />
       <Tab.Screen name="IdolProfile" component={IdolProfileScreen} />
       <Tab.Screen name="Groups" component={GroupsScreen} />
+      <Tab.Screen name="GroupProfile" component={GroupProfileScreen} />
       <Tab.Screen name="Training" component={TrainingScreen} />
       <Tab.Screen name="Schedule" component={ScheduleScreen} />
       <Tab.Screen name="Market" component={MarketScreen} />

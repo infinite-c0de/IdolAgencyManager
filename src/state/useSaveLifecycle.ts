@@ -12,8 +12,11 @@ import { normalizeIdolIdentity, normalizePersonalityProfile, normalizeTraineeIde
 import type { SaveData, SaveSlotSummary, UseSaveLifecycleParams } from '../features/saves';
 import {
   cloneInitialAgency,
+  cloneInitialRevenueHistory,
   cloneInitialTrainees,
+  cloneInitialTransactions,
   createInitialSave,
+  createInitialTrainingPlans,
   unlockWeeklyScoutingCandidates,
   withCurrentTraineeAssets,
 } from './gameStateHelpers';
@@ -23,6 +26,10 @@ export function useSaveLifecycle({
   idols,
   trainees,
   groups,
+  revenueHistory,
+  transactions,
+  trainingPlans,
+  currentWeek,
   isAgencyCreated,
   activeSlotId,
   scoutingLastGrowthAt,
@@ -30,6 +37,10 @@ export function useSaveLifecycle({
   setIdols,
   setTrainees,
   setGroups,
+  setRevenueHistory,
+  setTransactions,
+  setTrainingPlans,
+  setCurrentWeek,
   setIsAgencyCreated,
   setActiveSlotId,
   setScoutingLastGrowthAt,
@@ -78,6 +89,14 @@ export function useSaveLifecycle({
         gradient: [...group.gradient],
       })),
     );
+    setRevenueHistory(save.revenueHistory.map(point => ({ ...point })));
+    setTransactions(save.transactions.map(transaction => ({ ...transaction })));
+    setTrainingPlans(
+      Object.fromEntries(
+        Object.entries(save.trainingPlans).map(([targetId, plan]) => [targetId, { ...plan }]),
+      ),
+    );
+    setCurrentWeek(save.currentWeek);
     setIsAgencyCreated(Boolean(save.isAgencyCreated));
     setActiveSlotId(save.activeSlotId);
     setScoutingLastGrowthAt(save.scoutingLastGrowthAt);
@@ -146,6 +165,10 @@ export function useSaveLifecycle({
         idols,
         trainees,
         groups,
+        revenueHistory,
+        transactions,
+        trainingPlans,
+        currentWeek,
         isAgencyCreated,
         activeSlotId: slotId,
         scoutingLastGrowthAt,
@@ -161,13 +184,30 @@ export function useSaveLifecycle({
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [agency, idols, trainees, groups, isAgencyCreated, isHydrated, activeSlotId, scoutingLastGrowthAt]);
+  }, [
+    agency,
+    idols,
+    trainees,
+    groups,
+    revenueHistory,
+    transactions,
+    trainingPlans,
+    currentWeek,
+    isAgencyCreated,
+    isHydrated,
+    activeSlotId,
+    scoutingLastGrowthAt,
+  ]);
 
   const resetGame = async () => {
     setAgency(cloneInitialAgency());
     setIdols([]);
     setTrainees(cloneInitialTrainees());
     setGroups([]);
+    setRevenueHistory(cloneInitialRevenueHistory());
+    setTransactions(cloneInitialTransactions());
+    setTrainingPlans(createInitialTrainingPlans());
+    setCurrentWeek(1);
     setIsAgencyCreated(false);
     setActiveSlotId(null);
     setScoutingLastGrowthAt(new Date().toISOString());
@@ -209,6 +249,10 @@ export function useSaveLifecycle({
       setIdols([]);
       setTrainees(cloneInitialTrainees());
       setGroups([]);
+      setRevenueHistory(cloneInitialRevenueHistory());
+      setTransactions(cloneInitialTransactions());
+      setTrainingPlans(createInitialTrainingPlans());
+      setCurrentWeek(1);
       setIsAgencyCreated(false);
       setActiveSlotId(null);
       setScoutingLastGrowthAt(new Date().toISOString());

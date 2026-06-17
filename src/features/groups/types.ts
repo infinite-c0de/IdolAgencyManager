@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
-import type { Group, GroupRole, Idol } from '../../types';
+import type { AgencyLogo, Group, GroupRole, Idol } from '../../types';
 
 export type GroupRadarPoint = {
   skill: 'VOCAL' | 'DANCE' | 'RAP' | 'VISUAL' | 'CHARISMA';
@@ -22,6 +22,7 @@ export type CreateGroupPayload = {
   name: string;
   fanName: string;
   concept: string;
+  logo: AgencyLogo;
   memberIds: string[];
   roleAssignments: Partial<Record<GroupRole, string>>;
 };

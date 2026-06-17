@@ -12,6 +12,10 @@ export type RecruitResult =
   | { ok: true; idolName: string }
   | { ok: false; reason: 'NOT_FOUND' | 'INSUFFICIENT_FUNDS' | 'ALREADY_RECRUITED' };
 
+export type RefreshScoutingResult =
+  | { ok: true; cost: number; visibleCount: number; filterMatches: number }
+  | { ok: false; reason: 'INSUFFICIENT_FUNDS' | 'NO_CANDIDATES' };
+
 export type UseAgencyActionsParams = {
   agency: Agency;
   idols: Idol[];

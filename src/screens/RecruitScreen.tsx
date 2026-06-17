@@ -1,16 +1,28 @@
 import { Sparkles, UserPlus } from 'lucide-react-native';
 import React, { ReactNode, useState } from 'react';
-import { ImageBackground, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card, SectionTitle } from '../components/AppShell';
-import { Gradient } from '../components/ui/Gradient';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 import { fmt } from '../utils/format';
 
 const filters = ['All', 'Vocal', 'Dance', 'Rap', 'Visual', 'Charisma'];
 
+function resolveImageAspectRatio(source?: number) {
+  if (!source) {
+    return 0.72;
+  }
+
+  const asset = Image.resolveAssetSource(source);
+  if (!asset?.width || !asset?.height) {
+    return 0.72;
+  }
+
+  return asset.width / asset.height;
+}
+
 export function RecruitScreen() {
-  const { trainees, recruitTrainee } = useGame();
+  const { trainees, recruitTrainee, refreshScoutingCandidates } = useGame();
   const [confirm, setConfirm] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState('All');
@@ -37,6 +49,23 @@ export function RecruitScreen() {
     setError('Trainee not found.');
   };
 
+  const handleRefresh = () => {
+    const result = refreshScoutingCandidates(activeFilter);
+    if (result.ok) {
+      if (activeFilter !== 'All' && result.filterMatches === 0) {
+        setError('Candidates refreshed, but this filter still has no available trainees.');
+      }
+      return;
+    }
+
+    if (result.reason === 'INSUFFICIENT_FUNDS') {
+      setError('Not enough budget to refresh candidates.');
+      return;
+    }
+
+    setError('No candidates left to refresh.');
+  };
+
   return (
     <AppShell title="Scout Trainees" subtitle="Build the next generation of stars">
       <Card>
@@ -55,6 +84,9 @@ export function RecruitScreen() {
             );
           })}
         </View>
+        <TouchableOpacity style={styles.refreshBtn} onPress={handleRefresh} activeOpacity={0.8}>
+          <Text style={styles.refreshBtnText}>Refresh Candidates (₩12,000,000)</Text>
+        </TouchableOpacity>
       </Card>
 
       <View style={styles.grid}>
@@ -97,6 +129,9 @@ export function RecruitScreen() {
         {list.length === 0 && (
           <Card>
             <Text style={styles.emptyText}>No visible trainees for this filter this week.</Text>
+            <TouchableOpacity style={styles.emptyRefreshBtn} onPress={handleRefresh} activeOpacity={0.8}>
+              <Text style={styles.emptyRefreshText}>Reroll Candidates</Text>
+            </TouchableOpacity>
           </Card>
         )}
       </View>
@@ -136,23 +171,18 @@ function TraineeArt({
   trainee: ReturnType<typeof useGame>['trainees'][number];
   children: ReactNode;
 }) {
-  if (trainee.image) {
-    return (
-      <ImageBackground
-        source={trainee.image}
-        resizeMode="cover"
-        style={styles.image}
-        imageStyle={styles.imageBg}>
-        <View style={styles.imageShade} />
-        {children}
-      </ImageBackground>
-    );
-  }
+  const imageAspectRatio = resolveImageAspectRatio(trainee.image);
 
   return (
-    <Gradient colors={trainee.gradient} style={styles.image}>
+    <View style={[styles.image, { aspectRatio: imageAspectRatio }]}>
+      {trainee.image ? (
+        <Image source={trainee.image} resizeMode="contain" style={styles.imagePhoto} />
+      ) : (
+        <Text style={styles.emptyArtText}>{trainee.name}</Text>
+      )}
+      <View style={styles.imageShade} />
       {children}
-    </Gradient>
+    </View>
   );
 }
 
@@ -173,11 +203,46 @@ const styles = StyleSheet.create({
   filterActive: { borderColor: 'rgba(34,211,238,0.6)', backgroundColor: 'rgba(34,211,238,0.06)' },
   filterText: { fontSize: 11, fontWeight: '600', color: colors.foreground },
   filterTextActive: { color: colors.tealBright },
+  refreshBtn: {
+    marginTop: spacing.sm,
+    alignSelf: 'flex-start',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(34,211,238,0.6)',
+    backgroundColor: 'rgba(34,211,238,0.08)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  refreshBtnText: { fontSize: 11, fontWeight: '700', color: colors.tealBright },
 
   grid: { gap: spacing.md },
   traineeCard: {},
-  image: { height: 168, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.whiteA05 },
-  imageBg: { borderRadius: radius.lg },
+  image: {
+    width: '100%',
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(8,10,18,0.85)',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  imagePhoto: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    zIndex: 1,
+    elevation: 1,
+  },
+  emptyArtText: {
+    alignSelf: 'center',
+    marginTop: spacing.lg,
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.mutedForeground,
+  },
   imageShade: {
     position: 'absolute',
     top: 0,
@@ -185,9 +250,18 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     backgroundColor: 'rgba(0,0,0,0.08)',
+    zIndex: 2,
   },
-  flag: { position: 'absolute', right: 8, top: 6, fontSize: 18 },
-  imageFooter: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: spacing.sm, backgroundColor: 'rgba(0,0,0,0.48)' },
+  flag: { position: 'absolute', right: 8, top: 6, fontSize: 18, zIndex: 3 },
+  imageFooter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 3,
+    padding: spacing.sm,
+    backgroundColor: 'rgba(0,0,0,0.48)',
+  },
   name: { fontSize: 16, fontWeight: '700', color: colors.foreground },
   sub: { fontSize: 10, color: 'rgba(255,255,255,0.7)' },
   potential: { flexDirection: 'row', alignItems: 'center', borderRadius: radius.full, backgroundColor: colors.black40, paddingHorizontal: spacing.sm, paddingVertical: 2 },
@@ -225,4 +299,15 @@ const styles = StyleSheet.create({
   continueBtn: { marginTop: spacing.lg, width: '100%', alignItems: 'center', borderRadius: radius.lg, backgroundColor: colors.teal, paddingVertical: spacing.sm },
   continueText: { fontSize: 14, fontWeight: '700', color: colors.slate900 },
   emptyText: { fontSize: 12, color: colors.mutedForeground, textAlign: 'center' },
+  emptyRefreshBtn: {
+    marginTop: spacing.md,
+    alignSelf: 'center',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(34,211,238,0.6)',
+    backgroundColor: 'rgba(34,211,238,0.08)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  emptyRefreshText: { fontSize: 12, fontWeight: '700', color: colors.tealBright },
 });

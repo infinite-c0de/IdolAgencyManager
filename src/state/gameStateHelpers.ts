@@ -1,4 +1,9 @@
-import { initialAgency, traineeArtPool } from '../data/gameData';
+import {
+  initialAgency,
+  initialRevenueHistory,
+  initialTransactions,
+  traineeArtPool,
+} from '../data/gameData';
 import { generateScoutingPoolFromArtPool } from '../features/idols';
 import type { SaveData } from '../features/saves';
 import type { Agency, Idol, Trainee } from '../types';
@@ -48,6 +53,18 @@ const LEGACY_ART_KEY_MAP: Record<string, number> = {
 
 export function cloneInitialAgency(): Agency {
   return { ...initialAgency };
+}
+
+export function cloneInitialRevenueHistory() {
+  return initialRevenueHistory.map(point => ({ ...point }));
+}
+
+export function cloneInitialTransactions() {
+  return initialTransactions.map(transaction => ({ ...transaction }));
+}
+
+export function createInitialTrainingPlans() {
+  return { SOLO_DEFAULT: {} as Record<string, string> };
 }
 
 export function cloneInitialTrainees(): Trainee[] {
@@ -121,6 +138,10 @@ export function createInitialSave(slotId: number): SaveData {
     idols: [],
     trainees: cloneInitialTrainees(),
     groups: [],
+    revenueHistory: cloneInitialRevenueHistory(),
+    transactions: cloneInitialTransactions(),
+    trainingPlans: createInitialTrainingPlans(),
+    currentWeek: 1,
     isAgencyCreated: false,
     activeSlotId: slotId,
     scoutingLastGrowthAt: now,

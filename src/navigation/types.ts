@@ -6,6 +6,7 @@ export type RootStackParamList = {
   Idols: undefined;
   IdolProfile: { id: string };
   Groups: undefined;
+  GroupProfile: { groupId: string };
   Training: undefined;
   Schedule: undefined;
   Market: undefined;

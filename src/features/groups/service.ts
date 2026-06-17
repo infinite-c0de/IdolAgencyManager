@@ -126,6 +126,7 @@ export function createGroupFromIdols(
   const name = payload.name.trim();
   const fanName = payload.fanName.trim();
   const concept = payload.concept.trim();
+  const logo = payload.logo;
   const memberIds = uniq(payload.memberIds);
   const roleAssignments = cleanAssignments(payload.roleAssignments);
 
@@ -180,6 +181,7 @@ export function createGroupFromIdols(
     name,
     fanName,
     concept,
+    logo,
     status: 'Pre-debut',
     popularity,
     monthlyRevenue,
