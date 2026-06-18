@@ -55,10 +55,12 @@ export function calculateWeeklyProgression({
   trainingPlans,
   currentWeek,
 }: WeeklyProgressionInput): WeeklyProgressionResult {
+  const groupIdByName = new Map(groups.map(group => [group.name, group.id]));
   const nextIdols = idols.map(idol => {
+    const groupPlanKey = idol.group ? groupIdByName.get(idol.group) ?? idol.group : undefined;
     const plan =
-      idol.group
-        ? trainingPlans[idol.group] ?? trainingPlans.SOLO_DEFAULT ?? {}
+      groupPlanKey
+        ? trainingPlans[groupPlanKey] ?? trainingPlans[idol.group ?? ''] ?? trainingPlans.SOLO_DEFAULT ?? {}
         : trainingPlans.SOLO_DEFAULT ?? {};
     const vocalSessions = countSessions(plan, 'vocal');
     const danceSessions = countSessions(plan, 'dance');

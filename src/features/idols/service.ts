@@ -97,6 +97,10 @@ function sanitizeStageName(value: string) {
   return value.trim().replace(/\d+$/g, '').trim();
 }
 
+function normalizeIdentityKey(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
 function pickGenderedNames(nationality: string, gender: 'male' | 'female') {
   const profile = scoutingNationalityProfiles.find(item => item.nationality === nationality);
   const pool = profile?.[gender];
@@ -116,7 +120,9 @@ function pickUniqueStageName(
   usedStageNames: Set<string>,
 ): string {
   const localPool = shuffle([...pickGenderedNames(nationality, gender).stageNames]).map(sanitizeStageName);
-  const localUnique = localPool.find(candidate => candidate && !usedStageNames.has(candidate));
+  const localUnique = localPool.find(
+    candidate => candidate && !usedStageNames.has(normalizeIdentityKey(candidate)),
+  );
   if (localUnique) {
     return localUnique;
   }
@@ -124,7 +130,9 @@ function pickUniqueStageName(
   const globalPool = shuffle(
     scoutingNationalityProfiles.flatMap(profile => [...profile[gender].stageNames]),
   ).map(sanitizeStageName);
-  const globalUnique = globalPool.find(candidate => candidate && !usedStageNames.has(candidate));
+  const globalUnique = globalPool.find(
+    candidate => candidate && !usedStageNames.has(normalizeIdentityKey(candidate)),
+  );
   if (globalUnique) {
     return globalUnique;
   }
@@ -133,11 +141,50 @@ function pickUniqueStageName(
   const suffixes = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
   for (const suffix of suffixes) {
     const candidate = `${fallbackBase} ${suffix}`;
-    if (!usedStageNames.has(candidate)) {
+    if (!usedStageNames.has(normalizeIdentityKey(candidate))) {
       return candidate;
     }
   }
   return `${fallbackBase} Prime`;
+}
+
+function pickUniqueFullName(
+  nationality: string,
+  gender: 'male' | 'female',
+  usedFullNames: Set<string>,
+  stageName: string,
+): string {
+  const profile = getNationalityProfile(nationality);
+  const gendered = pickGenderedNames(profile.nationality, gender);
+  const families = shuffle([...profile.familyNames]);
+  const givens = shuffle([...gendered.givenNames]);
+  const safeFamilies = families.length > 0 ? families : ['Rookie'];
+  const safeGivens = givens.length > 0 ? givens : ['Name'];
+  const attemptCap = Math.max(20, safeFamilies.length * Math.min(safeGivens.length, 3));
+
+  for (let i = 0; i < attemptCap; i += 1) {
+    const family = safeFamilies[i % safeFamilies.length];
+    const given =
+      safeGivens[(i * 3 + randInt(0, Math.max(safeGivens.length - 1, 0))) % safeGivens.length];
+    const fullName = `${family} ${given}`.trim();
+    const key = normalizeIdentityKey(fullName);
+    if (fullName && !usedFullNames.has(key)) {
+      return fullName;
+    }
+  }
+
+  const fallbackFamily = safeFamilies[0];
+  const stageBase = sanitizeStageName(stageName).replace(/\s+/g, '');
+  const suffixes = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  for (const suffix of suffixes) {
+    const fullName = `${fallbackFamily} ${stageBase}${suffix}`;
+    const key = normalizeIdentityKey(fullName);
+    if (!usedFullNames.has(key)) {
+      return fullName;
+    }
+  }
+
+  return `${fallbackFamily} ${stageBase || 'Prime'}`;
 }
 
 function normalizeNameIdentity(trainee: Trainee, fallbackKey: string) {
@@ -269,7 +316,15 @@ function pickNationalityForArt(art: TraineeArtSeed) {
 
 export function generateScoutingPoolFromArtPool(artPool: readonly TraineeArtSeed[]): Trainee[] {
   const usedStageNames = new Set<string>();
-  const shuffledArtPool = shuffle([...artPool]);
+  const usedFullNames = new Set<string>();
+  const seenArtKeys = new Set<number>();
+  const shuffledArtPool = shuffle([...artPool]).filter(art => {
+    if (seenArtKeys.has(art.artKey)) {
+      return false;
+    }
+    seenArtKeys.add(art.artKey);
+    return true;
+  });
   const archetypeProfiles: Record<PersonalityArchetype, { dominance: number; traits: PersonalityProfile['traits'] }> = {
     Center: {
       dominance: 74,
@@ -324,9 +379,15 @@ export function generateScoutingPoolFromArtPool(artPool: readonly TraineeArtSeed
         adaptability: gaussianInt(archetypeBase.traits.adaptability, 9, 35, 95),
       },
     };
-    const gendered = pickGenderedNames(nationality.nationality, art.gender);
     const stageName = pickUniqueStageName(nationality.nationality, art.gender, usedStageNames);
-    usedStageNames.add(stageName);
+    usedStageNames.add(normalizeIdentityKey(stageName));
+    const fullName = pickUniqueFullName(
+      nationality.nationality,
+      art.gender,
+      usedFullNames,
+      stageName,
+    );
+    usedFullNames.add(normalizeIdentityKey(fullName));
     const id = `trn-${art.gender[0]}-${Date.now()}-${index}-${randInt(1000, 9999)}`;
 
     return {
@@ -335,7 +396,7 @@ export function generateScoutingPoolFromArtPool(artPool: readonly TraineeArtSeed
       gender: art.gender,
       isScoutingVisible: index < INITIAL_VISIBLE_SCOUTING_COUNT,
       name: stageName,
-      fullName: `${randomPick(nationality.familyNames)} ${randomPick(gendered.givenNames)}`,
+      fullName,
       age,
       dob: estimateDob(age, `${art.artKey}-${index}`),
       nationality: nationality.nationality,

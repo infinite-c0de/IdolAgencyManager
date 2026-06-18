@@ -39,6 +39,14 @@ function clampScore(value: number) {
   return Math.max(0, Math.min(100, Math.round(value)));
 }
 
+function isAssignedToExistingGroup(idol: Idol, groups: Group[]) {
+  const groupRef = idol.group?.trim();
+  if (!groupRef) {
+    return false;
+  }
+  return groups.some(group => group.id === groupRef || group.name === groupRef);
+}
+
 function calculatePersonalitySynergy(members: Idol[]) {
   const profiles = members.map(member =>
     normalizePersonalityProfile(member.personalityProfile, member.personality),
@@ -170,7 +178,7 @@ export function createGroupFromIdols(
   }
 
   const selectedMembers = memberIds
-    .map(id => idols.find(idol => idol.id === id && !idol.group))
+    .map(id => idols.find(idol => idol.id === id && !isAssignedToExistingGroup(idol, existingGroups)))
     .filter((idol): idol is Idol => Boolean(idol));
 
   if (selectedMembers.length !== memberIds.length) {
@@ -246,7 +254,7 @@ export function addMembersToExistingGroup(
   }
 
   const candidates = requestedIds
-    .map(id => idols.find(idol => idol.id === id && !idol.group))
+    .map(id => idols.find(idol => idol.id === id && !isAssignedToExistingGroup(idol, groups)))
     .filter((idol): idol is Idol => Boolean(idol));
   if (candidates.length !== requestedIds.length) {
     return { ok: false, reason: 'MEMBER_UNAVAILABLE' };

@@ -16,6 +16,7 @@ export type EconomyModifiers = {
 };
 
 export type EconomyTransaction = {
+  label?: string;
   amount: number;
   date?: string;
 };

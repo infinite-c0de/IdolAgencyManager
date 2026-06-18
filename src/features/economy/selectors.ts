@@ -26,10 +26,13 @@ export function selectTopBarMetrics(
   currentWeek?: number,
 ): TopBarMetrics {
   const totalFanbase = calculateTotalFanbase(idols, groups);
+  const topBarTransactions = transactions.filter(
+    transaction => transaction.label !== 'Weekly Income' && transaction.label !== 'Weekly Operations',
+  );
   const scopedTransactions =
     typeof currentWeek === 'number'
-      ? transactions.filter(transaction => transaction.date === `Week ${currentWeek}`)
-      : transactions;
+      ? topBarTransactions.filter(transaction => transaction.date === `Week ${currentWeek}`)
+      : topBarTransactions;
   const { netWeekly: weeklyNet } = calculateWeeklyEconomy(
     agency,
     city,

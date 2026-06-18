@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { cities } from '../data/gameData';
 import {
   buildCreatedAgency,
@@ -29,6 +30,7 @@ export function useAgencyActions({
 }: UseAgencyActionsParams) {
   const SCOUTING_REFRESH_COST = 12_000_000;
   const VISIBLE_CANDIDATE_COUNT = 10;
+  const recentlyShownTraineeIdsRef = useRef<string[]>([]);
 
   const createAgency = ({ agencyName, ceoName, cityId, logo }: CreateAgencyPayload) => {
     const pickedCity = getCityById(cities, cityId);
@@ -71,6 +73,8 @@ export function useAgencyActions({
       current.filter(
         t =>
           t.id !== traineeId &&
+          t.name.toLowerCase() !== trainee.name.toLowerCase() &&
+          (t.fullName ?? '').toLowerCase() !== (trainee.fullName ?? '').toLowerCase() &&
           !(
             trainee.artKey !== undefined &&
             t.artKey !== undefined &&
@@ -99,11 +103,18 @@ export function useAgencyActions({
         return current;
       }
 
+      const validIds = new Set(current.map(trainee => trainee.id));
+      recentlyShownTraineeIdsRef.current = recentlyShownTraineeIdsRef.current.filter(id =>
+        validIds.has(id),
+      );
+
       const targetCount = Math.min(VISIBLE_CANDIDATE_COUNT, current.length);
       const currentVisibleIndexes = current
         .map((trainee, index) => ({ trainee, index }))
         .filter(({ trainee }) => trainee.isScoutingVisible !== false)
         .map(({ index }) => index);
+      const recentIdSet = new Set(recentlyShownTraineeIdsRef.current);
+      const currentVisibleSet = new Set(currentVisibleIndexes);
       const hiddenIndexes = current
         .map((trainee, index) => ({ trainee, index }))
         .filter(({ trainee }) => trainee.isScoutingVisible === false)
@@ -111,16 +122,43 @@ export function useAgencyActions({
       const reset = current.map(trainee => ({ ...trainee, isScoutingVisible: false }));
       const shuffledHidden = [...hiddenIndexes].sort(() => Math.random() - 0.5);
       const shuffledAll = reset.map((_, index) => index).sort(() => Math.random() - 0.5);
+      const hiddenNotCurrentVisible = shuffledHidden.filter(index => !currentVisibleSet.has(index));
+      const shuffledFreshHidden = shuffledHidden.filter(index => !recentIdSet.has(current[index].id));
+      const shuffledFreshAll = shuffledAll.filter(index => !recentIdSet.has(current[index].id));
       const preferredIndexes =
         activeFilter === 'All'
           ? []
-          : shuffledHidden.filter(index => reset[index].skill === activeFilter);
+          : hiddenNotCurrentVisible.filter(index => reset[index].skill === activeFilter);
 
       const selected = new Set<number>();
       if (preferredIndexes.length > 0) {
         selected.add(preferredIndexes[0]);
       }
 
+      for (const index of hiddenNotCurrentVisible) {
+        if (selected.size >= targetCount) {
+          break;
+        }
+        selected.add(index);
+      }
+
+      // Prefer hidden candidates not seen recently before reusing current visible ones.
+      for (const index of shuffledFreshHidden) {
+        if (selected.size >= targetCount) {
+          break;
+        }
+        selected.add(index);
+      }
+
+      // If fresh pool is not enough, pull from fresh all candidates.
+      for (const index of shuffledFreshAll) {
+        if (selected.size >= targetCount) {
+          break;
+        }
+        selected.add(index);
+      }
+
+      // If fresh pool is exhausted, fill remaining slots from all hidden candidates.
       for (const index of shuffledHidden) {
         if (selected.size >= targetCount) {
           break;
@@ -128,7 +166,7 @@ export function useAgencyActions({
         selected.add(index);
       }
 
-      // If hidden pool is exhausted, fill remaining slots from all candidates.
+      // Final fallback: fill remaining slots from all candidates.
       for (const index of shuffledAll) {
         if (selected.size >= targetCount) {
           break;
@@ -146,22 +184,22 @@ export function useAgencyActions({
           ? selected.size
           : [...selected].filter(index => reset[index].skill === activeFilter).length;
 
-      // Hard anti-stall: ensure refresh doesn't return identical set when alternatives exist.
-      const unchangedCount = [...selected].filter(index => currentVisibleIndexes.includes(index)).length;
-      if (selected.size === targetCount && unchangedCount === targetCount && hiddenIndexes.length > 0) {
-        const replacementPool = shuffledHidden.filter(index => !selected.has(index));
-        if (replacementPool.length > 0) {
-          const toReplace = [...selected][selected.size - 1];
-          selected.delete(toReplace);
-          selected.add(replacementPool[0]);
-          for (const index of reset.map((_, idx) => idx)) {
-            reset[index] = { ...reset[index], isScoutingVisible: selected.has(index) };
+      const selectedIds = [...selected].map(index => current[index].id);
+      const recentCap = Math.max(0, current.length - targetCount);
+      if (recentCap > 0) {
+        const merged = [...recentlyShownTraineeIdsRef.current, ...selectedIds];
+        const dedupedNewestFirst: string[] = [];
+        const seen = new Set<string>();
+        for (let i = merged.length - 1; i >= 0; i -= 1) {
+          const id = merged[i];
+          if (!seen.has(id)) {
+            seen.add(id);
+            dedupedNewestFirst.push(id);
           }
-          refreshedFilterMatches =
-            activeFilter === 'All'
-              ? selected.size
-              : [...selected].filter(index => reset[index].skill === activeFilter).length;
         }
+        recentlyShownTraineeIdsRef.current = dedupedNewestFirst.reverse().slice(-recentCap);
+      } else {
+        recentlyShownTraineeIdsRef.current = [];
       }
 
       return reset;

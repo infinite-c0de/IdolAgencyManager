@@ -70,17 +70,16 @@ const idolSota = require('../assets/idols/idol_sota.webp');
 const idolXiaoxia = require('../assets/idols/idol_xiaoxia.webp');
 const idolLinh = require('../assets/idols/idol_linh.webp');
 const idolWeiming = require('../assets/idols/idol_weiming.webp');
-
-// const idolMina = require('../assets/idols/idol_mina.webp');
-// const idolRiku = require('../assets/idols/idol_riku.webp');
-// const idolTao = require('../assets/idols/idol_tao.webp');
-// const idolAria = require('../assets/idols/idol_aria.webp');
-// const idolRenjun = require('../assets/idols/idol_renjun.webp');
-// const idolBee = require('../assets/idols/idol_bee.webp');
-// const idolEm = require('../assets/idols/idol_em.webp');
-// const idolSaOn = require('../assets/idols/idol_saon.webp');
-// const idolSeR = require('../assets/idols/idol_ser.webp');
-// const idolTos = require('../assets/idols/idol_tos.webp');
+const idolMina = require('../assets/idols/idol_mina.webp');
+const idolRiku = require('../assets/idols/idol_riku.webp');
+const idolTao = require('../assets/idols/idol_tao.webp');
+const idolAria = require('../assets/idols/idol_aria.webp');
+const idolRenjun = require('../assets/idols/idol_renjun.webp');
+const idolBee = require('../assets/idols/idol_bee.webp');
+const idolEm = require('../assets/idols/idol_em.webp');
+const idolSaOn = require('../assets/idols/idol_saon.webp');
+const idolSeR = require('../assets/idols/idol_ser.webp');
+const idolTos = require('../assets/idols/idol_tos.webp');
 
 
 export const initialAgency: Agency = {
@@ -284,7 +283,16 @@ export const traineeArtPool = [
   { artKey: 68, gender: 'female', availableNationality: 'Chinese', image: idolXiaoxia },
   { artKey: 69, gender: 'female', availableNationality: 'Vietnamese', image: idolLinh },
   { artKey: 70, gender: 'male', availableNationality: 'Chinese', image: idolWeiming },
-
+  { artKey: 71, gender: 'female', availableNationality: 'All', image: idolMina },
+  { artKey: 72, gender: 'male', availableNationality: 'All', image: idolRiku },
+  { artKey: 73, gender: 'male', availableNationality: 'All', image: idolTao },
+  { artKey: 74, gender: 'female', availableNationality: 'All', image: idolAria },
+  { artKey: 75, gender: 'male', availableNationality: 'All', image: idolRenjun },
+  { artKey: 76, gender: 'female', availableNationality: 'All', image: idolBee },
+  { artKey: 77, gender: 'male', availableNationality: 'All', image: idolEm },
+  { artKey: 78, gender: 'female', availableNationality: 'All', image: idolSaOn },
+  { artKey: 79, gender: 'female', availableNationality: 'All', image: idolSeR },
+  { artKey: 80, gender: 'male', availableNationality: 'All', image: idolTos },
 ] as const;
 
 export const trainingTypes = [

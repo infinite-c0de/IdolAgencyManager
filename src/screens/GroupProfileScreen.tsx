@@ -75,6 +75,14 @@ function getSynergyTier(score: number) {
   };
 }
 
+function isAssignedToKnownGroup(groupRef: string | undefined, groups: ReturnType<typeof useGame>['groups']) {
+  const normalizedRef = groupRef?.trim();
+  if (!normalizedRef) {
+    return false;
+  }
+  return groups.some(group => group.id === normalizedRef || group.name === normalizedRef);
+}
+
 export function GroupProfileScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute();
@@ -96,8 +104,8 @@ export function GroupProfileScreen() {
 
   const members = getGroupMembers(group, idols);
   const availableMembers = useMemo(
-    () => idols.filter(idol => !idol.group || idol.group === ''),
-    [idols],
+    () => idols.filter(idol => !isAssignedToKnownGroup(idol.group, groups)),
+    [groups, idols],
   );
   const radar = buildGroupRadar(members);
   const readiness = buildGroupReadiness(members, group.status === 'Active');

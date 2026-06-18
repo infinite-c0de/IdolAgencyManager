@@ -17,7 +17,7 @@ import {
   cloneInitialTransactions,
   createInitialSave,
   createInitialTrainingPlans,
-  unlockWeeklyScoutingCandidates,
+  sanitizeScoutingRoster,
   withCurrentTraineeAssets,
 } from './gameStateHelpers';
 
@@ -55,20 +55,18 @@ export function useSaveLifecycle({
 
   const applySave = (save: SaveData) => {
     setAgency({ ...save.agency });
-    setIdols(
-      save.idols.map(idol => {
-        const normalized = normalizeIdolIdentity(idol);
-        return {
-          ...normalized,
-          languages: [...idol.languages],
-          gradient: [...idol.gradient],
-          stats: { ...idol.stats },
-          personalityProfile: normalizePersonalityProfile(idol.personalityProfile, idol.personality),
-        };
-      }),
-    );
-    setTrainees(
-      withCurrentTraineeAssets(save.trainees).map(trainee => {
+    const nextIdols = save.idols.map(idol => {
+      const normalized = normalizeIdolIdentity(idol);
+      return {
+        ...normalized,
+        languages: [...idol.languages],
+        gradient: [...idol.gradient],
+        stats: { ...idol.stats },
+        personalityProfile: normalizePersonalityProfile(idol.personalityProfile, idol.personality),
+      };
+    });
+    setIdols(nextIdols);
+    const nextTrainees = withCurrentTraineeAssets(save.trainees).map(trainee => {
         const normalized = normalizeTraineeIdentity(trainee);
         return {
           ...normalized,
@@ -79,8 +77,8 @@ export function useSaveLifecycle({
             trainee.personality,
           ),
         };
-      }),
-    );
+      });
+    setTrainees(sanitizeScoutingRoster(nextTrainees, nextIdols));
     setGroups(
       save.groups.map(group => ({
         ...group,
@@ -124,30 +122,8 @@ export function useSaveLifecycle({
       return;
     }
 
-    setTrainees(current => withCurrentTraineeAssets(current));
-  }, [isHydrated, setTrainees]);
-
-  useEffect(() => {
-    if (!isHydrated) {
-      return;
-    }
-
-    const lastMs = Date.parse(scoutingLastGrowthAt);
-    if (!Number.isFinite(lastMs)) {
-      setScoutingLastGrowthAt(new Date().toISOString());
-      return;
-    }
-
-    const nowMs = Date.now();
-    const weekMs = 7 * 24 * 60 * 60 * 1000;
-    const elapsedWeeks = Math.floor((nowMs - lastMs) / weekMs);
-    if (elapsedWeeks <= 0) {
-      return;
-    }
-
-    setTrainees(current => unlockWeeklyScoutingCandidates(current, elapsedWeeks));
-    setScoutingLastGrowthAt(new Date(lastMs + elapsedWeeks * weekMs).toISOString());
-  }, [isHydrated, scoutingLastGrowthAt, setScoutingLastGrowthAt, setTrainees]);
+    setTrainees(current => sanitizeScoutingRoster(withCurrentTraineeAssets(current), idols));
+  }, [idols, isHydrated, setTrainees]);
 
   useEffect(() => {
     const slotId = activeSlotId;

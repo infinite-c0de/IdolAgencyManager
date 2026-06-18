@@ -4,7 +4,7 @@ import {
   initialTransactions,
   traineeArtPool,
 } from '../data/gameData';
-import { generateScoutingPoolFromArtPool } from '../features/idols';
+import { generateScoutingPoolFromArtPool, normalizePersonalityProfile } from '../features/idols';
 import type { SaveData } from '../features/saves';
 import type { Agency, Idol, Trainee } from '../types';
 
@@ -73,44 +73,18 @@ export function cloneInitialTrainees(): Trainee[] {
     languages: [...trainee.languages],
     gradient: [...trainee.gradient],
     personalityProfile: trainee.personalityProfile
-      ? {
-          ...trainee.personalityProfile,
-          traits: { ...trainee.personalityProfile.traits },
-        }
+      ? (() => {
+          const normalizedProfile = normalizePersonalityProfile(
+            trainee.personalityProfile,
+            trainee.personality,
+          );
+          return {
+            ...normalizedProfile,
+            traits: { ...normalizedProfile.traits },
+          };
+        })()
       : undefined,
   }));
-}
-
-function randInt(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-export function unlockWeeklyScoutingCandidates(trainees: Trainee[], weeks: number): Trainee[] {
-  if (weeks <= 0) {
-    return trainees;
-  }
-
-  let next = trainees.map(trainee => ({ ...trainee }));
-
-  for (let i = 0; i < weeks; i += 1) {
-    const hiddenIndexes = next
-      .map((trainee, index) => ({ trainee, index }))
-      .filter(({ trainee }) => trainee.isScoutingVisible === false)
-      .map(({ index }) => index);
-
-    if (hiddenIndexes.length === 0) {
-      break;
-    }
-
-    const unlockCount = Math.min(hiddenIndexes.length, randInt(1, 2));
-    for (let j = 0; j < unlockCount; j += 1) {
-      const pickIndex = randInt(0, hiddenIndexes.length - 1);
-      const target = hiddenIndexes.splice(pickIndex, 1)[0];
-      next[target] = { ...next[target], isScoutingVisible: true };
-    }
-  }
-
-  return next;
 }
 
 export function withCurrentTraineeAssets(trainees: Trainee[]) {
@@ -129,6 +103,56 @@ export function withCurrentTraineeAssets(trainees: Trainee[]) {
       image: trainee.image ?? current?.image,
     };
   });
+}
+
+function identityKey(value?: string) {
+  return (value ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+export function sanitizeScoutingRoster(trainees: Trainee[], idols: Idol[]) {
+  const usedArtKeys = new Set(
+    idols
+      .map(idol =>
+        idol.artKey !== undefined && Number.isFinite(Number(idol.artKey)) ? Number(idol.artKey) : undefined,
+      )
+      .filter((value): value is number => value !== undefined),
+  );
+  const usedStageNames = new Set(idols.map(idol => identityKey(idol.stageName)).filter(Boolean));
+  const usedFullNames = new Set(idols.map(idol => identityKey(idol.fullName)).filter(Boolean));
+  const keptTraineeIds = new Set<string>();
+  const next: Trainee[] = [];
+
+  for (const trainee of trainees) {
+    if (keptTraineeIds.has(trainee.id)) {
+      continue;
+    }
+    const numericArtKey =
+      trainee.artKey !== undefined && Number.isFinite(Number(trainee.artKey))
+        ? Number(trainee.artKey)
+        : undefined;
+    if (numericArtKey !== undefined && usedArtKeys.has(numericArtKey)) {
+      continue;
+    }
+    const stageKey = identityKey(trainee.name);
+    const fullNameKey = identityKey(trainee.fullName);
+    if ((stageKey && usedStageNames.has(stageKey)) || (fullNameKey && usedFullNames.has(fullNameKey))) {
+      continue;
+    }
+
+    keptTraineeIds.add(trainee.id);
+    if (numericArtKey !== undefined) {
+      usedArtKeys.add(numericArtKey);
+    }
+    if (stageKey) {
+      usedStageNames.add(stageKey);
+    }
+    if (fullNameKey) {
+      usedFullNames.add(fullNameKey);
+    }
+    next.push(trainee);
+  }
+
+  return next;
 }
 
 export function createInitialSave(slotId: number): SaveData {

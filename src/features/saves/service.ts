@@ -4,7 +4,7 @@ import {
   initialTransactions,
   traineeArtPool,
 } from '../../data/gameData';
-import { generateScoutingPoolFromArtPool } from '../idols';
+import { generateScoutingPoolFromArtPool, normalizePersonalityProfile } from '../idols';
 import type { Group, Idol, Trainee } from '../../types';
 import type { FinanceTransaction, RevenueHistoryPoint, SaveData, TrainingPlans } from './types';
 
@@ -14,10 +14,16 @@ function cloneDefaultTrainees(): Trainee[] {
     languages: [...trainee.languages],
     gradient: [...trainee.gradient],
     personalityProfile: trainee.personalityProfile
-      ? {
-          ...trainee.personalityProfile,
-          traits: { ...trainee.personalityProfile.traits },
-        }
+      ? (() => {
+          const normalizedProfile = normalizePersonalityProfile(
+            trainee.personalityProfile,
+            trainee.personality,
+          );
+          return {
+            ...normalizedProfile,
+            traits: { ...normalizedProfile.traits },
+          };
+        })()
       : undefined,
   }));
 }

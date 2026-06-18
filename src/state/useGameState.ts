@@ -22,7 +22,7 @@ import type { FinanceTransaction, RevenueHistoryPoint, SaveSlotSummary, Training
 import { calculateWeeklyProgression } from '../features/simulation';
 import type { Agency, Group, Idol, Trainee } from '../types';
 import { useAgencyActions } from './useAgencyActions';
-import { cloneInitialTrainees, unlockWeeklyScoutingCandidates } from './gameStateHelpers';
+import { cloneInitialTrainees } from './gameStateHelpers';
 import { useGroupActions } from './useGroupActions';
 import { useSaveLifecycle } from './useSaveLifecycle';
 
@@ -154,7 +154,6 @@ export function useGameState(): GameState {
     }));
 
     setIdols(progression.nextIdols);
-    setTrainees(current => unlockWeeklyScoutingCandidates(current, 1));
     setGroups(progression.nextGroups);
 
     const expenseAmount = Math.round(economy.weekly.taxWeekly + economy.weekly.operationsWeekly);
@@ -186,7 +185,6 @@ export function useGameState(): GameState {
       return [...current.slice(-8), progression.revenuePoint];
     });
 
-    setScoutingLastGrowthAt(new Date().toISOString());
     setCurrentWeek(week => week + 1);
   };
 
