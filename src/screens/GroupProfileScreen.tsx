@@ -11,7 +11,7 @@ import { buildGroupRadar, buildGroupReadiness, getGroupMembers } from '../featur
 import type { RootStackParamList } from '../navigation/types';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
-import { fmt } from '../utils/format';
+import { fmt, fmtCount } from '../utils/format';
 
 const MAX_GROUP_SIZE = 6;
 
@@ -155,43 +155,54 @@ export function GroupProfileScreen() {
         </TouchableOpacity>
       }>
 
-      {/* ── HERO: asymmetric – logo gradient left, synergy score right ── */}
+      {/* ── HERO ── */}
       <View style={styles.heroCard}>
-        {/* Gradient tint behind */}
         <Gradient colors={group.gradient} direction="to-br" style={styles.heroBg} />
-        <View style={styles.heroContent}>
-          {/* Left: identity */}
-          <View style={styles.heroLeft}>
-            <View style={styles.heroLogoWrap}>
-              {group.logo?.kind === 'custom' ? (
-                <Image source={{ uri: group.logo.uri }} resizeMode="cover" style={styles.heroLogoImage} />
-              ) : (
-                <AgencyLogoMark preset={group.logo?.kind === 'preset' ? group.logo.preset : 1} size={44} />
-              )}
-            </View>
-            <Text style={styles.heroGroupName} numberOfLines={2}>{group.name}</Text>
+
+        {/* Identity row: logo + name + synergy badge */}
+        <View style={styles.heroIdentityRow}>
+          <View style={styles.heroLogoWrap}>
+            {group.logo?.kind === 'custom' ? (
+              <Image source={{ uri: group.logo.uri }} resizeMode="cover" style={styles.heroLogoImage} />
+            ) : (
+              <AgencyLogoMark preset={group.logo?.kind === 'preset' ? group.logo.preset : 1} size={64} />
+            )}
+          </View>
+
+          <View style={styles.heroTextCol}>
+            <Text style={styles.heroEyebrow}>GROUP PROFILE</Text>
+            <Text style={styles.heroGroupName} numberOfLines={1}>{group.name}</Text>
             <View style={styles.heroPillRow}>
               <View style={styles.heroPill}><Text style={styles.heroPillText}>{group.status}</Text></View>
               <View style={styles.heroPill}><Text style={styles.heroPillText}>{group.concept}</Text></View>
             </View>
-            <Text style={styles.heroFandom}>Fandom: <Text style={styles.heroFandomVal}>{group.fanName}</Text></Text>
+            <Text style={styles.heroFandom}>
+              ♡ <Text style={styles.heroFandomVal}>{group.fanName}</Text>
+            </Text>
           </View>
 
-          {/* Right: synergy score + revenue */}
-          <View style={styles.heroRight}>
-            <View style={[styles.synergyBlock, { borderColor: synergyTier.borderColor, backgroundColor: synergyTier.backgroundColor }]}>
-              <Text style={styles.synergySmallLabel}>SYNERGY</Text>
-              <Text style={[styles.synergyBig, { color: synergyTier.textColor }]}>{group.synergy}</Text>
-              <Text style={[styles.synergyTierBadge, { color: synergyTier.textColor }]}>{synergyTier.label}</Text>
-            </View>
-            <View style={styles.revBlock}>
-              <Text style={styles.revLabel}>MONTHLY</Text>
-              <Text style={styles.revValue}>{fmt(group.monthlyRevenue)}</Text>
-            </View>
-            <View style={styles.memberCountBlock}>
-              <Text style={styles.memberCountNum}>{group.memberIds.length}</Text>
-              <Text style={styles.memberCountLabel}>MEMBERS</Text>
-            </View>
+          <View style={[styles.synergyBadge, { borderColor: synergyTier.borderColor, backgroundColor: synergyTier.backgroundColor }]}>
+            <Text style={styles.synergySmallLabel}>SYNC</Text>
+            <Text style={[styles.synergyBig, { color: synergyTier.textColor }]}>{group.synergy}</Text>
+            <Text style={[styles.synergyTierBadge, { color: synergyTier.textColor }]}>{synergyTier.label}</Text>
+          </View>
+        </View>
+
+        {/* Stat strip */}
+        <View style={styles.heroStatStrip}>
+          <View style={styles.heroStat}>
+            <Text style={styles.heroStatVal}>{fmt(group.monthlyRevenue)}</Text>
+            <Text style={styles.heroStatLabel}>MONTHLY</Text>
+          </View>
+          <View style={styles.heroStatDivider} />
+          <View style={styles.heroStat}>
+            <Text style={styles.heroStatVal}>{group.memberIds.length}</Text>
+            <Text style={styles.heroStatLabel}>MEMBERS</Text>
+          </View>
+          <View style={styles.heroStatDivider} />
+          <View style={styles.heroStat}>
+            <Text style={styles.heroStatVal}>{fmtCount(group.popularity * 3200)}</Text>
+            <Text style={styles.heroStatLabel}>FANS</Text>
           </View>
         </View>
       </View>
@@ -365,68 +376,70 @@ const styles = StyleSheet.create({
     borderRadius: radius['2xl'],
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(103,232,249,0.25)',
-    minHeight: 180,
+    borderColor: 'rgba(103,232,249,0.2)',
   },
   heroBg: {
     position: 'absolute',
     top: 0, left: 0, right: 0, bottom: 0,
-    opacity: 0.18,
+    opacity: 0.2,
   },
-  heroContent: {
+  heroIdentityRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
+    alignItems: 'center',
     padding: spacing.lg,
-    gap: spacing.lg,
+    gap: spacing.md,
   },
-  heroLeft: { flex: 1, gap: 8 },
   heroLogoWrap: {
-    width: 52,
-    height: 52,
     borderRadius: radius.xl,
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
   },
-  heroLogoImage: { width: '100%', height: '100%' },
-  heroGroupName: { fontSize: 26, fontWeight: '900', color: colors.foreground, letterSpacing: -0.5, lineHeight: 30 },
-  heroPillRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+  heroLogoImage: { width: 64, height: 64 },
+  heroTextCol: { flex: 1, gap: 4 },
+  heroEyebrow: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 2,
+    color: 'rgba(255,255,255,0.45)',
+  },
+  heroGroupName: { fontSize: 22, fontWeight: '900', color: colors.foreground, letterSpacing: -0.5 },
+  heroPillRow: { flexDirection: 'row', gap: 5, flexWrap: 'wrap' },
   heroPill: {
     borderRadius: radius.full,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.18)',
     backgroundColor: 'rgba(255,255,255,0.07)',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
   },
-  heroPillText: { fontSize: 10, fontWeight: '600', color: 'rgba(255,255,255,0.75)', letterSpacing: 0.3 },
-  heroFandom: { fontSize: 10, color: colors.mutedForeground },
+  heroPillText: { fontSize: 9, fontWeight: '700', color: 'rgba(255,255,255,0.7)', letterSpacing: 0.5 },
+  heroFandom: { fontSize: 10, color: colors.mutedForeground, marginTop: 1 },
   heroFandomVal: { fontWeight: '700', color: colors.violetBright },
-
-  heroRight: { alignItems: 'center', gap: spacing.sm },
-  synergyBlock: {
+  synergyBadge: {
     alignItems: 'center',
-    justifyContent: 'center',
     borderRadius: radius.xl,
     borderWidth: 1,
-    padding: spacing.sm,
-    minWidth: 70,
-    gap: 2,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    minWidth: 58,
+    gap: 1,
   },
   synergySmallLabel: { fontSize: 8, fontWeight: '800', letterSpacing: 1.2, color: colors.mutedForeground },
-  synergyBig: { fontSize: 34, fontWeight: '900', lineHeight: 38 },
-  synergyTierBadge: { fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
+  synergyBig: { fontSize: 28, fontWeight: '900', lineHeight: 32 },
+  synergyTierBadge: { fontSize: 8, fontWeight: '800', letterSpacing: 0.5 },
 
-  revBlock: { alignItems: 'center' },
-  revLabel: { fontSize: 8, fontWeight: '700', letterSpacing: 1, color: colors.mutedForeground },
-  revValue: { fontSize: 12, fontWeight: '800', color: colors.mint },
-  memberCountBlock: { alignItems: 'center' },
-  memberCountNum: { fontSize: 20, fontWeight: '900', color: colors.foreground, lineHeight: 22 },
-  memberCountLabel: { fontSize: 8, fontWeight: '700', letterSpacing: 1, color: colors.mutedForeground },
+  heroStatStrip: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
+    marginHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  heroStat: { flex: 1, alignItems: 'center', gap: 2 },
+  heroStatVal: { fontSize: 14, fontWeight: '900', color: colors.foreground },
+  heroStatLabel: { fontSize: 8, fontWeight: '700', letterSpacing: 1.2, color: colors.mutedForeground },
+  heroStatDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.08)', marginVertical: 2 },
 
   // ── Filmstrip ──
   filmScroll: { flexDirection: 'row', gap: spacing.sm, paddingBottom: 2 },
