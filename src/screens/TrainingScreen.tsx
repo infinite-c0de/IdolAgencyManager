@@ -1,7 +1,7 @@
 import { Activity, Heart, Sparkles, Zap } from 'lucide-react-native';
 import React, { ComponentType, useEffect, useMemo, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { AppShell, Card, SectionTitle } from '../components/AppShell';
+import { AppShell, Card } from '../components/AppShell';
 import { Gradient } from '../components/ui/Gradient';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
@@ -10,34 +10,52 @@ type IconType = ComponentType<{ size?: number; color?: string }>;
 
 const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
+const TRAINING_ACCENT: Record<string, string> = {
+  vocal: '#E879F9',
+  dance: '#67E8F9',
+  rap: '#FCD34D',
+  visual: '#FB7185',
+  acting: '#34D399',
+  language: '#93C5FD',
+  rest: '#6B7280',
+};
+
+function getTrainingAccent(id: string, name: string): string {
+  const lower = (id + name).toLowerCase();
+  if (lower.includes('vocal')) return TRAINING_ACCENT.vocal;
+  if (lower.includes('dance')) return TRAINING_ACCENT.dance;
+  if (lower.includes('rap')) return TRAINING_ACCENT.rap;
+  if (lower.includes('visual')) return TRAINING_ACCENT.visual;
+  if (lower.includes('acting')) return TRAINING_ACCENT.acting;
+  if (lower.includes('lang')) return TRAINING_ACCENT.language;
+  if (lower.includes('rest')) return TRAINING_ACCENT.rest;
+  return colors.tealBright;
+}
+
 export function TrainingScreen() {
   const { idols, groups, trainingTypes, trainingPlans, setTrainingPlan, advanceWeek } = useGame();
   const [selectedIdol, setSelectedIdol] = useState(idols[0]?.id ?? '');
   const [selectedType, setSelectedType] = useState(trainingTypes[0]?.id ?? '');
   const [selectedTarget, setSelectedTarget] = useState<string>('SOLO_DEFAULT');
   const [toast, setToast] = useState<string | null>(null);
+
   const targetOptions = useMemo(
     () => [
-      { id: 'SOLO_DEFAULT', label: 'Solo Default' },
+      { id: 'SOLO_DEFAULT', label: 'Solo' },
       ...groups.map(group => ({ id: group.id, label: group.name })),
     ],
     [groups],
   );
+
   const grid = trainingPlans[selectedTarget] ?? {};
-  const hasIdols = idols.length > 0;
-  const hasTrainingTypes = trainingTypes.length > 0;
-  const canPlan = hasIdols && hasTrainingTypes;
+  const canPlan = idols.length > 0 && trainingTypes.length > 0;
 
   useEffect(() => {
-    if (!selectedIdol && idols[0]) {
-      setSelectedIdol(idols[0].id);
-    }
+    if (!selectedIdol && idols[0]) setSelectedIdol(idols[0].id);
   }, [idols, selectedIdol]);
 
   useEffect(() => {
-    if (!selectedType && trainingTypes[0]) {
-      setSelectedType(trainingTypes[0].id);
-    }
+    if (!selectedType && trainingTypes[0]) setSelectedType(trainingTypes[0].id);
   }, [selectedType, trainingTypes]);
 
   useEffect(() => {
@@ -54,95 +72,120 @@ export function TrainingScreen() {
 
   const simulate = () => {
     advanceWeek();
-    if (!hasIdols) {
-      setToast('Week advanced. No idols yet, so only economy progressed.');
-      setTimeout(() => setToast(null), 3000);
-      return;
-    }
-    setToast('Week advanced. Training plans applied to current idols/groups.');
-    setTimeout(() => setToast(null), 3000);
+    setToast(idols.length > 0 ? 'Week advanced — training applied.' : 'Week advanced.');
+    setTimeout(() => setToast(null), 2500);
   };
 
   const simulateAction = (
-    <TouchableOpacity style={styles.simulateBtn} onPress={simulate} activeOpacity={0.8}>
+    <TouchableOpacity style={styles.nextWeekBtn} onPress={simulate} activeOpacity={0.8}>
       <Sparkles size={14} color={colors.slate900} />
-      <Text style={styles.simulateText}>Next Week</Text>
+      <Text style={styles.nextWeekText}>Next Week</Text>
     </TouchableOpacity>
   );
 
-  return (
-      <AppShell title="Weekly Training" subtitle="Tap slots, then run week progression" action={simulateAction}>
-      <Card>
-        <SectionTitle>TRAINING TARGET</SectionTitle>
-        <View style={styles.targetRow}>
-          {targetOptions.map(option => {
-            const active = selectedTarget === option.id;
-            return (
-              <TouchableOpacity
-                key={option.id}
-                onPress={() => setSelectedTarget(option.id)}
-                style={[styles.targetChip, active ? styles.pickActive : styles.pickIdle]}
-                activeOpacity={0.8}>
-                <Text style={styles.targetChipText}>{option.label}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </Card>
+  const selectedTrainType = trainingTypes.find(t => t.id === selectedType);
 
+  return (
+    <AppShell title="Training" subtitle="Plan the week, then advance" action={simulateAction}>
+
+      {/* ── Target + Idol strip — compact single row per section ── */}
       <Card>
-        <SectionTitle>SELECT IDOL</SectionTitle>
-        {hasIdols ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.idolRow}>
-            {idols.map(i => {
-              const active = selectedIdol === i.id;
+        {/* Target selector */}
+        <View style={styles.rowLabel}>
+          <Text style={styles.rowLabelText}>TARGET</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+            {targetOptions.map(option => {
+              const active = selectedTarget === option.id;
               return (
                 <TouchableOpacity
-                  key={i.id}
-                  onPress={() => setSelectedIdol(i.id)}
-                  style={[styles.idolPick, active ? styles.pickActive : styles.pickIdle]}
+                  key={option.id}
+                  onPress={() => setSelectedTarget(option.id)}
+                  style={[styles.targetChip, active && styles.chipActive]}
                   activeOpacity={0.8}>
-                  <View style={[styles.idolAvatar, active && styles.idolAvatarActive]}>
-                    {i.image ? (
-                      <Image source={i.image} resizeMode="cover" style={styles.idolAvatarImage} />
-                    ) : (
-                      <Text style={styles.idolAvatarFallback}>{i.stageName.slice(0, 1).toUpperCase()}</Text>
-                    )}
-                  </View>
-                  <Text style={styles.idolPickName}>{i.stageName}</Text>
+                  <Text style={[styles.chipText, active && styles.chipTextActive]}>{option.label}</Text>
                 </TouchableOpacity>
               );
             })}
           </ScrollView>
-        ) : (
-          <Text style={styles.emptyHint}>No idols available yet. You can still advance the week from this screen.</Text>
+        </View>
+
+        {/* Idol selector */}
+        {idols.length > 0 && (
+          <View style={[styles.rowLabel, { marginTop: spacing.md }]}>
+            <Text style={styles.rowLabelText}>IDOL</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.idolStrip}>
+              {idols.map(i => {
+                const active = selectedIdol === i.id;
+                return (
+                  <TouchableOpacity
+                    key={i.id}
+                    onPress={() => setSelectedIdol(i.id)}
+                    style={[styles.idolPill, active && styles.chipActive]}
+                    activeOpacity={0.8}>
+                    <View style={[styles.idolThumb, active && styles.idolThumbActive]}>
+                      {i.image ? (
+                        <Image source={i.image} resizeMode="cover" style={styles.idolThumbImage} />
+                      ) : (
+                        <Text style={styles.idolThumbFallback}>{i.stageName.slice(0, 1)}</Text>
+                      )}
+                    </View>
+                    <Text style={[styles.idolPillName, active && styles.chipTextActive]} numberOfLines={1}>
+                      {i.stageName}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
         )}
       </Card>
 
+      {/* ── Training type — color-coded compact tiles ── */}
       <Card>
-        <SectionTitle>TRAINING TYPE</SectionTitle>
         <View style={styles.typeGrid}>
           {trainingTypes.map(t => {
             const active = selectedType === t.id;
+            const accent = getTrainingAccent(t.id, t.name);
             return (
               <TouchableOpacity
                 key={t.id}
                 onPress={() => setSelectedType(t.id)}
-                style={[styles.typeBtn, active ? styles.pickActive : styles.pickIdle]}
+                style={[
+                  styles.typeTile,
+                  active
+                    ? { borderColor: accent + '88', backgroundColor: accent + '14' }
+                    : { borderColor: colors.border, backgroundColor: colors.whiteA05 },
+                ]}
                 activeOpacity={0.8}>
-                <Text style={styles.typeName}>{t.name}</Text>
-                <View style={styles.typeMeta}>
-                  <Text style={styles.effect}>{t.effect}</Text>
-                  <Text style={styles.cost}>{t.cost}</Text>
-                </View>
+                <View style={[styles.typeAccentDot, { backgroundColor: accent }]} />
+                <Text style={[styles.typeName, active && { color: accent }]} numberOfLines={1}>
+                  {t.name}
+                </Text>
               </TouchableOpacity>
             );
           })}
         </View>
+        {selectedTrainType && (
+          <View style={styles.selectedTypeDetails}>
+            <Text style={styles.selectedTypeEffect}>{selectedTrainType.effect}</Text>
+            <Text style={styles.selectedTypeCost}>{selectedTrainType.cost}</Text>
+          </View>
+        )}
       </Card>
 
+      {/* ── Week schedule grid ── */}
       <Card glow="teal">
-        <SectionTitle>WEEK PLAN</SectionTitle>
+        <View style={styles.weekHeader}>
+          <Text style={styles.weekHeaderLabel}>WEEK PLAN</Text>
+          {selectedTrainType && (
+            <View style={[styles.activeTypeBadge, { borderColor: getTrainingAccent(selectedType, selectedTrainType.name) + '66' }]}>
+              <View style={[styles.activeTypeDot, { backgroundColor: getTrainingAccent(selectedType, selectedTrainType.name) }]} />
+              <Text style={[styles.activeTypeName, { color: getTrainingAccent(selectedType, selectedTrainType.name) }]}>
+                {selectedTrainType.name}
+              </Text>
+            </View>
+          )}
+        </View>
         <View style={styles.weekGrid}>
           {days.map(d => (
             <View key={d} style={styles.dayHeadCell}>
@@ -153,35 +196,34 @@ export function TrainingScreen() {
             days.map(d => {
               const key = `${row}-${d}`;
               const v = grid[key];
-              const label = v ? trainingTypes.find(t => t.id === v)?.name.split(' ')[0] : '';
+              const matchType = v ? trainingTypes.find(t => t.id === v) : null;
+              const accent = matchType ? getTrainingAccent(matchType.id, matchType.name) : colors.tealBright;
+              const label = matchType ? matchType.name.split(' ')[0] : '';
               return (
                 <TouchableOpacity
                   key={key}
-                  onPress={() => {
-                    if (canPlan) {
-                      toggle(key);
-                    }
-                  }}
-                  style={[styles.slot, v ? styles.slotActive : styles.slotIdle]}
+                  onPress={() => { if (canPlan) toggle(key); }}
+                  style={[
+                    styles.slot,
+                    v
+                      ? { borderColor: accent + '88', backgroundColor: accent + '18' }
+                      : styles.slotIdle,
+                  ]}
                   activeOpacity={0.7}>
-                  <Text style={[styles.slotText, v && styles.slotTextActive]} numberOfLines={1}>
-                    {label || '+'}
-                  </Text>
+                  {v ? (
+                    <View style={[styles.slotDot, { backgroundColor: accent }]} />
+                  ) : (
+                    <Text style={styles.slotPlus}>+</Text>
+                  )}
+                  {label ? <Text style={[styles.slotText, { color: accent }]} numberOfLines={1}>{label}</Text> : null}
                 </TouchableOpacity>
               );
             }),
           )}
         </View>
-        <Text style={styles.planHint}>
-          Plans are saved per target. Group plans apply to members in that group; solo default applies to idols without a group.
-        </Text>
-        <View style={styles.vitalRow}>
-          <Vital Icon={Heart} label="Health" v={84} />
-          <Vital Icon={Activity} label="Morale" v={76} />
-          <Vital Icon={Zap} label="Energy" v={78} />
-        </View>
       </Card>
 
+      {/* Toast */}
       {toast && (
         <View style={styles.toast}>
           <Text style={styles.toastText}>{toast}</Text>
@@ -191,25 +233,8 @@ export function TrainingScreen() {
   );
 }
 
-function Vital({ Icon, label, v }: { Icon: IconType; label: string; v: number }) {
-  return (
-    <View style={styles.vital}>
-      <View style={styles.vitalHead}>
-        <Icon size={12} color={colors.mutedForeground} />
-        <Text style={styles.tinyMuted}> {label}</Text>
-      </View>
-      <View style={styles.vitalTrack}>
-        <Gradient colors={[colors.teal, colors.violet]} direction="to-r" style={[styles.vitalFill, { width: `${v}%` }]} />
-      </View>
-      <Text style={styles.vitalValue}>{v}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  tinyMuted: { fontSize: 10, color: colors.mutedForeground },
-
-  simulateBtn: {
+  nextWeekBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
@@ -218,15 +243,38 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
-  simulateText: { fontSize: 11, fontWeight: '700', color: colors.slate900 },
+  nextWeekText: { fontSize: 11, fontWeight: '700', color: colors.slate900 },
 
-  idolRow: { gap: spacing.sm },
-  emptyHint: { fontSize: 11, color: colors.mutedForeground, lineHeight: 16 },
-  idolPick: { alignItems: 'center', gap: 4, borderRadius: radius.lg, borderWidth: 1, padding: spacing.sm },
-  idolAvatar: {
-    width: 44,
-    height: 44,
+  rowLabel: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  rowLabelText: { fontSize: 9, fontWeight: '800', letterSpacing: 1.5, color: colors.mutedForeground, width: 42 },
+  chipRow: { flexDirection: 'row', gap: 6 },
+  targetChip: {
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.whiteA05,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 5,
+  },
+  chipActive: { borderColor: 'rgba(34,211,238,0.55)', backgroundColor: 'rgba(34,211,238,0.07)' },
+  chipText: { fontSize: 11, fontWeight: '600', color: colors.mutedForeground },
+  chipTextActive: { color: colors.tealBright },
+
+  idolStrip: { flexDirection: 'row', gap: 6 },
+  idolPill: {
+    alignItems: 'center',
+    gap: 4,
     borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.whiteA05,
+    padding: spacing.xs,
+    minWidth: 52,
+  },
+  idolThumb: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.whiteA05,
@@ -234,27 +282,58 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  idolAvatarActive: { borderColor: 'rgba(34,211,238,0.8)' },
-  idolAvatarImage: { width: '100%', height: '100%' },
-  idolAvatarFallback: { fontSize: 14, fontWeight: '700', color: colors.mutedForeground },
-  pickIdle: { borderColor: colors.border, backgroundColor: colors.whiteA05 },
-  pickActive: { borderColor: 'rgba(34,211,238,0.6)', backgroundColor: 'rgba(34,211,238,0.06)' },
-  idolPickName: { fontSize: 10, fontWeight: '600', color: colors.foreground },
+  idolThumbActive: { borderColor: 'rgba(34,211,238,0.8)' },
+  idolThumbImage: { width: '100%', height: '100%' },
+  idolThumbFallback: { fontSize: 14, fontWeight: '700', color: colors.mutedForeground },
+  idolPillName: { fontSize: 9, fontWeight: '600', color: colors.foreground, maxWidth: 52, textAlign: 'center' },
 
   typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  typeBtn: { flexGrow: 1, flexBasis: '46%', borderRadius: radius.lg, borderWidth: 1, padding: spacing.md },
-  typeName: { fontSize: 12, fontWeight: '700', color: colors.foreground },
-  typeMeta: { marginTop: 4, flexDirection: 'row', gap: spacing.sm },
-  effect: { fontSize: 10, color: colors.mint },
-  cost: { fontSize: 10, color: '#FDA4AF' },
+  typeTile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexGrow: 1,
+    flexBasis: '44%',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  typeAccentDot: { width: 7, height: 7, borderRadius: radius.full, flexShrink: 0 },
+  typeName: { fontSize: 11, fontWeight: '600', color: colors.foreground, flexShrink: 1 },
+  selectedTypeDetails: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  selectedTypeEffect: { fontSize: 11, color: colors.mint },
+  selectedTypeCost: { fontSize: 11, color: '#FDA4AF' },
 
-  targetRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  targetChip: { borderRadius: radius.full, borderWidth: 1, paddingHorizontal: spacing.md, paddingVertical: 6 },
-  targetChipText: { fontSize: 11, fontWeight: '600', color: colors.foreground },
+  weekHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
+  weekHeaderLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1.5, color: colors.mutedForeground },
+  activeTypeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+  },
+  activeTypeDot: { width: 6, height: 6, borderRadius: radius.full },
+  activeTypeName: { fontSize: 10, fontWeight: '700' },
 
-  weekGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  weekGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
   dayHeadCell: { width: '12.7%', alignItems: 'center' },
-  dayHead: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, color: colors.mutedForeground },
+  dayHead: { fontSize: 9, fontWeight: '800', letterSpacing: 0.8, color: colors.mutedForeground },
   slot: {
     width: '12.7%',
     aspectRatio: 1,
@@ -262,20 +341,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 2,
+    gap: 1,
+    padding: 1,
   },
   slotIdle: { borderColor: colors.border, backgroundColor: colors.whiteA05 },
-  slotActive: { borderColor: 'rgba(34,211,238,0.6)', backgroundColor: 'rgba(34,211,238,0.1)' },
-  slotText: { fontSize: 9, fontWeight: '700', color: colors.mutedForeground },
-  slotTextActive: { color: colors.tealBright },
-  planHint: { marginTop: spacing.md, fontSize: 11, lineHeight: 16, color: colors.mutedForeground },
-
-  vitalRow: { marginTop: spacing.lg, flexDirection: 'row', gap: spacing.sm },
-  vital: { flex: 1, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.whiteA05, padding: 10 },
-  vitalHead: { flexDirection: 'row', alignItems: 'center' },
-  vitalTrack: { marginTop: 6, height: 6, borderRadius: radius.full, backgroundColor: colors.whiteA10, overflow: 'hidden' },
-  vitalFill: { height: '100%' },
-  vitalValue: { marginTop: 4, fontSize: 12, fontWeight: '700', color: colors.foreground },
+  slotDot: { width: 7, height: 7, borderRadius: radius.full },
+  slotPlus: { fontSize: 14, color: colors.mutedForeground, lineHeight: 16 },
+  slotText: { fontSize: 7, fontWeight: '700', lineHeight: 9 },
 
   toast: {
     position: 'absolute',
@@ -284,10 +356,11 @@ const styles = StyleSheet.create({
     bottom: 96,
     borderRadius: radius['2xl'],
     borderWidth: 1,
-    borderColor: 'rgba(34,211,238,0.6)',
-    backgroundColor: 'rgba(20,23,34,0.98)',
+    borderColor: 'rgba(34,211,238,0.5)',
+    backgroundColor: 'rgba(18,21,32,0.98)',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
+    alignItems: 'center',
   },
-  toastText: { textAlign: 'center', fontSize: 14, fontWeight: '600', color: colors.tealBright },
+  toastText: { fontSize: 13, fontWeight: '600', color: colors.tealBright },
 });

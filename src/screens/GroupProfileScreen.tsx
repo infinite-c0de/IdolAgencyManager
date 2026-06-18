@@ -144,58 +144,98 @@ export function GroupProfileScreen() {
   return (
     <AppShell
       title={group.name}
-      subtitle="Detailed profile and progression"
+      subtitle="Group Profile"
       action={
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.navigate('Groups')} activeOpacity={0.8}>
           <ChevronLeft size={14} color={colors.slate900} />
-          <Text style={styles.backText}>Back</Text>
+          <Text style={styles.backText}>Groups</Text>
         </TouchableOpacity>
       }>
-      <Card glow="teal">
-        <View style={styles.headerRow}>
-          <Gradient colors={group.gradient} style={styles.logoWrap}>
-            {group.logo?.kind === 'custom' ? (
-              <Image source={{ uri: group.logo.uri }} resizeMode="cover" style={styles.logoImage} />
-            ) : (
-              <AgencyLogoMark preset={group.logo?.kind === 'preset' ? group.logo.preset : 'NEON_STAR'} size={40} />
-            )}
-          </Gradient>
-          <View style={styles.flex1}>
-            <Text style={styles.groupName}>{group.name}</Text>
-            <Text style={styles.subMuted}>
-              {group.status} · {group.concept} · Fandom {group.fanName}
-            </Text>
+
+      {/* ── HERO: asymmetric – logo gradient left, synergy score right ── */}
+      <View style={styles.heroCard}>
+        {/* Gradient tint behind */}
+        <Gradient colors={group.gradient} direction="to-br" style={styles.heroBg} />
+        <View style={styles.heroContent}>
+          {/* Left: identity */}
+          <View style={styles.heroLeft}>
+            <View style={styles.heroLogoWrap}>
+              {group.logo?.kind === 'custom' ? (
+                <Image source={{ uri: group.logo.uri }} resizeMode="cover" style={styles.heroLogoImage} />
+              ) : (
+                <AgencyLogoMark preset={group.logo?.kind === 'preset' ? group.logo.preset : 'NEON_STAR'} size={44} />
+              )}
+            </View>
+            <Text style={styles.heroGroupName} numberOfLines={2}>{group.name}</Text>
+            <View style={styles.heroPillRow}>
+              <View style={styles.heroPill}><Text style={styles.heroPillText}>{group.status}</Text></View>
+              <View style={styles.heroPill}><Text style={styles.heroPillText}>{group.concept}</Text></View>
+            </View>
+            <Text style={styles.heroFandom}>Fandom: <Text style={styles.heroFandomVal}>{group.fanName}</Text></Text>
+          </View>
+
+          {/* Right: synergy score + revenue */}
+          <View style={styles.heroRight}>
+            <View style={[styles.synergyBlock, { borderColor: synergyTier.borderColor, backgroundColor: synergyTier.backgroundColor }]}>
+              <Text style={styles.synergySmallLabel}>SYNERGY</Text>
+              <Text style={[styles.synergyBig, { color: synergyTier.textColor }]}>{group.synergy}</Text>
+              <Text style={[styles.synergyTierBadge, { color: synergyTier.textColor }]}>{synergyTier.label}</Text>
+            </View>
+            <View style={styles.revBlock}>
+              <Text style={styles.revLabel}>MONTHLY</Text>
+              <Text style={styles.revValue}>{fmt(group.monthlyRevenue)}</Text>
+            </View>
+            <View style={styles.memberCountBlock}>
+              <Text style={styles.memberCountNum}>{group.memberIds.length}</Text>
+              <Text style={styles.memberCountLabel}>MEMBERS</Text>
+            </View>
           </View>
         </View>
+      </View>
 
-        <View style={styles.kpiRow}>
-          <Mini label="Members" value={`${group.memberIds.length}`} />
-          <View
-            style={[
-              styles.synergyBadge,
-              {
-                borderColor: synergyTier.borderColor,
-                backgroundColor: synergyTier.backgroundColor,
-              },
-            ]}>
-            <Text style={styles.synergyLabel}>SYNERGY</Text>
-            <Text style={[styles.synergyValue, { color: synergyTier.textColor }]}>{group.synergy}</Text>
-            <Text style={[styles.synergyTierText, { color: synergyTier.textColor }]}>{synergyTier.label}</Text>
-          </View>
-          <Mini label="Monthly Revenue" value={fmt(group.monthlyRevenue)} />
+      {/* ── MEMBER FILMSTRIP ── */}
+      <View>
+        <View style={styles.sectionRow}>
+          <Text style={styles.sectionLabel}>LINEUP</Text>
+          <TouchableOpacity style={styles.addBtn} onPress={() => setOpenAddModal(true)} activeOpacity={0.8}>
+            <Plus size={11} color={colors.slate900} />
+            <Text style={styles.addBtnText}>Add</Text>
+          </TouchableOpacity>
         </View>
-      </Card>
+        {members.length > 0 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filmScroll}>
+            {members.map(member => (
+              <View key={member.id} style={styles.filmCell}>
+                {member.image ? (
+                  <Image source={member.image} resizeMode="cover" style={styles.filmPhoto} />
+                ) : (
+                  <View style={styles.filmFallback}>
+                    <Text style={styles.filmFallbackText}>{member.stageName.slice(0, 2).toUpperCase()}</Text>
+                  </View>
+                )}
+                <View style={styles.filmShade} />
+                <Text style={styles.filmName} numberOfLines={1}>{member.stageName}</Text>
+                <Text style={styles.filmRole} numberOfLines={1}>{member.role}</Text>
+              </View>
+            ))}
+          </ScrollView>
+        ) : (
+          <View style={styles.emptyLineup}>
+            <Text style={styles.emptyText}>No members yet. Add idols to the group.</Text>
+          </View>
+        )}
+      </View>
 
+      {/* ── PERFORMANCE ── radar + bars asymmetric */}
       <Card>
-        <SectionTitle>SYNERGY ANALYSIS</SectionTitle>
+        <SectionTitle>PERFORMANCE</SectionTitle>
         <View style={styles.perfRow}>
           <View style={styles.radarWrap}>
-            <RadarChart data={radar} size={170} fillStops={[colors.teal, colors.violet]} />
+            <RadarChart data={radar} size={155} fillStops={[colors.teal, colors.violet]} />
           </View>
           <View style={styles.vBars}>
             {stats.map(stat => (
               <View key={stat.label} style={styles.vBarCol}>
-                <Text style={styles.vBarLabel}>{stat.label}</Text>
                 <View style={styles.vBarTrack}>
                   <Gradient
                     colors={[colors.violet, colors.tealBright]}
@@ -204,57 +244,35 @@ export function GroupProfileScreen() {
                   />
                 </View>
                 <Text style={styles.vBarValue}>{stat.v}</Text>
+                <Text style={styles.vBarLabel}>{stat.label.slice(0, 3).toUpperCase()}</Text>
               </View>
             ))}
           </View>
         </View>
       </Card>
 
+      {/* ── DEBUT READINESS ── visual badges */}
       <Card>
         <SectionTitle>DEBUT READINESS</SectionTitle>
-        <Text style={styles.subMuted}>
-          Triggers: at least 3 members, leader assigned, vocal avg 70+, dance avg 70+, debut song, promotion plan.
-        </Text>
-        <View style={styles.checkGrid}>
+        <View style={styles.readinessGrid}>
           {readiness.checks.map(check => (
-            <View key={check.t} style={styles.checkItem}>
-              <View style={[styles.checkDot, check.ok ? styles.checkOn : styles.checkOff]} />
-              <Text style={check.ok ? styles.checkTextOn : styles.checkTextOff}>{check.t}</Text>
+            <View key={check.t} style={[styles.readinessItem, check.ok ? styles.readinessOn : styles.readinessOff]}>
+              <View style={[styles.readinessDot, check.ok ? styles.dotOn : styles.dotOff]} />
+              <Text style={[styles.readinessText, check.ok ? styles.readinessTextOn : styles.readinessTextOff]} numberOfLines={2}>
+                {check.t}
+              </Text>
             </View>
           ))}
         </View>
       </Card>
 
-      <Card>
-        <SectionTitle
-          action={
-            <TouchableOpacity style={styles.addBtn} onPress={() => setOpenAddModal(true)} activeOpacity={0.8}>
-              <Plus size={12} color={colors.slate900} />
-              <Text style={styles.addBtnText}>Add Members</Text>
-            </TouchableOpacity>
-          }>
-          MEMBERS
-        </SectionTitle>
-        <View style={styles.memberList}>
-          {members.map(member => (
-            <View key={member.id} style={styles.memberItem}>
-              <Avatar name={member.stageName} gradient={member.gradient} image={member.image} size={34} />
-              <View style={styles.flex1}>
-                <Text style={styles.memberName}>{member.stageName}</Text>
-                <Text style={styles.subMuted}>{member.role}</Text>
-              </View>
-              <Sparkles size={14} color={colors.tealBright} />
-            </View>
-          ))}
-        </View>
-      </Card>
-
+      {/* ── ADD MEMBERS MODAL ── */}
       <Modal visible={openAddModal} transparent animationType="fade" onRequestClose={closeAddModal}>
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Add members to {group.name}</Text>
-            <Text style={styles.subMuted}>
-              Select unassigned idols. Their group and performance metrics will update immediately.
+            <Text style={styles.modalTitle}>Add to {group.name}</Text>
+            <Text style={styles.modalSub}>
+              Select unassigned idols. Metrics update immediately.
             </Text>
             <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
               {availableMembers.length === 0 ? (
@@ -274,6 +292,7 @@ export function GroupProfileScreen() {
                           <Text style={styles.memberName}>{idol.stageName}</Text>
                           <Text style={styles.subMuted}>{idol.role}</Text>
                         </View>
+                        {active && <Sparkles size={13} color={colors.tealBright} />}
                       </TouchableOpacity>
                     );
                   })}
@@ -285,10 +304,12 @@ export function GroupProfileScreen() {
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.createBtn, selectedMemberIds.length === 0 && styles.createBtnDisabled]}
+                style={[styles.confirmBtn, selectedMemberIds.length === 0 && styles.confirmBtnDim]}
                 onPress={handleAddMembers}
                 activeOpacity={0.8}>
-                <Text style={styles.createText}>Add selected</Text>
+                <Text style={styles.confirmText}>
+                  Add {selectedMemberIds.length > 0 ? `(${selectedMemberIds.length})` : ''}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -309,6 +330,8 @@ function Mini({ label, value }: { label: string; value: string }) {
 
 const styles = StyleSheet.create({
   flex1: { flex: 1, minWidth: 0 },
+  subMuted: { fontSize: 11, color: colors.mutedForeground },
+
   backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -319,6 +342,10 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   backText: { fontSize: 11, fontWeight: '700', color: colors.slate900 },
+
+  sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
+  sectionLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 1.5, color: colors.mutedForeground },
+
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -326,22 +353,160 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: colors.teal,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
+    paddingVertical: 5,
   },
-  addBtnText: { fontSize: 11, fontWeight: '700', color: colors.slate900 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  logoWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.lg,
+  addBtnText: { fontSize: 10, fontWeight: '700', color: colors.slate900 },
+
+  // ── Hero ──
+  heroCard: {
+    borderRadius: radius['2xl'],
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(103,232,249,0.25)',
+    minHeight: 180,
+  },
+  heroBg: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    opacity: 0.18,
+  },
+  heroContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    padding: spacing.lg,
+    gap: spacing.lg,
+  },
+  heroLeft: { flex: 1, gap: 8 },
+  heroLogoWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(255,255,255,0.07)',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  logoImage: { width: '100%', height: '100%' },
-  groupName: { color: colors.tealBright, fontSize: 24, fontWeight: '900' },
-  subMuted: { fontSize: 11, color: colors.mutedForeground },
-  kpiRow: { marginTop: spacing.md, flexDirection: 'row', gap: spacing.sm },
+  heroLogoImage: { width: '100%', height: '100%' },
+  heroGroupName: { fontSize: 26, fontWeight: '900', color: colors.foreground, letterSpacing: -0.5, lineHeight: 30 },
+  heroPillRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+  heroPill: {
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+  },
+  heroPillText: { fontSize: 10, fontWeight: '600', color: 'rgba(255,255,255,0.75)', letterSpacing: 0.3 },
+  heroFandom: { fontSize: 10, color: colors.mutedForeground },
+  heroFandomVal: { fontWeight: '700', color: colors.violetBright },
+
+  heroRight: { alignItems: 'center', gap: spacing.sm },
+  synergyBlock: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    padding: spacing.sm,
+    minWidth: 70,
+    gap: 2,
+  },
+  synergySmallLabel: { fontSize: 8, fontWeight: '800', letterSpacing: 1.2, color: colors.mutedForeground },
+  synergyBig: { fontSize: 34, fontWeight: '900', lineHeight: 38 },
+  synergyTierBadge: { fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
+
+  revBlock: { alignItems: 'center' },
+  revLabel: { fontSize: 8, fontWeight: '700', letterSpacing: 1, color: colors.mutedForeground },
+  revValue: { fontSize: 12, fontWeight: '800', color: colors.mint },
+  memberCountBlock: { alignItems: 'center' },
+  memberCountNum: { fontSize: 20, fontWeight: '900', color: colors.foreground, lineHeight: 22 },
+  memberCountLabel: { fontSize: 8, fontWeight: '700', letterSpacing: 1, color: colors.mutedForeground },
+
+  // ── Filmstrip ──
+  filmScroll: { flexDirection: 'row', gap: spacing.sm, paddingBottom: 2 },
+  filmCell: {
+    width: 82,
+    height: 120,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: '#080B12',
+    justifyContent: 'flex-end',
+  },
+  filmPhoto: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
+  filmFallback: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(34,211,238,0.05)' },
+  filmFallbackText: { fontSize: 20, fontWeight: '900', color: 'rgba(103,232,249,0.3)', letterSpacing: 2 },
+  filmShade: {
+    position: 'absolute',
+    bottom: 0, left: 0, right: 0,
+    height: 50,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+  },
+  filmName: {
+    paddingHorizontal: 4,
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.4,
+    color: colors.foreground,
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  filmRole: {
+    paddingHorizontal: 4,
+    paddingBottom: 5,
+    fontSize: 8,
+    color: 'rgba(255,255,255,0.55)',
+    textAlign: 'center',
+  },
+
+  emptyLineup: { paddingVertical: spacing.xl, alignItems: 'center' },
+  emptyText: { color: colors.mutedForeground, textAlign: 'center', fontSize: 12 },
+
+  // ── Performance ──
+  perfRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  radarWrap: { flex: 1, alignItems: 'center' },
+  vBars: { flexDirection: 'row', gap: 10, alignItems: 'flex-end' },
+  vBarCol: { alignItems: 'center', gap: 3 },
+  vBarTrack: {
+    height: 60,
+    width: 12,
+    borderRadius: radius.full,
+    backgroundColor: colors.whiteA10,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  vBarFill: { width: '100%', borderRadius: radius.full },
+  vBarValue: { fontSize: 10, fontWeight: '700', color: colors.foreground },
+  vBarLabel: { fontSize: 7, fontWeight: '800', letterSpacing: 0.5, color: colors.mutedForeground, textTransform: 'uppercase' },
+
+  // ── Readiness ──
+  readinessGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.sm },
+  readinessItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 7,
+    flex: 1,
+    minWidth: '46%',
+    maxWidth: '50%',
+  },
+  readinessOn: { borderColor: 'rgba(52,211,153,0.45)', backgroundColor: 'rgba(52,211,153,0.07)' },
+  readinessOff: { borderColor: 'rgba(255,255,255,0.07)', backgroundColor: colors.whiteA04 },
+  readinessDot: { width: 7, height: 7, borderRadius: radius.full, flexShrink: 0 },
+  dotOn: { backgroundColor: colors.mint },
+  dotOff: { backgroundColor: 'rgba(255,255,255,0.2)' },
+  readinessText: { fontSize: 10, fontWeight: '600', flexShrink: 1 },
+  readinessTextOn: { color: colors.foreground },
+  readinessTextOff: { color: colors.mutedForeground },
+
+  // ── KPI (kept for Mini component) ──
   kpiItem: {
     flex: 1,
     borderRadius: radius.lg,
@@ -350,44 +515,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.whiteA05,
     padding: spacing.sm,
   },
-  synergyBadge: {
-    flex: 1,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-  },
-  synergyLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 1, color: colors.mutedForeground },
-  synergyValue: { fontSize: 26, fontWeight: '900', lineHeight: 30 },
-  synergyTierText: { fontSize: 11, fontWeight: '700' },
   kpiLabel: { fontSize: 10, color: colors.mutedForeground },
   kpiValue: { marginTop: 2, fontSize: 12, fontWeight: '700', color: colors.foreground },
-  perfRow: { alignItems: 'center', gap: spacing.md },
-  radarWrap: { alignItems: 'center' },
-  vBars: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.xl },
-  vBarCol: { alignItems: 'center', gap: 6 },
-  vBarLabel: { fontSize: 8, textTransform: 'uppercase', letterSpacing: 0.6, color: colors.mutedForeground },
-  vBarTrack: {
-    height: 74,
-    width: 10,
-    borderRadius: radius.full,
-    backgroundColor: colors.whiteA10,
-    overflow: 'hidden',
-    justifyContent: 'flex-end',
-  },
-  vBarFill: { width: '100%', borderRadius: radius.full },
-  vBarValue: { fontSize: 12, fontWeight: '700', color: colors.foreground },
-  checkGrid: { marginTop: spacing.md, flexDirection: 'row', flexWrap: 'wrap' },
-  checkItem: { width: '50%', flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
-  checkDot: { width: 8, height: 8, borderRadius: radius.full },
-  checkOn: { backgroundColor: colors.mint },
-  checkOff: { backgroundColor: 'rgba(255,255,255,0.2)' },
-  checkTextOn: { fontSize: 11, color: colors.foreground },
-  checkTextOff: { fontSize: 11, color: colors.mutedForeground },
-  memberList: { gap: spacing.sm },
+
+  // ── Modal ──
   memberPickWrap: { gap: spacing.sm, marginTop: spacing.sm },
   memberPick: {
     flexDirection: 'row',
@@ -400,32 +531,23 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
   },
   memberPickActive: {
-    borderColor: 'rgba(34,211,238,0.65)',
-    backgroundColor: 'rgba(34,211,238,0.12)',
-  },
-  memberItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.whiteA05,
-    padding: spacing.sm,
+    borderColor: 'rgba(34,211,238,0.6)',
+    backgroundColor: 'rgba(34,211,238,0.1)',
   },
   memberName: { fontSize: 12, fontWeight: '700', color: colors.foreground },
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
   modalCard: {
     width: '100%',
     maxWidth: 440,
     maxHeight: '80%',
     borderRadius: radius['2xl'],
-    backgroundColor: 'rgba(20,23,34,0.98)',
+    backgroundColor: 'rgba(18,21,32,0.99)',
     borderWidth: 1,
-    borderColor: colors.borderStrong,
+    borderColor: 'rgba(103,232,249,0.3)',
     padding: spacing.lg,
   },
   modalTitle: { fontSize: 18, fontWeight: '900', color: colors.tealBright },
+  modalSub: { fontSize: 11, color: colors.mutedForeground, marginTop: 4 },
   modalScroll: { marginTop: spacing.md },
   modalActions: { marginTop: spacing.lg, flexDirection: 'row', gap: spacing.sm },
   cancelBtn: {
@@ -437,9 +559,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.whiteA05,
     paddingVertical: spacing.sm,
   },
-  cancelText: { fontSize: 14, color: colors.foreground },
-  createBtn: { flex: 1, alignItems: 'center', borderRadius: radius.lg, backgroundColor: colors.teal, paddingVertical: spacing.sm },
-  createBtnDisabled: { opacity: 0.5 },
-  createText: { fontSize: 14, fontWeight: '700', color: colors.slate900 },
-  emptyText: { color: colors.mutedForeground, textAlign: 'center', fontSize: 12 },
+  cancelText: { fontSize: 13, color: colors.foreground },
+  confirmBtn: { flex: 1, alignItems: 'center', borderRadius: radius.lg, backgroundColor: colors.teal, paddingVertical: spacing.sm },
+  confirmBtnDim: { opacity: 0.45 },
+  confirmText: { fontSize: 13, fontWeight: '700', color: colors.slate900 },
 });

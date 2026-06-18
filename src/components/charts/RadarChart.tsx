@@ -38,9 +38,13 @@ export function RadarChart({
     return <View />;
   }
 
-  const cx = size / 2;
-  const cy = size / 2;
-  const radius = size / 2 - 32;
+  // Extra padding on each side so axis labels never get clipped
+  const labelPad = 56;
+  const svgW = size + labelPad * 2;
+  const svgH = size + labelPad * 2;
+  const cx = svgW / 2;
+  const cy = svgH / 2;
+  const radius = size / 2 - 8;
   const n = data.length;
   const angle = (i: number) => (-Math.PI / 2) + (i * 2 * Math.PI) / n;
 
@@ -56,7 +60,7 @@ export function RadarChart({
 
   return (
     <View>
-      <Svg width={size} height={size}>
+      <Svg width={svgW} height={svgH}>
         <Defs>
           <LinearGradient id="radarFill" x1="0" y1="0" x2="1" y2="1">
             <Stop offset="0%" stopColor={fillStops[0]} stopOpacity={0.6} />
@@ -106,7 +110,7 @@ export function RadarChart({
 
         {data.map((d, i) => {
           const a = angle(i);
-          const p = pointAt(cx, cy, radius + 12, a);
+          const p = pointAt(cx, cy, radius + 16, a);
           const cos = Math.cos(a);
           const textAnchor = cos > 0.35 ? 'start' : cos < -0.35 ? 'end' : 'middle';
           const xOffset = cos > 0.35 ? 2 : cos < -0.35 ? -2 : 0;

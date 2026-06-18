@@ -1,9 +1,10 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Crown, Plus, Sparkles } from 'lucide-react-native';
+import { Crown, Plus, Sparkles, Users } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
   Alert,
+  Image,
   Modal,
   ScrollView,
   StyleSheet,
@@ -55,8 +56,13 @@ export function GroupsScreen() {
   const navigation = useNavigation<Nav>();
   const { groups, idols, conceptOptions, createGroup } = useGame();
   const [open, setOpen] = useState(false);
+  const [ceremony, setCeremony] = useState<{ groupName: string; memberIds: string[] } | null>(null);
   const active = groups.filter(g => g.status === 'Active').length;
   const predebut = groups.filter(g => g.status === 'Pre-debut').length;
+
+  const handleCreated = (groupName: string, memberIds: string[]) => {
+    setCeremony({ groupName, memberIds });
+  };
 
   const newAction = (
     <TouchableOpacity style={styles.newBtn} onPress={() => setOpen(true)} activeOpacity={0.8}>
@@ -181,7 +187,25 @@ export function GroupsScreen() {
         idols={idols}
         concepts={conceptOptions}
         createGroup={createGroup}
+        onCreated={handleCreated}
       />
+
+      {/* Group creation ceremony */}
+      {ceremony !== null && (
+        <GroupCreatedCeremony
+          groupName={ceremony.groupName}
+          memberIds={ceremony.memberIds}
+          idols={idols}
+          onClose={() => setCeremony(null)}
+          onView={() => {
+            setCeremony(null);
+            const found = groups.find(g => g.name === ceremony.groupName);
+            if (found) {
+              navigation.navigate('GroupProfile', { groupId: found.id });
+            }
+          }}
+        />
+      )}
     </AppShell>
   );
 }
@@ -195,18 +219,98 @@ function Mini({ label, v }: { label: string; v: string }) {
   );
 }
 
+function GroupCreatedCeremony({
+  groupName,
+  memberIds,
+  idols,
+  onClose,
+  onView,
+}: {
+  groupName: string;
+  memberIds: string[];
+  idols: Idol[];
+  onClose: () => void;
+  onView: () => void;
+}) {
+  const members = idols.filter(i => memberIds.includes(i.id));
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.ceremonyBackdrop}>
+        <View style={styles.ceremonyCard}>
+          {/* Subtle gradient shimmer bg */}
+          <Gradient
+            colors={[colors.teal + '22', colors.violet + '22']}
+            direction="to-br"
+            style={styles.ceremonyBg}
+          />
+
+          {/* Badge */}
+          <View style={styles.ceremonyBadge}>
+            <Sparkles size={13} color={colors.slate900} />
+            <Text style={styles.ceremonyBadgeText}>PRE-DEBUT FORMED</Text>
+          </View>
+
+          {/* Group name */}
+          <Text style={styles.ceremonyGroupName}>{groupName}</Text>
+          <Text style={styles.ceremonyTagline}>A new unit is born. The journey begins now.</Text>
+
+          {/* Member lineup */}
+          {members.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.ceremonyLineup}>
+              {members.map(m => (
+                <View key={m.id} style={styles.ceremonyMember}>
+                  {m.image ? (
+                    <Image source={m.image} resizeMode="cover" style={styles.ceremonyMemberPhoto} />
+                  ) : (
+                    <View style={styles.ceremonyMemberFallback}>
+                      <Text style={styles.ceremonyMemberInitials}>{m.stageName.slice(0, 2).toUpperCase()}</Text>
+                    </View>
+                  )}
+                  <View style={styles.ceremonyMemberShade} />
+                  <Text style={styles.ceremonyMemberName} numberOfLines={1}>{m.stageName}</Text>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+
+          {/* Member count */}
+          <View style={styles.ceremonyMeta}>
+            <Users size={13} color={colors.mutedForeground} />
+            <Text style={styles.ceremonyMetaText}>{members.length} members · Pre-debut unit</Text>
+          </View>
+
+          {/* Actions */}
+          <View style={styles.ceremonyActions}>
+            <TouchableOpacity style={styles.ceremonySecondary} onPress={onClose} activeOpacity={0.8}>
+              <Text style={styles.ceremonySecondaryText}>Back to Groups</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.ceremonyPrimary} onPress={onView} activeOpacity={0.8}>
+              <Text style={styles.ceremonyPrimaryText}>View Group</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 function NewGroupModal({
   visible,
   onClose,
   idols,
   concepts,
   createGroup,
+  onCreated,
 }: {
   visible: boolean;
   onClose: () => void;
   idols: ReturnType<typeof useGame>['idols'];
   concepts: ReturnType<typeof useGame>['conceptOptions'];
   createGroup: ReturnType<typeof useGame>['createGroup'];
+  onCreated: (groupName: string, memberIds: string[]) => void;
 }) {
   const [name, setName] = useState('');
   const [fan, setFan] = useState('');
@@ -281,8 +385,8 @@ function NewGroupModal({
       return;
     }
 
-    Alert.alert('Group created', `${result.groupName} is now preparing for debut.`);
     closeAndReset();
+    onCreated(result.groupName, selectedIds);
   };
 
   return (
@@ -512,8 +616,7 @@ const styles = StyleSheet.create({
   readinessHint: { marginTop: 6, fontSize: 10, lineHeight: 14, color: colors.mutedForeground },
 
   // Modal
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
-  modalCard: {
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: spacing.lg },  modalCard: {
     width: '100%',
     maxWidth: 440,
     maxHeight: '85%',
@@ -600,4 +703,112 @@ const styles = StyleSheet.create({
   createBtn: { flex: 1, alignItems: 'center', borderRadius: radius.lg, backgroundColor: colors.teal, paddingVertical: spacing.sm },
   createBtnDisabled: { opacity: 0.5 },
   createText: { fontSize: 14, fontWeight: '700', color: colors.slate900 },
+
+  // ── Group creation ceremony ──
+  ceremonyBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  ceremonyCard: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: radius['2xl'],
+    borderWidth: 1,
+    borderColor: 'rgba(103,232,249,0.4)',
+    backgroundColor: 'rgba(10,13,22,0.98)',
+    padding: spacing.xl,
+    alignItems: 'center',
+    gap: spacing.md,
+    overflow: 'hidden',
+  },
+  ceremonyBg: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+  },
+  ceremonyBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: radius.full,
+    backgroundColor: colors.teal,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 5,
+  },
+  ceremonyBadgeText: { fontSize: 10, fontWeight: '900', letterSpacing: 2, color: colors.slate900 },
+  ceremonyGroupName: {
+    fontSize: 34,
+    fontWeight: '900',
+    color: colors.foreground,
+    letterSpacing: -1,
+    textAlign: 'center',
+    marginTop: spacing.xs,
+  },
+  ceremonyTagline: {
+    fontSize: 12,
+    color: colors.mutedForeground,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  ceremonyLineup: {
+    flexDirection: 'row',
+    gap: 6,
+    paddingHorizontal: spacing.xs,
+    marginTop: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  ceremonyMember: {
+    width: 64,
+    height: 90,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(103,232,249,0.25)',
+    backgroundColor: '#080B12',
+    justifyContent: 'flex-end',
+  },
+  ceremonyMemberPhoto: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
+  ceremonyMemberFallback: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(34,211,238,0.06)' },
+  ceremonyMemberInitials: { fontSize: 14, fontWeight: '900', color: 'rgba(103,232,249,0.4)', letterSpacing: 2 },
+  ceremonyMemberShade: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 36, backgroundColor: 'rgba(0,0,0,0.6)' },
+  ceremonyMemberName: {
+    paddingHorizontal: 3,
+    paddingBottom: 5,
+    fontSize: 8,
+    fontWeight: '800',
+    color: colors.foreground,
+    textAlign: 'center',
+  },
+  ceremonyMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  ceremonyMetaText: { fontSize: 11, color: colors.mutedForeground },
+  ceremonyActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    width: '100%',
+    marginTop: spacing.xs,
+  },
+  ceremonySecondary: {
+    flex: 1,
+    alignItems: 'center',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.whiteA05,
+    paddingVertical: spacing.sm,
+  },
+  ceremonySecondaryText: { fontSize: 13, color: colors.foreground },
+  ceremonyPrimary: {
+    flex: 1,
+    alignItems: 'center',
+    borderRadius: radius.lg,
+    backgroundColor: colors.teal,
+    paddingVertical: spacing.sm,
+  },
+  ceremonyPrimaryText: { fontSize: 13, fontWeight: '700', color: colors.slate900 },
 });

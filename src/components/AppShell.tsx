@@ -239,7 +239,7 @@ export function SectionTitle({
   return (
     <View style={styles.sectionTitleRow}>
       <Text style={styles.sectionTitle}>{children}</Text>
-      {action ?? <ChevronRight size={16} color={colors.mutedForeground} />}
+      {action ?? null}
     </View>
   );
 }

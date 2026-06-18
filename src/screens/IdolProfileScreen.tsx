@@ -16,8 +16,7 @@ import {
 } from 'lucide-react-native';
 import React, { ComponentType, ReactNode } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { AppShell, Card, SectionTitle, SkillBar, StatusDot } from '../components/AppShell';
-import { RadarChart } from '../components/charts';
+import { AppShell, Card, SectionTitle, SkillBar, StatusDot } from '../components/AppShell';import { RadarChart } from '../components/charts';
 import { Gradient } from '../components/ui/Gradient';
 import type { RootStackParamList, RootStackScreenProps } from '../navigation/types';
 import { useGame } from '../state/GameContext';
@@ -108,22 +107,58 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
         </HeroArt>
       </Card>
 
-      {/* Basic info */}
+      {/* Identity block — replaces the label/row list */}
       <Card>
-        <SectionTitle>BASIC INFO</SectionTitle>
-        <View style={styles.infoList}>
-          <Row k="Stage Name" v={i.stageName} />
-          <Row k="Full Name" v={i.fullName} />
-          <Row k="Age" v={`${i.age} (International)`} />
-          <Row k="Gender" v={i.gender === 'male' ? 'Male' : i.gender === 'female' ? 'Female' : '-'} />
-          <Row k="Date of Birth" v={i.dob} />
-          <Row k="Nationality" v={`${i.nationality} ${i.flag}`} />
-          <Row k="Languages" v={i.languages.join(', ')} />
-          <Row k="Personality" v={i.personality} />
-          <Row k="Archetype" v={i.personalityProfile?.archetype ?? 'All-Rounder'} />
-          <Row k="Dominance" v={`${i.personalityProfile?.dominance ?? 55}`} />
-          <Row k="Training" v={`${i.trainingYears} years`} />
+        <View style={styles.identityRow}>
+          <View style={styles.flex1}>
+            <Text style={styles.fullName}>{i.fullName}</Text>
+            <View style={styles.identityMetaRow}>
+              <Text style={styles.nationalityLine}>{i.flag} {i.nationality}</Text>
+              <View style={[
+                styles.genderBadge,
+                i.gender === 'male' ? styles.genderMale : i.gender === 'female' ? styles.genderFemale : styles.genderNeutral,
+              ]}>
+                <Text style={[
+                  styles.genderSymbol,
+                  i.gender === 'male' ? { color: '#93C5FD' } : i.gender === 'female' ? { color: '#F9A8D4' } : { color: colors.mutedForeground },
+                ]}>
+                  {i.gender === 'male' ? '♂' : i.gender === 'female' ? '♀' : '—'}
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.dobLine}>{i.dob}  ·  {i.age} yrs</Text>
+          </View>
+          <View style={styles.trainingBadge}>
+            <Text style={styles.trainingNum}>{i.trainingYears}</Text>
+            <Text style={styles.trainingLabel}>YRS{'\n'}TRAINING</Text>
+          </View>
         </View>
+
+        {/* Tag row — personality, archetype, languages */}
+        <View style={styles.tagRow}>
+          <Tag label={i.personalityProfile?.archetype ?? 'All-Rounder'} color={colors.violetBright} />
+          <Tag label={i.personality} color={colors.mutedForeground} />
+          {i.languages.map(lang => <Tag key={lang} label={lang} color={colors.tealBright} />)}
+        </View>
+
+        {/* Dominance bar */}
+        {i.personalityProfile && (
+          <View style={styles.dominanceSection}>
+            <View style={styles.dominanceLabel}>
+              <Text style={styles.domKey}>DOMINANCE</Text>
+              <Text style={styles.domVal}>{i.personalityProfile.dominance}</Text>
+            </View>
+            <View style={styles.domTrack}>
+              <Gradient
+                colors={[colors.violetBright + '88', colors.violetBright]}
+                direction="to-r"
+                style={[styles.domFill, { width: `${i.personalityProfile.dominance}%` }]}
+              />
+            </View>
+          </View>
+        )}
+
+        {/* Vitals */}
         <View style={styles.vitalRow}>
           <Vital Icon={Heart} label="Health" v={i.health} color="#FDA4AF" />
           <Vital Icon={Activity} label="Morale" v={i.morale} color={colors.violetBright} />
@@ -204,6 +239,14 @@ function HeroArt({
       )}
       <View style={styles.heroShade} />
       {children}
+    </View>
+  );
+}
+
+function Tag({ label, color }: { label: string; color: string }) {
+  return (
+    <View style={[styles.tag, { borderColor: color + '44' }]}>
+      <Text style={[styles.tagText, { color }]}>{label}</Text>
     </View>
   );
 }
@@ -297,6 +340,52 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   heroStatusText: { fontSize: 10, color: colors.foreground },
+
+  // Identity block
+  identityRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
+  identityMetaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 3 },
+  fullName: { fontSize: 20, fontWeight: '900', color: colors.foreground, lineHeight: 24 },
+  nationalityLine: { fontSize: 14, color: colors.mutedForeground },
+  genderBadge: {
+    borderRadius: radius.full,
+    borderWidth: 1,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  genderMale: { borderColor: 'rgba(147,197,253,0.45)', backgroundColor: 'rgba(147,197,253,0.1)' },
+  genderFemale: { borderColor: 'rgba(249,168,212,0.45)', backgroundColor: 'rgba(249,168,212,0.1)' },
+  genderNeutral: { borderColor: colors.border, backgroundColor: colors.whiteA05 },
+  genderSymbol: { fontSize: 14, fontWeight: '700', lineHeight: 18 },
+  dobLine: { fontSize: 12, color: colors.mutedForeground, marginTop: 2 },
+  trainingBadge: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(34,211,238,0.35)',
+    backgroundColor: 'rgba(34,211,238,0.06)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    minWidth: 52,
+  },
+  trainingNum: { fontSize: 22, fontWeight: '900', color: colors.tealBright, lineHeight: 26 },
+  trainingLabel: { fontSize: 8, fontWeight: '700', letterSpacing: 1, color: colors.mutedForeground, textAlign: 'center' },
+
+  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.md },
+  tag: {
+    borderRadius: radius.full,
+    borderWidth: 1,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+  },
+  tagText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.4 },
+
+  dominanceSection: { marginTop: spacing.md, gap: 5 },
+  dominanceLabel: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  domKey: { fontSize: 10, fontWeight: '700', letterSpacing: 1, color: colors.mutedForeground },
+  domVal: { fontSize: 13, fontWeight: '900', color: colors.violetBright },
+  domTrack: { height: 5, borderRadius: radius.full, backgroundColor: colors.whiteA10, overflow: 'hidden' },
+  domFill: { height: '100%', borderRadius: radius.full },
 
   infoList: { gap: spacing.sm },
   infoRow: {

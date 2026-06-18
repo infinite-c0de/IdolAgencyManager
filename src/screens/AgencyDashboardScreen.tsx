@@ -7,24 +7,21 @@ import {
   ChevronRight,
   FastForward,
   Heart,
-  MoreHorizontal,
   Pin,
   Sparkles,
+  TrendingUp,
   UserPlus,
+  Users,
   Wallet,
 } from 'lucide-react-native';
-import React, { ReactNode } from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { ReactNode, useState } from 'react';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Avatar, Card, SectionTitle } from '../components/AppShell';
-import {
-  LineChart,
-  ResponsiveChart,
-  lineColors,
-} from '../components/charts';
+import { LineChart, ResponsiveChart, lineColors } from '../components/charts';
 import { RadarChart } from '../components/charts';
 import { AgencyLogoMark } from '../components/ui/AgencyLogoMark';
 import { Gradient } from '../components/ui/Gradient';
-import { getGroupMembers, getPrimaryGroup } from '../features/groups';
+import { getGroupMembers } from '../features/groups';
 import { selectDynamicSchedule, type DynamicScheduleItem } from '../features/simulation';
 import type { RootStackParamList } from '../navigation/types';
 import { useGame } from '../state/GameContext';
@@ -34,144 +31,250 @@ import { fmt } from '../utils/format';
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 function avg(values: number[]) {
-  return Math.round(values.reduce((sum, value) => sum + value, 0) / Math.max(values.length, 1));
+  return Math.round(values.reduce((sum, v) => sum + v, 0) / Math.max(values.length, 1));
 }
 
 function buildPerformanceStats(idols: ReturnType<typeof useGame>['idols']) {
   if (idols.length === 0) {
     return [
-      { label: 'Vocal', v: 0 },
-      { label: 'Dance', v: 0 },
-      { label: 'Rap', v: 0 },
-      { label: 'Visual', v: 0 },
-      { label: 'Charisma', v: 0 },
+      { label: 'Vocal', short: 'VOC', v: 0 },
+      { label: 'Dance', short: 'DNC', v: 0 },
+      { label: 'Rap', short: 'RAP', v: 0 },
+      { label: 'Visual', short: 'VIS', v: 0 },
+      { label: 'Charisma', short: 'CHA', v: 0 },
     ];
   }
-
   return [
-    { label: 'Vocal', v: avg(idols.map(idol => idol.stats.vocal)) },
-    { label: 'Dance', v: avg(idols.map(idol => idol.stats.dance)) },
-    { label: 'Rap', v: avg(idols.map(idol => idol.stats.rap)) },
-    { label: 'Visual', v: avg(idols.map(idol => idol.stats.visual)) },
-    { label: 'Charisma', v: avg(idols.map(idol => idol.stats.charisma)) },
+    { label: 'Vocal', short: 'VOC', v: avg(idols.map(i => i.stats.vocal)) },
+    { label: 'Dance', short: 'DNC', v: avg(idols.map(i => i.stats.dance)) },
+    { label: 'Rap', short: 'RAP', v: avg(idols.map(i => i.stats.rap)) },
+    { label: 'Visual', short: 'VIS', v: avg(idols.map(i => i.stats.visual)) },
+    { label: 'Charisma', short: 'CHA', v: avg(idols.map(i => i.stats.charisma)) },
   ];
 }
 
 export function AgencyDashboardScreen() {
   const navigation = useNavigation<Nav>();
   const { agency, idols, trainees, groups, revenueHistory, currentWeek, advanceWeek } = useGame();
-  const elevate = getPrimaryGroup(groups);
-  const members = elevate ? getGroupMembers(elevate, idols) : [];
+  const [perfGroupId, setPerfGroupId] = useState<string | null>(null);
+
   const schedule = selectDynamicSchedule(idols, groups);
-  const sourceIdols = members.length > 0 ? members : idols;
+  const allMembers = idols.slice(0, 8);
+
+  // Performance group picker: null = agency avg, else a specific group
+  const selectedGroup = perfGroupId ? (groups.find(g => g.id === perfGroupId) ?? null) : null;
+  const perfMembers = selectedGroup ? getGroupMembers(selectedGroup, idols) : [];
+  const sourceIdols = perfMembers.length > 0 ? perfMembers : (perfGroupId ? [] : idols);
   const stats = buildPerformanceStats(sourceIdols);
-  const radarData = stats.map(stat => ({ skill: stat.label.toUpperCase(), v: stat.v }));
+  const radarData = stats.map(s => ({ skill: s.label.toUpperCase(), v: s.v }));
 
   return (
-    <AppShell title="Agency Dashboard" subtitle={`Manage your agency growth · Week ${currentWeek}`}>
-      <Card glow="teal">
-        <View style={styles.rowBetweenStart}>
-          <View style={styles.groupHeading}>
+    <AppShell title="Agency" subtitle={agency.name}>
+
+      {/* ── HERO SECTION ── asymmetric, week ticker on right */}
+      <View style={styles.hero}>
+        {/* Left column – agency identity */}
+        <View style={styles.heroLeft}>
+          <View style={styles.heroBadgeRow}>
             <View style={styles.agencyLogoBadge}>
               {agency.logo.kind === 'custom' ? (
                 <Image source={{ uri: agency.logo.uri }} resizeMode="cover" style={styles.agencyLogoImage} />
               ) : (
-                <AgencyLogoMark preset={agency.logo.kind === 'preset' ? agency.logo.preset : 'NEON_STAR'} size={34} />
+                <AgencyLogoMark preset={agency.logo.kind === 'preset' ? agency.logo.preset : 'NEON_STAR'} size={32} />
               )}
             </View>
-            <View>
-              <Text style={styles.heroTitle}>{agency.name}</Text>
-              <View style={styles.agencyMetaRow}>
-                <Text style={styles.agencyMetaText}>CEO : {agency.ceoName || 'Unassigned'}</Text>
-                <Text style={styles.agencyMetaText}>{agency.city}</Text>
-              </View>
+            <View style={styles.careerPill}>
+              <Text style={styles.careerPillText}>Career</Text>
             </View>
           </View>
-          <View style={styles.activeBadge}>
-            <Text style={styles.activeBadgeText}>Career</Text>
+          <Text style={styles.heroAgencyName} numberOfLines={2}>{agency.name}</Text>
+          <View style={styles.heroMeta}>
+            <Text style={styles.heroMetaText}>{agency.ceoName || 'CEO Unassigned'}</Text>
+            <Text style={styles.heroMetaDot}>·</Text>
+            <Text style={styles.heroMetaText}>{agency.city}</Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.nextWeekBtn} onPress={advanceWeek} activeOpacity={0.85}>
-          <FastForward size={14} color={colors.slate900} />
-          <Text style={styles.nextWeekText}>Next Week</Text>
-        </TouchableOpacity>
-        <View style={styles.kpiRow}>
-          <KPI icon={<Wallet size={12} color={colors.mint} />} label="Cash" value={fmt(agency.money)} />
-          <KPI icon={<Heart size={12} color="#FDA4AF" />} label="Reputation" value={`${agency.reputation}`} sub="/100" />
-          <KPI icon={<UserPlus size={12} color={colors.tealBright} />} label="Roster" value={`${idols.length}`} sub="idols" />
-        </View>
-      </Card>
 
-      <Card>
-        <SectionTitle>AGENCY STATUS</SectionTitle>
-        <View style={styles.statusGrid}>
-          <Mini label="Available Recruits" value={`${trainees.length}`} accent="teal" />
-          <Mini label="Groups Formed" value={`${groups.length}`} accent="violet" />
-          <Mini label="Monthly Income" value={fmt(agency.monthlyIncome)} accent="mint" />
-          <Mini label="Global Rank" value={`#${agency.ranking}`} accent="teal" />
+        {/* Right column – week ticker */}
+        <View style={styles.weekBlock}>
+          <Text style={styles.weekLabel}>WEEK</Text>
+          <Text style={styles.weekNum}>{currentWeek}</Text>
+          <TouchableOpacity style={styles.nextWeekBtn} onPress={advanceWeek} activeOpacity={0.85}>
+            <FastForward size={13} color={colors.slate900} />
+            <Text style={styles.nextWeekText}>Next</Text>
+          </TouchableOpacity>
         </View>
-        {idols.length === 0 ? (
-          <View style={styles.nextStepBox}>
-            <Sparkles size={18} color={colors.tealBright} />
+      </View>
+
+      {/* ── KPI STRIP ── */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.kpiStrip}>
+        <KpiTile
+          icon={<Wallet size={14} color={colors.mint} />}
+          label="Cash"
+          value={fmt(agency.money)}
+          accent={colors.mint}
+        />
+        <KpiTile
+          icon={<Heart size={14} color="#FDA4AF" />}
+          label="Reputation"
+          value={`${agency.reputation}`}
+          sub="/100"
+          accent="#FDA4AF"
+        />
+        <KpiTile
+          icon={<UserPlus size={14} color={colors.tealBright} />}
+          label="Roster"
+          value={`${idols.length}`}
+          sub="idols"
+          accent={colors.tealBright}
+        />
+        <KpiTile
+          icon={<Users size={14} color={colors.violetBright} />}
+          label="Groups"
+          value={`${groups.length}`}
+          accent={colors.violetBright}
+        />
+        <KpiTile
+          icon={<TrendingUp size={14} color={colors.amber} />}
+          label="Rank"
+          value={`#${agency.ranking}`}
+          accent={colors.amber}
+        />
+      </ScrollView>
+
+      {/* ── IDOL FILMSTRIP ── full-art horizontal scroll */}
+      {allMembers.length > 0 && (
+        <View>
+          <View style={styles.sectionRow}>
+            <Text style={styles.sectionLabel}>ROSTER</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Idols')} activeOpacity={0.7}>
+              <Text style={styles.linkText}>See all</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filmstripScroll}>
+            {allMembers.map(m => (
+              <TouchableOpacity
+                key={m.id}
+                style={styles.filmCell}
+                onPress={() => navigation.navigate('IdolProfile', { id: m.id })}
+                activeOpacity={0.85}>
+                {m.image ? (
+                  <Image source={m.image} resizeMode="cover" style={styles.filmPhoto} />
+                ) : (
+                  <View style={styles.filmFallback}>
+                    <Text style={styles.filmFallbackText}>{m.stageName.slice(0, 2).toUpperCase()}</Text>
+                  </View>
+                )}
+                <View style={styles.filmOverlay} />
+                <Text style={styles.filmName} numberOfLines={1}>{m.stageName}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* ── NEXT STEP CTA if no idols ── */}
+      {idols.length === 0 && (
+        <Card>
+          <View style={styles.ctaBox}>
+            <Sparkles size={20} color={colors.tealBright} />
             <View style={styles.flex1}>
-              <Text style={styles.nextStepTitle}>Start by recruiting your first idol</Text>
-              <Text style={styles.nextStepText}>
-                Scout candidates, build your roster, then form a group when you have enough members.
+              <Text style={styles.ctaTitle}>Start by recruiting your first idol</Text>
+              <Text style={styles.ctaBody}>
+                Scout candidates, build your roster, then form groups to grow your agency.
               </Text>
             </View>
             <TouchableOpacity
-              style={styles.nextStepButton}
+              style={styles.ctaBtn}
               onPress={() => navigation.navigate('Recruit')}
               activeOpacity={0.8}>
-              <Text style={styles.nextStepButtonText}>Recruit</Text>
+              <Text style={styles.ctaBtnText}>Scout</Text>
             </TouchableOpacity>
           </View>
-        ) : null}
-      </Card>
+        </Card>
+      )}
 
-      {groups.length > 0 ? (
+      {/* ── GROUPS ── */}
+      {groups.length > 0 && (
         <Card glow="teal">
-          <View style={styles.rowBetweenStart}>
-            <Text style={styles.groupTitle}>GROUPS OVERVIEW</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Groups')} activeOpacity={0.8}>
-              <Text style={styles.linkText}>Manage</Text>
+          <View style={styles.sectionRow}>
+            <Text style={styles.sectionLabel}>GROUPS</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Groups')} activeOpacity={0.7}>
+              <Text style={styles.linkText}>Manage →</Text>
             </TouchableOpacity>
           </View>
-          <View style={styles.groupListWrap}>
+          <View style={styles.groupList}>
             {groups.slice(0, 3).map(group => {
-              const groupMembers = getGroupMembers(group, idols);
+              const gm = getGroupMembers(group, idols);
               return (
                 <TouchableOpacity
                   key={group.id}
-                  style={styles.groupListItem}
+                  style={styles.groupRow}
                   onPress={() => navigation.navigate('GroupProfile', { groupId: group.id })}
                   activeOpacity={0.84}>
-                  <View>
-                    <Text style={styles.groupListName}>{group.name}</Text>
-                    <Text style={styles.tinyMuted}>
-                      {groupMembers.length} members · {group.status} · synergy {group.synergy}
-                    </Text>
+                  <View style={styles.groupRowLeft}>
+                    <AgencyLogoMark
+                      preset={group.logo?.kind === 'preset' ? group.logo.preset : 'NEON_STAR'}
+                      size={28}
+                    />
+                    <View>
+                      <Text style={styles.groupName}>{group.name}</Text>
+                      <Text style={styles.groupSub}>
+                        {gm.length} members · synergy {group.synergy}
+                      </Text>
+                    </View>
                   </View>
-                  <ChevronRight size={14} color={colors.mutedForeground} />
+                  <View style={styles.groupStatusPill}>
+                    <Text style={styles.groupStatusText}>{group.status}</Text>
+                  </View>
                 </TouchableOpacity>
               );
             })}
           </View>
         </Card>
-      ) : null}
+      )}
 
+      {/* ── PERFORMANCE ── radar + vertical bars side by side */}
       <Card>
-        <SectionTitle action={<MoreHorizontal size={16} color={colors.mutedForeground} />}>
-          PERFORMANCE · {elevate ? elevate.name : 'AGENCY'}
-        </SectionTitle>
+        {/* Group switcher tabs */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.perfTabRow}>
+          <TouchableOpacity
+            style={[styles.perfTab, perfGroupId === null && styles.perfTabActive]}
+            onPress={() => setPerfGroupId(null)}
+            activeOpacity={0.8}>
+            <Text style={[styles.perfTabText, perfGroupId === null && styles.perfTabTextActive]}>
+              Agency Avg
+            </Text>
+          </TouchableOpacity>
+          {groups.map(g => (
+            <TouchableOpacity
+              key={g.id}
+              style={[styles.perfTab, perfGroupId === g.id && styles.perfTabActive]}
+              onPress={() => setPerfGroupId(g.id)}
+              activeOpacity={0.8}>
+              <Text style={[styles.perfTabText, perfGroupId === g.id && styles.perfTabTextActive]}>
+                {g.name}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
         <View style={styles.perfRow}>
           <View style={styles.radarBox}>
-            <RadarChart data={radarData} size={180} />
+            <RadarChart data={radarData} size={110} />
           </View>
           <View style={styles.vBars}>
             {stats.map(s => (
-              <View key={s.label} style={styles.vBarCol}>
-                <Text style={styles.vBarLabel}>{s.label}</Text>
+              <View key={s.short} style={styles.vBarCol}>
                 <View style={styles.vBarTrack}>
                   <Gradient
                     colors={[colors.violet, colors.tealBright]}
@@ -179,32 +282,37 @@ export function AgencyDashboardScreen() {
                     style={[styles.vBarFill, { height: `${s.v}%` }]}
                   />
                 </View>
-                <Text style={styles.vBarValue}>{s.v}</Text>
+                <Text style={styles.vBarNum}>{s.v}</Text>
+                <Text style={styles.vBarLabel}>{s.short}</Text>
               </View>
             ))}
           </View>
         </View>
-        {members.length > 0 ? (
-          <View style={styles.avatarRow}>
-            {members.map(m => (
+        {perfMembers.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.memberAvatars}>
+            {perfMembers.map(m => (
               <TouchableOpacity
                 key={m.id}
                 style={styles.avatarItem}
                 onPress={() => navigation.navigate('IdolProfile', { id: m.id })}
                 activeOpacity={0.7}>
-                <Avatar name={m.stageName} gradient={m.gradient} image={m.image} size={42} />
+                <Avatar name={m.stageName} gradient={m.gradient} image={m.image} size={38} />
                 <Text style={styles.avatarName}>{m.stageName}</Text>
               </TouchableOpacity>
             ))}
-          </View>
-        ) : (
-          <Text style={styles.emptyHint}>Recruit idols to unlock detailed performance comparisons.</Text>
+          </ScrollView>
+        )}
+        {idols.length === 0 && (
+          <Text style={styles.emptyHint}>Recruit idols to see performance data.</Text>
         )}
       </Card>
 
-      {/* Schedule */}
+      {/* ── SCHEDULE ── */}
       <Card>
-        <SectionTitle>CURRENT SCHEDULE</SectionTitle>
+        <SectionTitle>THIS WEEK</SectionTitle>
         <View style={styles.scheduleGrid}>
           {schedule.map(s => (
             <ScheduleCard key={s.id} s={s} />
@@ -212,16 +320,16 @@ export function AgencyDashboardScreen() {
         </View>
       </Card>
 
-      {/* Revenue */}
+      {/* ── REVENUE CHART ── */}
       <Card>
         <View style={styles.revenueHeader}>
-          <SectionTitle>REVENUE HISTORY</SectionTitle>
+          <SectionTitle>REVENUE</SectionTitle>
           <View style={styles.alignEnd}>
             <Text style={styles.revenueTotal}>₩1.45B</Text>
             <Text style={styles.tinyMuted}>Jan – Sep total</Text>
           </View>
         </View>
-        <ResponsiveChart height={180}>
+        <ResponsiveChart height={160}>
           {width => (
             <LineChart
               width={width}
@@ -236,44 +344,38 @@ export function AgencyDashboardScreen() {
           )}
         </ResponsiveChart>
         <View style={styles.legendRow}>
-          <Legend color={lineColors.group} label="group" />
-          <Legend color={lineColors.solo} label="solo" />
-          <Legend color={lineColors.merch} label="merch" />
-        </View>
-        <View style={styles.miniGrid}>
-          <Mini label="Monthly Profit" value={fmt(170_000_000)} accent="mint" />
-          <Mini label="Fan Growth" value="+128K" accent="teal" />
-          <Mini label="Promotion" value={fmt(82_000_000)} accent="violet" />
-          <Mini label="Reputation" value="+4" accent="mint" />
+          <Legend color={lineColors.group} label="Group" />
+          <Legend color={lineColors.solo} label="Solo" />
+          <Legend color={lineColors.merch} label="Merch" />
         </View>
       </Card>
     </AppShell>
   );
 }
 
-function KPI({ icon, label, value, sub }: { icon: ReactNode; label: string; value: string; sub?: string }) {
+function KpiTile({
+  icon,
+  label,
+  value,
+  sub,
+  accent,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+  sub?: string;
+  accent: string;
+}) {
   return (
-    <View style={styles.kpi}>
+    <View style={[styles.kpiTile, { borderColor: accent + '33' }]}>
       <View style={styles.kpiHead}>
         {icon}
-        <Text style={styles.kpiLabel}> {label}</Text>
-      </View>
-      <Text style={styles.kpiValue}>
-        {value} <Text style={styles.kpiSub}>{sub}</Text>
-      </Text>
-    </View>
-  );
-}
-
-function Mini({ label, value, accent }: { label: string; value: string; accent: 'mint' | 'teal' | 'violet' }) {
-  const dot = accent === 'mint' ? colors.mint : accent === 'teal' ? colors.teal : colors.violetBright;
-  return (
-    <View style={styles.mini}>
-      <View style={styles.miniHead}>
-        <View style={[styles.miniDot, { backgroundColor: dot }]} />
         <Text style={styles.kpiLabel}>{label}</Text>
       </View>
-      <Text style={styles.miniValue}>{value}</Text>
+      <Text style={[styles.kpiValue, { color: accent }]}>
+        {value}
+        {sub ? <Text style={styles.kpiSub}> {sub}</Text> : null}
+      </Text>
     </View>
   );
 }
@@ -296,11 +398,11 @@ function ScheduleCard({ s }: { s: DynamicScheduleItem }) {
         : styles.accentHot;
   const badge =
     s.badge === 'pinned' ? (
-      <Pin size={14} color={colors.violetBright} />
+      <Pin size={13} color={colors.violetBright} />
     ) : s.badge === 'alert' ? (
-      <AlertCircle size={14} color={colors.hot} />
+      <AlertCircle size={13} color={colors.hot} />
     ) : (
-      <CheckCircle2 size={14} color={colors.tealBright} />
+      <CheckCircle2 size={13} color={colors.tealBright} />
     );
   return (
     <View style={[styles.scheduleCard, accentStyle]}>
@@ -308,9 +410,7 @@ function ScheduleCard({ s }: { s: DynamicScheduleItem }) {
       <View style={styles.scheduleInner}>
         <Text style={styles.scheduleNum}>{s.num}.</Text>
         <View style={styles.flex1}>
-          <Text style={styles.scheduleTitle} numberOfLines={1}>
-            {s.title}
-          </Text>
+          <Text style={styles.scheduleTitle} numberOfLines={1}>{s.title}</Text>
           <View style={styles.rowBetween}>
             <Text style={styles.tinyMuted}>{s.category}</Text>
             <Text style={styles.tinyMuted}>{s.date}</Text>
@@ -343,8 +443,22 @@ function ScheduleCard({ s }: { s: DynamicScheduleItem }) {
 const styles = StyleSheet.create({
   flex1: { flex: 1, minWidth: 0 },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  rowBetweenStart: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.md },
-  groupHeading: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  tinyMuted: { fontSize: 10, color: colors.mutedForeground },
+  sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
+  sectionLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 1.5, color: colors.mutedForeground },
+  linkText: { fontSize: 11, fontWeight: '700', color: colors.tealBright },
+  alignEnd: { alignItems: 'flex-end' },
+
+  // ── Hero ──
+  hero: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  heroLeft: { flex: 1, gap: 6 },
+  heroBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   agencyLogoBadge: {
     width: 36,
     height: 36,
@@ -352,86 +466,118 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(34,211,238,0.6)',
+    borderColor: 'rgba(34,211,238,0.5)',
     backgroundColor: colors.whiteA05,
     overflow: 'hidden',
   },
   agencyLogoImage: { width: '100%', height: '100%' },
-  alignEnd: { alignItems: 'flex-end' },
-  tinyMuted: { fontSize: 10, color: colors.mutedForeground },
-
-  heroTitle: { color: colors.tealBright, fontSize: 28, fontWeight: '900', letterSpacing: -0.5 },
-  agencyMetaRow: { marginTop: 4, flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  agencyMetaText: {
+  careerPill: {
     borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.whiteA05,
+    borderColor: 'rgba(103,232,249,0.4)',
     paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    fontSize: 10,
-    color: colors.mutedForeground,
+    paddingVertical: 3,
   },
-  groupTitle: { color: colors.tealBright, fontSize: 22, fontWeight: '900', letterSpacing: -0.4 },
-  linkText: { color: colors.tealBright, fontSize: 11, fontWeight: '700' },
-  activeBadge: {
-    borderRadius: radius.full,
+  careerPillText: { fontSize: 9, fontWeight: '700', letterSpacing: 1, color: colors.tealBright },
+  heroAgencyName: { fontSize: 26, fontWeight: '900', color: colors.foreground, letterSpacing: -0.5, lineHeight: 30 },
+  heroMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  heroMetaText: { fontSize: 11, color: colors.mutedForeground },
+  heroMetaDot: { fontSize: 11, color: colors.border },
+
+  // Week block (right side)
+  weekBlock: {
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: 'rgba(103,232,249,0.5)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    borderColor: 'rgba(34,211,238,0.3)',
+    backgroundColor: 'rgba(34,211,238,0.05)',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    minWidth: 80,
   },
-  activeBadgeText: { color: colors.tealBright, fontSize: 10, fontWeight: '600' },
+  weekLabel: { fontSize: 9, fontWeight: '800', letterSpacing: 2, color: colors.mutedForeground },
+  weekNum: { fontSize: 36, fontWeight: '900', color: colors.tealBright, lineHeight: 40 },
   nextWeekBtn: {
-    marginTop: spacing.md,
-    alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
+    borderRadius: radius.lg,
+    backgroundColor: colors.teal,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 5,
+  },
+  nextWeekText: { fontSize: 10, fontWeight: '900', color: colors.slate900 },
+
+  // KPI strip
+  kpiStrip: { flexDirection: 'row', gap: spacing.sm, paddingBottom: 2 },
+  kpiTile: {
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    backgroundColor: 'rgba(20,23,34,0.9)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: 3,
+    minWidth: 90,
+  },
+  kpiHead: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  kpiLabel: { fontSize: 10, color: colors.mutedForeground },
+  kpiValue: { fontSize: 18, fontWeight: '900' },
+  kpiSub: { fontSize: 10, fontWeight: '400', color: colors.mutedForeground },
+
+  // Filmstrip
+  filmstripScroll: { flexDirection: 'row', gap: spacing.sm, paddingBottom: 2 },
+  filmCell: {
+    width: 80,
+    height: 110,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: '#080B12',
+  },
+  filmPhoto: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
+  filmFallback: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(34,211,238,0.05)' },
+  filmFallbackText: { fontSize: 18, fontWeight: '900', color: 'rgba(103,232,249,0.3)', letterSpacing: 2 },
+  filmOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 40,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
+  filmName: {
+    position: 'absolute',
+    bottom: 6,
+    left: 4,
+    right: 4,
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    color: colors.foreground,
+    textAlign: 'center',
+  },
+
+  // CTA box
+  ctaBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  ctaTitle: { fontSize: 13, fontWeight: '700', color: colors.foreground },
+  ctaBody: { marginTop: 2, fontSize: 11, color: colors.mutedForeground },
+  ctaBtn: {
     borderRadius: radius.lg,
     backgroundColor: colors.teal,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
-  nextWeekText: { fontSize: 12, fontWeight: '800', color: colors.slate900 },
+  ctaBtnText: { fontSize: 11, fontWeight: '800', color: colors.slate900 },
 
-  memberStrip: {
-    marginTop: spacing.md,
-    flexDirection: 'row',
-    height: 112,
-    gap: 6,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-  },
-  memberCell: { flex: 1, justifyContent: 'flex-end', overflow: 'hidden' },
-  memberCellImage: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    zIndex: 1,
-    elevation: 1,
-    opacity: 1,
-  },
-  memberCellNameWrap: {
-    backgroundColor: 'rgba(0,0,0,0.42)',
-    paddingVertical: 6,
-    paddingHorizontal: 4,
-    zIndex: 2,
-  },
-  memberCellName: {
-    fontSize: 10,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    color: 'rgba(255,255,255,0.95)',
-    textAlign: 'center',
-  },
-  groupListWrap: { marginTop: spacing.md, gap: spacing.sm },
-  groupListItem: {
+  // Groups
+  groupList: { gap: spacing.sm },
+  groupRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -442,65 +588,58 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
-  groupListName: { color: colors.foreground, fontSize: 13, fontWeight: '700' },
+  groupRowLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  groupName: { fontSize: 13, fontWeight: '700', color: colors.foreground },
+  groupSub: { fontSize: 10, color: colors.mutedForeground, marginTop: 1 },
+  groupStatusPill: {
+    borderRadius: radius.full,
+    backgroundColor: 'rgba(34,211,238,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(34,211,238,0.3)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+  },
+  groupStatusText: { fontSize: 9, fontWeight: '700', color: colors.tealBright, letterSpacing: 0.5 },
 
-  kpiRow: { marginTop: spacing.lg, flexDirection: 'row', gap: spacing.sm },
-  kpi: {
-    flex: 1,
-    borderRadius: radius.lg,
+  // Performance
+  perfTabRow: { flexDirection: 'row', gap: 8 },
+  perfTab: {
+    borderRadius: radius.full,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.whiteA05,
-    padding: 10,
-  },
-  kpiHead: { flexDirection: 'row', alignItems: 'center' },
-  kpiLabel: { fontSize: 10, color: colors.mutedForeground },
-  kpiValue: { marginTop: 4, fontSize: 16, fontWeight: '700', color: colors.foreground },
-  kpiSub: { fontSize: 10, fontWeight: '400', color: colors.mint },
-
-  statusGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  nextStepBox: {
-    marginTop: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(34,211,238,0.45)',
-    backgroundColor: 'rgba(34,211,238,0.06)',
-    padding: spacing.md,
-  },
-  nextStepTitle: { fontSize: 13, fontWeight: '700', color: colors.foreground },
-  nextStepText: { marginTop: 2, fontSize: 11, color: colors.mutedForeground },
-  nextStepButton: {
-    borderRadius: radius.lg,
-    backgroundColor: colors.teal,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingVertical: 5,
   },
-  nextStepButtonText: { fontSize: 11, fontWeight: '800', color: colors.slate900 },
+  perfTabActive: {
+    borderColor: 'rgba(34,211,238,0.55)',
+    backgroundColor: 'rgba(34,211,238,0.08)',
+  },
+  perfTabText: { fontSize: 12, fontWeight: '600', color: colors.mutedForeground },
+  perfTabTextActive: { color: colors.tealBright },
 
-  perfRow: { alignItems: 'center', gap: spacing.md },
-  radarBox: { alignItems: 'center' },
-  vBars: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.xl },
-  vBarCol: { alignItems: 'center', gap: 6 },
-  vBarLabel: { fontSize: 8, textTransform: 'uppercase', letterSpacing: 0.6, color: colors.mutedForeground },
+  perfRow: { flexDirection: 'row', alignItems: 'center', gap: 0 },
+  radarBox: { flex: 1, alignItems: 'center' },
+  vBars: { flexDirection: 'row', gap: 10, alignItems: 'flex-end' },
+  vBarCol: { alignItems: 'center', gap: 3 },
   vBarTrack: {
-    height: 74,
-    width: 10,
+    height: 60,
+    width: 12,
     borderRadius: radius.full,
     backgroundColor: colors.whiteA10,
     overflow: 'hidden',
     justifyContent: 'flex-end',
   },
   vBarFill: { width: '100%', borderRadius: radius.full },
-  vBarValue: { fontSize: 12, fontWeight: '700', color: colors.foreground },
+  vBarNum: { fontSize: 10, fontWeight: '700', color: colors.foreground },
+  vBarLabel: { fontSize: 7, fontWeight: '800', letterSpacing: 0.5, color: colors.mutedForeground, textTransform: 'uppercase' },
 
-  avatarRow: { marginTop: spacing.md, flexDirection: 'row', justifyContent: 'space-between' },
+  memberAvatars: { flexDirection: 'row', gap: spacing.md },
   avatarItem: { alignItems: 'center', gap: 4 },
-  avatarName: { fontSize: 9, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: colors.foreground },
-  emptyHint: { marginTop: spacing.md, fontSize: 11, color: colors.mutedForeground, textAlign: 'center' },
+  avatarName: { fontSize: 8, fontWeight: '700', letterSpacing: 0.8, color: colors.foreground, textTransform: 'uppercase', maxWidth: 44, textAlign: 'center' },
+  emptyHint: { fontSize: 11, color: colors.mutedForeground, textAlign: 'center', paddingVertical: spacing.md },
 
+  // Schedule
   scheduleGrid: { gap: spacing.sm },
   scheduleCard: {
     position: 'relative',
@@ -509,12 +648,12 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderWidth: 1,
   },
-  accentTeal: { borderColor: 'rgba(34,211,238,0.6)' },
-  accentViolet: { borderColor: 'rgba(217,70,239,0.6)' },
-  accentHot: { borderColor: 'rgba(251,113,133,0.5)' },
-  scheduleBadge: { position: 'absolute', right: 8, top: 8, zIndex: 2 },
+  accentTeal: { borderColor: 'rgba(34,211,238,0.5)' },
+  accentViolet: { borderColor: 'rgba(217,70,239,0.5)' },
+  accentHot: { borderColor: 'rgba(251,113,133,0.45)' },
+  scheduleBadge: { position: 'absolute', right: spacing.sm, top: spacing.sm, zIndex: 2 },
   scheduleInner: { flexDirection: 'row', gap: spacing.sm },
-  scheduleNum: { fontSize: 22, fontWeight: '900', color: colors.tealBright },
+  scheduleNum: { fontSize: 20, fontWeight: '900', color: colors.tealBright },
   scheduleTitle: { fontSize: 13, fontWeight: '700', color: colors.foreground },
   progressWrap: { marginTop: spacing.sm, gap: 4 },
   progressTrack: { height: 4, borderRadius: radius.full, backgroundColor: colors.whiteA10, overflow: 'hidden' },
@@ -534,23 +673,10 @@ const styles = StyleSheet.create({
   },
   detailsText: { fontSize: 10, color: colors.foreground },
 
-  revenueHeader: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
-  revenueTotal: { color: colors.tealBright, fontSize: 20, fontWeight: '900' },
-  legendRow: { flexDirection: 'row', gap: spacing.md, justifyContent: 'center', marginTop: 4 },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  legendDot: { width: 8, height: 8, borderRadius: radius.full },
-
-  miniGrid: { marginTop: spacing.md, flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  mini: {
-    flexGrow: 1,
-    flexBasis: '47%',
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.whiteA05,
-    padding: 10,
-  },
-  miniHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  miniDot: { width: 6, height: 6, borderRadius: radius.full },
-  miniValue: { fontSize: 14, fontWeight: '700', color: colors.foreground, marginTop: 2 },
+  // Revenue
+  revenueHeader: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: spacing.sm },
+  revenueTotal: { fontSize: 20, fontWeight: '900', color: colors.tealBright },
+  legendRow: { flexDirection: 'row', gap: spacing.lg, justifyContent: 'center', marginTop: spacing.sm },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  legendDot: { width: 7, height: 7, borderRadius: radius.full },
 });
