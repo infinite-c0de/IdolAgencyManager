@@ -62,11 +62,11 @@ export function RecruitScreen() {
 
   const visibleCandidates = trainees.filter(t => t.isScoutingVisible !== false);
 
-  // Build nationality list from the current visible pool
+  // Build nationality list from the full trainee pool (not just visible)
   const nationalities = useMemo(() => {
-    const set = new Set(visibleCandidates.map(t => t.nationality));
+    const set = new Set(trainees.map(t => t.nationality));
     return ['All', ...Array.from(set).sort()];
-  }, [visibleCandidates]);
+  }, [trainees]);
 
   const list = visibleCandidates.filter(t => {
     if (activeFilter !== 'All' && t.skill !== activeFilter) return false;
@@ -136,14 +136,17 @@ export function RecruitScreen() {
             {filters.map(f => {
               const active = activeFilter === f;
               const accent = SKILL_COLOR[f];
+              const count = f === 'All' ? visibleCandidates.length : visibleCandidates.filter(t => t.skill === f).length;
+              const hasMatches = count > 0;
               return (
                 <TouchableOpacity
                   key={f}
                   onPress={() => setActiveFilter(f)}
-                  style={[styles.filterChip, active && { borderColor: (accent ?? colors.tealBright) + 'AA', backgroundColor: (accent ?? colors.tealBright) + '18' }]}
+                  style={[styles.filterChip, active && { borderColor: (accent ?? colors.tealBright) + 'AA', backgroundColor: (accent ?? colors.tealBright) + '18' }, !hasMatches && styles.filterChipEmpty]}
                   activeOpacity={0.7}>
-                  {accent && <View style={[styles.filterDot, { backgroundColor: accent, opacity: active ? 1 : 0.35 }]} />}
-                  <Text style={[styles.filterText, active && { color: accent ?? colors.tealBright, fontWeight: '700' }]}>{f}</Text>
+                  {accent && <View style={[styles.filterDot, { backgroundColor: accent, opacity: active ? 1 : hasMatches ? 0.35 : 0.15 }]} />}
+                  <Text style={[styles.filterText, active && { color: accent ?? colors.tealBright, fontWeight: '700' }, !hasMatches && styles.filterTextEmpty]}>{f}</Text>
+                  {f !== 'All' && <Text style={[styles.filterCount, active && { color: accent ?? colors.tealBright }]}>{count}</Text>}
                 </TouchableOpacity>
               );
             })}
@@ -177,13 +180,16 @@ export function RecruitScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
             {nationalities.map(n => {
               const active = nationalityFilter === n;
+              const count = n === 'All' ? visibleCandidates.length : visibleCandidates.filter(t => t.nationality === n).length;
+              const hasMatches = count > 0;
               return (
                 <TouchableOpacity
                   key={n}
                   onPress={() => setNationalityFilter(n)}
-                  style={[styles.filterChip, active && { borderColor: 'rgba(103,232,249,0.6)', backgroundColor: 'rgba(34,211,238,0.1)' }]}
+                  style={[styles.filterChip, active && { borderColor: 'rgba(103,232,249,0.6)', backgroundColor: 'rgba(34,211,238,0.1)' }, !hasMatches && styles.filterChipEmpty]}
                   activeOpacity={0.7}>
-                  <Text style={[styles.filterText, active && { color: colors.tealBright, fontWeight: '700' }]}>{n}</Text>
+                  <Text style={[styles.filterText, active && { color: colors.tealBright, fontWeight: '700' }, !hasMatches && styles.filterTextEmpty]}>{n}</Text>
+                  {n !== 'All' && <Text style={[styles.filterCount, active && { color: colors.tealBright }]}>{count}</Text>}
                 </TouchableOpacity>
               );
             })}
@@ -232,14 +238,37 @@ export function RecruitScreen() {
         ))}
         {list.length === 0 && (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>No candidates visible</Text>
-            <Text style={styles.emptyBody}>
-              Use Refresh to cycle new faces into the scouting pool.
-            </Text>
-            <TouchableOpacity style={styles.emptyRefreshBtn} onPress={handleRefresh} activeOpacity={0.8}>
-              <RefreshCw size={13} color={colors.tealBright} />
-              <Text style={styles.emptyRefreshText}>Refresh Candidates</Text>
-            </TouchableOpacity>
+            {visibleCandidates.length > 0 ? (
+              <>
+                <Text style={styles.emptyTitle}>No matches</Text>
+                <Text style={styles.emptyBody}>
+                  {activeFilter !== 'All' && `Skill: ${activeFilter}  `}
+                  {genderFilter !== 'All' && `Gender: ${genderFilter}  `}
+                  {nationalityFilter !== 'All' && `Nation: ${nationalityFilter}`}
+                </Text>
+                <Text style={styles.emptyBody}>
+                  No candidates in the current pool match these filters. Clear a filter or refresh.
+                </Text>
+                <TouchableOpacity
+                  style={styles.emptyRefreshBtn}
+                  onPress={() => { setActiveFilter('All'); setGenderFilter('All'); setNationalityFilter('All'); }}
+                  activeOpacity={0.8}>
+                  <X size={13} color={colors.tealBright} />
+                  <Text style={styles.emptyRefreshText}>Clear All Filters</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text style={styles.emptyTitle}>No candidates visible</Text>
+                <Text style={styles.emptyBody}>
+                  Use Refresh to cycle new faces into the scouting pool.
+                </Text>
+                <TouchableOpacity style={styles.emptyRefreshBtn} onPress={handleRefresh} activeOpacity={0.8}>
+                  <RefreshCw size={13} color={colors.tealBright} />
+                  <Text style={styles.emptyRefreshText}>Refresh Candidates</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         )}
       </View>
@@ -494,6 +523,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 6,
   },
+  filterChipEmpty: { opacity: 0.45 },
   filterDot: {
     width: 6,
     height: 6,
@@ -503,6 +533,17 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: colors.mutedForeground,
+  },
+  filterTextEmpty: { color: 'rgba(154,163,181,0.5)' },
+  filterCount: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.mutedForeground,
+    backgroundColor: colors.whiteA10,
+    borderRadius: radius.full,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    overflow: 'hidden',
   },
 
   genderToggle: {

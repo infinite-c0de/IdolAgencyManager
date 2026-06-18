@@ -5,6 +5,7 @@ import {
   Award,
   BedDouble,
   ChevronLeft,
+  ChevronRight,
   Drama,
   Heart,
   Languages,
@@ -15,8 +16,8 @@ import {
   Users,
   Zap,
 } from 'lucide-react-native';
-import React, { ComponentType, ReactNode } from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { ComponentType, ReactNode, useState } from 'react';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card, SectionTitle, SkillBar, StatusDot } from '../components/AppShell';
 import { RadarChart } from '../components/charts';
 import { AgencyLogoMark } from '../components/ui/AgencyLogoMark';
@@ -48,6 +49,7 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
   const { idols, groups } = useGame();
   const i = idols.find(x => x.id === route.params.id);
   const idolGroup = i?.group ? groups.find(g => g.name === i.group) : undefined;
+  const [tab, setTab] = useState<'info' | 'stats' | 'schedule'>('info');
 
   if (!i) {
     return (
@@ -112,156 +114,177 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
         </HeroArt>
       </Card>
 
-      {/* Identity block — replaces the label/row list */}
-      <Card>
-        <View style={styles.identityRow}>
-          <View style={styles.flex1}>
-            <Text style={styles.fullName}>{i.fullName}</Text>
-            <View style={styles.identityMetaRow}>
-              <Text style={styles.nationalityLine}>{i.flag} {i.nationality}</Text>
-              <View style={[
-                styles.genderBadge,
-                i.gender === 'male' ? styles.genderMale : i.gender === 'female' ? styles.genderFemale : styles.genderNeutral,
-              ]}>
-                <Text style={[
-                  styles.genderSymbol,
-                  i.gender === 'male' ? { color: '#93C5FD' } : i.gender === 'female' ? { color: '#F9A8D4' } : { color: colors.mutedForeground },
+      {/* Tab bar */}
+      <View style={styles.tabBar}>
+        {(['info', 'stats', 'schedule'] as const).map(t => (
+          <TouchableOpacity
+            key={t}
+            style={[styles.tabBtn, tab === t && styles.tabBtnActive]}
+            onPress={() => setTab(t)}
+            activeOpacity={0.8}>
+            <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
+              {t === 'info' ? 'INFO' : t === 'stats' ? 'STATS' : 'SCHEDULE'}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* ── INFO TAB ── */}
+      {tab === 'info' && (
+        <Card>
+          <View style={styles.identityRow}>
+            <View style={styles.flex1}>
+              <Text style={styles.fullName}>{i.fullName}</Text>
+              <View style={styles.identityMetaRow}>
+                <Text style={styles.nationalityLine}>{i.flag} {i.nationality}</Text>
+                <View style={[
+                  styles.genderBadge,
+                  i.gender === 'male' ? styles.genderMale : i.gender === 'female' ? styles.genderFemale : styles.genderNeutral,
                 ]}>
-                  {i.gender === 'male' ? '♂' : i.gender === 'female' ? '♀' : '—'}
+                  <Text style={[
+                    styles.genderSymbol,
+                    i.gender === 'male' ? { color: '#93C5FD' } : i.gender === 'female' ? { color: '#F9A8D4' } : { color: colors.mutedForeground },
+                  ]}>
+                    {i.gender === 'male' ? '♂' : i.gender === 'female' ? '♀' : '—'}
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.dobLine}>{i.dob}  ·  {i.age} yrs</Text>
+            </View>
+            <View style={styles.trainingBadge}>
+              <Text style={styles.trainingNum}>{i.trainingYears}</Text>
+              <Text style={styles.trainingLabel}>YRS{'\n'}TRAINING</Text>
+            </View>
+          </View>
+
+          <View style={styles.tagRow}>
+            <Tag label={i.personalityProfile?.archetype ?? 'All-Rounder'} color={colors.violetBright} />
+            <Tag label={i.personality} color={colors.mutedForeground} />
+            {i.languages.map(lang => <Tag key={lang} label={lang} color={colors.tealBright} />)}
+          </View>
+
+          {i.personalityProfile && (
+            <View style={styles.dominanceSection}>
+              <View style={styles.dominanceLabel}>
+                <Text style={styles.domKey}>DOMINANCE</Text>
+                <Text style={styles.domVal}>{i.personalityProfile.dominance}</Text>
+              </View>
+              <View style={styles.domTrack}>
+                <Gradient
+                  colors={[colors.violetBright + '88', colors.violetBright]}
+                  direction="to-r"
+                  style={[styles.domFill, { width: `${i.personalityProfile.dominance}%` }]}
+                />
+              </View>
+            </View>
+          )}
+
+          {/* Group info — tappable → Group Profile */}
+          {idolGroup ? (
+            <TouchableOpacity
+              style={styles.groupInfoRow}
+              onPress={() => navigation.navigate('GroupProfile', { groupId: idolGroup.id })}
+              activeOpacity={0.75}>
+              <AgencyLogoMark
+                preset={idolGroup.logo?.kind === 'preset' ? idolGroup.logo.preset : 1}
+                size={38}
+              />
+              <View style={styles.groupInfoText}>
+                <Text style={styles.groupInfoName}>{idolGroup.name}</Text>
+                <View style={styles.groupInfoMeta}>
+                  <View style={[styles.groupStatusDot, { backgroundColor: idolGroup.status === 'Active' ? colors.mint : colors.mutedForeground }]} />
+                  <Text style={styles.groupInfoSub}>{idolGroup.status}</Text>
+                  <Text style={styles.groupInfoDivider}>·</Text>
+                  <Users size={10} color={colors.mutedForeground} />
+                  <Text style={styles.groupInfoSub}>{idolGroup.memberIds.length} members</Text>
+                </View>
+              </View>
+              <View style={[styles.groupStatusPill, idolGroup.status === 'Active' ? styles.groupStatusActive : styles.groupStatusPre]}>
+                <Text style={[styles.groupStatusText, idolGroup.status === 'Active' ? styles.groupStatusTextActive : styles.groupStatusTextPre]}>
+                  {idolGroup.status === 'Active' ? 'ACTIVE' : 'PRE-DEBUT'}
                 </Text>
               </View>
-            </View>
-            <Text style={styles.dobLine}>{i.dob}  ·  {i.age} yrs</Text>
-          </View>
-          <View style={styles.trainingBadge}>
-            <Text style={styles.trainingNum}>{i.trainingYears}</Text>
-            <Text style={styles.trainingLabel}>YRS{'\n'}TRAINING</Text>
-          </View>
-        </View>
-
-        {/* Tag row — personality, archetype, languages */}
-        <View style={styles.tagRow}>
-          <Tag label={i.personalityProfile?.archetype ?? 'All-Rounder'} color={colors.violetBright} />
-          <Tag label={i.personality} color={colors.mutedForeground} />
-          {i.languages.map(lang => <Tag key={lang} label={lang} color={colors.tealBright} />)}
-        </View>
-
-        {/* Dominance bar */}
-        {i.personalityProfile && (
-          <View style={styles.dominanceSection}>
-            <View style={styles.dominanceLabel}>
-              <Text style={styles.domKey}>DOMINANCE</Text>
-              <Text style={styles.domVal}>{i.personalityProfile.dominance}</Text>
-            </View>
-            <View style={styles.domTrack}>
-              <Gradient
-                colors={[colors.violetBright + '88', colors.violetBright]}
-                direction="to-r"
-                style={[styles.domFill, { width: `${i.personalityProfile.dominance}%` }]}
-              />
-            </View>
-          </View>
-        )}
-
-        {/* Group info */}
-        {idolGroup ? (
-          <View style={styles.groupInfoRow}>
-            <AgencyLogoMark
-              preset={idolGroup.logo?.kind === 'preset' ? idolGroup.logo.preset : 1}
-              size={38}
-            />
-            <View style={styles.groupInfoText}>
-              <Text style={styles.groupInfoName}>{idolGroup.name}</Text>
-              <View style={styles.groupInfoMeta}>
-                <View style={[styles.groupStatusDot, { backgroundColor: idolGroup.status === 'Active' ? colors.mint : colors.mutedForeground }]} />
-                <Text style={styles.groupInfoSub}>{idolGroup.status}</Text>
-                <Text style={styles.groupInfoDivider}>·</Text>
-                <Users size={10} color={colors.mutedForeground} />
-                <Text style={styles.groupInfoSub}>{idolGroup.memberIds.length} members</Text>
+              <ChevronRight size={14} color={colors.mutedForeground} />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.groupInfoRow}>
+              <View style={styles.groupInfoSoloIcon}>
+                <Text style={styles.groupInfoSoloEmoji}>🎤</Text>
               </View>
+              <Text style={styles.groupInfoSoloLabel}>Solo Artist</Text>
             </View>
-            <View style={[styles.groupStatusPill, idolGroup.status === 'Active' ? styles.groupStatusActive : styles.groupStatusPre]}>
-              <Text style={[styles.groupStatusText, idolGroup.status === 'Active' ? styles.groupStatusTextActive : styles.groupStatusTextPre]}>
-                {idolGroup.status === 'Active' ? 'ACTIVE' : 'PRE-DEBUT'}
+          )}
+
+          {/* Vitals + Fanbase */}
+          <View style={styles.vitalRow}>
+            <Vital Icon={Heart} label="Health" v={i.health} color="#FDA4AF" />
+            <Vital Icon={Activity} label="Morale" v={i.morale} color={colors.violetBright} />
+            <Vital Icon={Zap} label="Energy" v={i.energy} color={colors.mint} />
+            <View style={styles.vital}>
+              <View style={styles.vitalHead}>
+                <Heart size={12} color="#F9A8D4" />
+                <Text style={styles.tinyMuted}> Fans</Text>
+              </View>
+              <Text style={[styles.vitalValue, { color: '#F9A8D4' }]}>
+                {fmtCount(i.popularity * 3200)}
               </Text>
             </View>
           </View>
-        ) : (
-          <View style={styles.groupInfoRow}>
-            <View style={styles.groupInfoSoloIcon}>
-              <Text style={styles.groupInfoSoloEmoji}>🎤</Text>
-            </View>
-            <Text style={styles.groupInfoSoloLabel}>Solo Artist</Text>
+        </Card>
+      )}
+
+      {/* ── STATS TAB ── */}
+      {tab === 'stats' && (
+        <Card>
+          <SectionTitle>PERFORMANCE SKILLS</SectionTitle>
+          <View style={styles.radarBox}>
+            <RadarChart data={radar} size={190} fillStops={[colors.teal, colors.teal]} />
           </View>
-        )}
-
-        {/* Vitals + Fanbase — 4-column grid */}
-        <View style={styles.vitalRow}>
-          <Vital Icon={Heart} label="Health" v={i.health} color="#FDA4AF" />
-          <Vital Icon={Activity} label="Morale" v={i.morale} color={colors.violetBright} />
-          <Vital Icon={Zap} label="Energy" v={i.energy} color={colors.mint} />
-          <View style={styles.vital}>
-            <View style={styles.vitalHead}>
-              <Heart size={12} color="#F9A8D4" />
-              <Text style={styles.tinyMuted}> Fans</Text>
-            </View>
-            <Text style={[styles.vitalValue, { color: '#F9A8D4' }]}>
-              {fmtCount(i.popularity * 3200)}
-            </Text>
+          <View style={styles.skillList}>
+            <SkillBar label="Vocal" value={i.stats.vocal} />
+            <SkillBar label="Dance" value={i.stats.dance} color="violet" />
+            <SkillBar label="Rap" value={i.stats.rap} color="mint" />
+            <SkillBar label="Visual" value={i.stats.visual} />
+            <SkillBar label="Charisma" value={i.stats.charisma} color="violet" />
+            <SkillBar label="Stamina" value={i.stats.stamina} color="mint" />
+            <SkillBar label="Variety" value={i.stats.variety} />
+            <SkillBar label="Acting" value={i.stats.acting} color="violet" />
           </View>
-        </View>
-      </Card>
+        </Card>
+      )}
 
-      {/* Performance skills */}
-      <Card>
-        <SectionTitle>PERFORMANCE SKILLS</SectionTitle>
-        <View style={styles.radarBox}>
-          <RadarChart data={radar} size={190} fillStops={[colors.teal, colors.teal]} />
-        </View>
-        <View style={styles.skillList}>
-          <SkillBar label="Vocal" value={i.stats.vocal} />
-          <SkillBar label="Dance" value={i.stats.dance} color="violet" />
-          <SkillBar label="Rap" value={i.stats.rap} color="mint" />
-          <SkillBar label="Visual" value={i.stats.visual} />
-          <SkillBar label="Charisma" value={i.stats.charisma} color="violet" />
-          <SkillBar label="Stamina" value={i.stats.stamina} color="mint" />
-          <SkillBar label="Variety" value={i.stats.variety} />
-          <SkillBar label="Acting" value={i.stats.acting} color="violet" />
-        </View>
-      </Card>
-
-      {/* Training & development */}
-      <Card glow="teal">
-        <SectionTitle>TRAINING & DEVELOPMENT</SectionTitle>
-        <View style={styles.trainGrid}>
-          {trainings.map(({ Icon, label }) => (
-            <View key={label} style={styles.trainBtn}>
-              <Icon size={16} color={colors.tealBright} />
-              <Text style={styles.trainLabel}>{label}</Text>
+      {/* ── SCHEDULE TAB ── */}
+      {tab === 'schedule' && (
+        <>
+          <Card glow="teal">
+            <SectionTitle>TRAINING & DEVELOPMENT</SectionTitle>
+            <View style={styles.trainGrid}>
+              {trainings.map(({ Icon, label }) => (
+                <View key={label} style={styles.trainBtn}>
+                  <Icon size={16} color={colors.tealBright} />
+                  <Text style={styles.trainLabel}>{label}</Text>
+                </View>
+              ))}
             </View>
-          ))}
-        </View>
-      </Card>
-
-      {/* Achievements */}
-      <Card>
-        <SectionTitle>RECENT ACHIEVEMENTS</SectionTitle>
-        <View style={styles.achList}>
-          {achievements.map(({ Icon, t, d }) => (
-            <View key={t} style={styles.achItem}>
-              <Gradient colors={['rgba(34,211,238,0.2)', 'rgba(217,70,239,0.2)']} style={styles.achIcon}>
-                <Icon size={16} color={colors.tealBright} />
-              </Gradient>
-              <View style={styles.flex1}>
-                <Text style={styles.achTitle} numberOfLines={1}>
-                  {t}
-                </Text>
-                <Text style={styles.tinyMuted}>{d}</Text>
-              </View>
+          </Card>
+          <Card>
+            <SectionTitle>RECENT ACHIEVEMENTS</SectionTitle>
+            <View style={styles.achList}>
+              {achievements.map(({ Icon, t, d }) => (
+                <View key={t} style={styles.achItem}>
+                  <Gradient colors={['rgba(34,211,238,0.2)', 'rgba(217,70,239,0.2)']} style={styles.achIcon}>
+                    <Icon size={16} color={colors.tealBright} />
+                  </Gradient>
+                  <View style={styles.flex1}>
+                    <Text style={styles.achTitle} numberOfLines={1}>{t}</Text>
+                    <Text style={styles.tinyMuted}>{d}</Text>
+                  </View>
+                </View>
+              ))}
             </View>
-          ))}
-        </View>
-      </Card>
+          </Card>
+        </>
+      )}
     </AppShell>
   );
 }
@@ -339,6 +362,28 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   backText: { fontSize: 11, color: colors.foreground },
+
+  // ── Tabs ──
+  tabBar: {
+    flexDirection: 'row',
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.whiteA05,
+    overflow: 'hidden',
+  },
+  tabBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  tabBtnActive: {
+    backgroundColor: 'rgba(34,211,238,0.12)',
+    borderBottomWidth: 2,
+    borderBottomColor: colors.tealBright,
+  },
+  tabText: { fontSize: 11, fontWeight: '700', letterSpacing: 1, color: colors.mutedForeground },
+  tabTextActive: { color: colors.tealBright },
 
   heroCard: { padding: 0, overflow: 'hidden' },
   hero: {

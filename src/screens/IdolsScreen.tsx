@@ -20,7 +20,6 @@ const TOP_STATS: Array<{ key: keyof ReturnType<typeof useGame>['idols'][number][
   { key: 'visual', label: 'VIS', color: '#FB7185' },
   { key: 'charisma', label: 'CHA', color: '#34D399' },
 ];
-
 function resolveImageAspectRatio(source?: number) {
   if (!source) return 0.72;
   const asset = Image.resolveAssetSource(source);
@@ -144,9 +143,10 @@ export function IdolsScreen() {
                     const val = i.stats[stat.key];
                     return (
                       <View key={stat.key} style={styles.statCol}>
+                        <Text style={[styles.statVal, { color: stat.color }]}>{val}</Text>
                         <View style={styles.statBarTrack}>
                           <Gradient
-                            colors={[stat.color + '88', stat.color]}
+                            colors={[stat.color + '55', stat.color + 'CC']}
                             direction="to-t"
                             style={[styles.statBarFill, { height: `${val}%` }]}
                           />
@@ -299,17 +299,18 @@ const styles = StyleSheet.create({
     gap: 4,
     backgroundColor: 'rgba(0,0,0,0.3)',
   },
-  statCol: { flex: 1, alignItems: 'center', gap: 3 },
+  statCol: { flex: 1, alignItems: 'center', gap: 2 },
   statBarTrack: {
     width: '100%',
-    height: 28,
+    height: 22,
     borderRadius: radius.sm,
     backgroundColor: colors.whiteA10,
     overflow: 'hidden',
     justifyContent: 'flex-end',
   },
   statBarFill: { width: '100%', borderRadius: radius.sm },
-  statLabel: { fontSize: 7, fontWeight: '800', letterSpacing: 0.4 },
+  statVal: { fontSize: 9, fontWeight: '900', lineHeight: 10 },
+  statLabel: { fontSize: 7, fontWeight: '700', letterSpacing: 0.3 },
   popCol: { flex: 1, alignItems: 'center', gap: 2 },
   popNum: { fontSize: 16, fontWeight: '900', color: colors.tealBright, lineHeight: 18 },
   popLabel: { fontSize: 7, fontWeight: '800', letterSpacing: 0.4, color: colors.mutedForeground },
