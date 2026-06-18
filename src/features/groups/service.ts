@@ -9,13 +9,13 @@ import type {
 import type { GroupMember, GroupRadarPoint, GroupReadiness } from './types';
 
 const GROUP_GRADIENTS = [
-  ['rgba(34,211,238,0.45)', 'rgba(217,70,239,0.42)', 'rgba(52,211,153,0.35)'],
-  ['rgba(217,70,239,0.45)', 'rgba(139,92,246,0.42)', 'rgba(251,113,133,0.35)'],
+  ['rgba(34,211,238,0.45)', 'rgba(217,70,239,0.42)', 'rgba(52,211,153,0.35)'],  ['rgba(217,70,239,0.45)', 'rgba(139,92,246,0.42)', 'rgba(251,113,133,0.35)'],
   ['rgba(52,211,153,0.45)', 'rgba(20,184,166,0.42)', 'rgba(6,182,212,0.35)'],
   ['rgba(252,211,77,0.42)', 'rgba(251,113,133,0.38)', 'rgba(217,70,239,0.35)'],
 ];
 
 const MIN_GROUP_MEMBERS = 2;
+const MAX_GROUP_MEMBERS = 6;
 const REQUIRED_ROLES: GroupRole[] = ['Leader', 'Main Vocal', 'Main Dancer'];
 const CORE_ROLES: GroupRole[] = ['Leader', 'Main Vocal', 'Main Dancer', 'Main Rapper', 'Visual', 'Center'];
 
@@ -173,6 +173,9 @@ export function createGroupFromIdols(
   if (memberIds.length < MIN_GROUP_MEMBERS) {
     return { ok: false, reason: 'NOT_ENOUGH_MEMBERS' };
   }
+  if (memberIds.length > MAX_GROUP_MEMBERS) {
+    return { ok: false, reason: 'TOO_MANY_MEMBERS' };
+  }
   if (REQUIRED_ROLES.some(role => !roleAssignments[role])) {
     return { ok: false, reason: 'MISSING_REQUIRED_ROLE' };
   }
@@ -251,6 +254,10 @@ export function addMembersToExistingGroup(
   const requestedIds = uniq(payload.memberIds).filter(id => !group.memberIds.includes(id));
   if (requestedIds.length === 0) {
     return { ok: false, reason: 'NO_MEMBERS_SELECTED' };
+  }
+
+  if (group.memberIds.length + requestedIds.length > MAX_GROUP_MEMBERS) {
+    return { ok: false, reason: 'TOO_MANY_MEMBERS' };
   }
 
   const candidates = requestedIds

@@ -147,6 +147,7 @@ export type Trainee = {
   artKey?: number | string;
   gender?: 'male' | 'female';
   isScoutingVisible?: boolean;
+  shownCount?: number;
   name: string;
   fullName?: string;
   age: number;

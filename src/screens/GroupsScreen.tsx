@@ -339,6 +339,9 @@ function NewGroupModal({
 
   const toggleMember = (idolId: string) => {
     setSelectedIds(current => {
+      if (!current.includes(idolId) && current.length >= 6) {
+        return current;
+      }
       const next = current.includes(idolId) ? current.filter(id => id !== idolId) : [...current, idolId];
       if (!next.includes(idolId)) {
         setRoleAssignments(prev => {
@@ -363,6 +366,7 @@ function NewGroupModal({
       MISSING_FAN_NAME: 'Please enter a fandom name.',
       MISSING_CONCEPT: 'Please select a group concept.',
       NOT_ENOUGH_MEMBERS: 'Select at least 2 recruited idols for this group.',
+      TOO_MANY_MEMBERS: 'Groups are limited to 6 members. Please deselect some idols.',
       MEMBER_UNAVAILABLE: 'One or more selected idols are no longer available.',
       MISSING_REQUIRED_ROLE: 'Assign Leader, Main Vocal, and Main Dancer before creating.',
       INVALID_ROLE_ASSIGNMENT: 'Role assignments must use selected members only.',
@@ -434,7 +438,7 @@ function NewGroupModal({
                 </View>
               </View>
               <View>
-                <Text style={styles.fieldLabel}>AVAILABLE MEMBERS ({selectedIds.length} SELECTED)</Text>
+                <Text style={styles.fieldLabel}>AVAILABLE MEMBERS ({selectedIds.length}/6 SELECTED)</Text>
                 {available.length === 0 && (
                   <Text style={styles.helperText}>No available idols. Recruit idols or use idols who are not already assigned to a group.</Text>
                 )}

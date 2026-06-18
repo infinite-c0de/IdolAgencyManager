@@ -30,6 +30,7 @@ export function useAgencyActions({
 }: UseAgencyActionsParams) {
   const SCOUTING_REFRESH_COST = 12_000_000;
   const VISIBLE_CANDIDATE_COUNT = 10;
+  const MAX_ROSTER_SIZE = 30;
   const recentlyShownTraineeIdsRef = useRef<string[]>([]);
 
   const createAgency = ({ agencyName, ceoName, cityId, logo }: CreateAgencyPayload) => {
@@ -63,6 +64,10 @@ export function useAgencyActions({
       return { ok: false, reason: 'ALREADY_RECRUITED' };
     }
 
+    if (idols.length >= MAX_ROSTER_SIZE) {
+      return { ok: false, reason: 'ROSTER_FULL' };
+    }
+
     if (!canRecruitTrainee(agency, trainee)) {
       return { ok: false, reason: 'INSUFFICIENT_FUNDS' };
     }
@@ -86,12 +91,13 @@ export function useAgencyActions({
     return { ok: true, idolName: trainee.name };
   };
 
-  const refreshScoutingCandidates = (activeFilter: string): RefreshScoutingResult => {
+  const refreshScoutingCandidates = (activeFilter: string, overrideCost?: number): RefreshScoutingResult => {
+    const cost = overrideCost ?? SCOUTING_REFRESH_COST;
     if (trainees.length === 0) {
       return { ok: false, reason: 'NO_CANDIDATES' };
     }
 
-    if (agency.money < SCOUTING_REFRESH_COST) {
+    if (agency.money < cost) {
       return { ok: false, reason: 'INSUFFICIENT_FUNDS' };
     }
 
@@ -99,113 +105,43 @@ export function useAgencyActions({
     let refreshedFilterMatches = 0;
 
     setTrainees(current => {
-      if (current.length === 0) {
-        return current;
-      }
-
-      const validIds = new Set(current.map(trainee => trainee.id));
-      recentlyShownTraineeIdsRef.current = recentlyShownTraineeIdsRef.current.filter(id =>
-        validIds.has(id),
-      );
+      if (current.length === 0) return current;
 
       const targetCount = Math.min(VISIBLE_CANDIDATE_COUNT, current.length);
-      const currentVisibleIndexes = current
+
+      // Sort by shownCount ascending — least shown first, shuffle within same count for variety
+      const sorted = current
         .map((trainee, index) => ({ trainee, index }))
-        .filter(({ trainee }) => trainee.isScoutingVisible !== false)
-        .map(({ index }) => index);
-      const recentIdSet = new Set(recentlyShownTraineeIdsRef.current);
-      const currentVisibleSet = new Set(currentVisibleIndexes);
-      const hiddenIndexes = current
-        .map((trainee, index) => ({ trainee, index }))
-        .filter(({ trainee }) => trainee.isScoutingVisible === false)
-        .map(({ index }) => index);
-      const reset = current.map(trainee => ({ ...trainee, isScoutingVisible: false }));
-      const shuffledHidden = [...hiddenIndexes].sort(() => Math.random() - 0.5);
-      const shuffledAll = reset.map((_, index) => index).sort(() => Math.random() - 0.5);
-      const hiddenNotCurrentVisible = shuffledHidden.filter(index => !currentVisibleSet.has(index));
-      const shuffledFreshHidden = shuffledHidden.filter(index => !recentIdSet.has(current[index].id));
-      const shuffledFreshAll = shuffledAll.filter(index => !recentIdSet.has(current[index].id));
-      const preferredIndexes =
-        activeFilter === 'All'
-          ? []
-          : hiddenNotCurrentVisible.filter(index => reset[index].skill === activeFilter);
+        .filter(({ index }) => !current[index].isScoutingVisible)
+        .sort((a, b) => {
+          const diff = (a.trainee.shownCount ?? 0) - (b.trainee.shownCount ?? 0);
+          return diff !== 0 ? diff : Math.random() - 0.5;
+        });
 
-      const selected = new Set<number>();
-      if (preferredIndexes.length > 0) {
-        selected.add(preferredIndexes[0]);
-      }
+      const selected = new Set(sorted.slice(0, targetCount).map(({ index }) => index));
 
-      for (const index of hiddenNotCurrentVisible) {
-        if (selected.size >= targetCount) {
-          break;
+      const next = current.map((trainee, index) => {
+        if (selected.has(index)) {
+          return {
+            ...trainee,
+            isScoutingVisible: true,
+            shownCount: (trainee.shownCount ?? 0) + 1,
+          };
         }
-        selected.add(index);
-      }
-
-      // Prefer hidden candidates not seen recently before reusing current visible ones.
-      for (const index of shuffledFreshHidden) {
-        if (selected.size >= targetCount) {
-          break;
-        }
-        selected.add(index);
-      }
-
-      // If fresh pool is not enough, pull from fresh all candidates.
-      for (const index of shuffledFreshAll) {
-        if (selected.size >= targetCount) {
-          break;
-        }
-        selected.add(index);
-      }
-
-      // If fresh pool is exhausted, fill remaining slots from all hidden candidates.
-      for (const index of shuffledHidden) {
-        if (selected.size >= targetCount) {
-          break;
-        }
-        selected.add(index);
-      }
-
-      // Final fallback: fill remaining slots from all candidates.
-      for (const index of shuffledAll) {
-        if (selected.size >= targetCount) {
-          break;
-        }
-        selected.add(index);
-      }
-
-      for (const index of selected) {
-        reset[index] = { ...reset[index], isScoutingVisible: true };
-      }
+        return { ...trainee, isScoutingVisible: false };
+      });
 
       refreshedVisibleCount = selected.size;
       refreshedFilterMatches =
         activeFilter === 'All'
           ? selected.size
-          : [...selected].filter(index => reset[index].skill === activeFilter).length;
+          : [...selected].filter(index => next[index].skill === activeFilter).length;
 
-      const selectedIds = [...selected].map(index => current[index].id);
-      const recentCap = Math.max(0, current.length - targetCount);
-      if (recentCap > 0) {
-        const merged = [...recentlyShownTraineeIdsRef.current, ...selectedIds];
-        const dedupedNewestFirst: string[] = [];
-        const seen = new Set<string>();
-        for (let i = merged.length - 1; i >= 0; i -= 1) {
-          const id = merged[i];
-          if (!seen.has(id)) {
-            seen.add(id);
-            dedupedNewestFirst.push(id);
-          }
-        }
-        recentlyShownTraineeIdsRef.current = dedupedNewestFirst.reverse().slice(-recentCap);
-      } else {
-        recentlyShownTraineeIdsRef.current = [];
-      }
-
-      return reset;
+      recentlyShownTraineeIdsRef.current = [];
+      return next;
     });
 
-    setAgency(current => ({ ...current, money: Math.max(0, current.money - SCOUTING_REFRESH_COST) }));
+    setAgency(current => ({ ...current, money: Math.max(0, current.money - cost) }));
 
     return {
       ok: true,

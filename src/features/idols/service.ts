@@ -395,6 +395,7 @@ export function generateScoutingPoolFromArtPool(artPool: readonly TraineeArtSeed
       artKey: art.artKey,
       gender: art.gender,
       isScoutingVisible: index < INITIAL_VISIBLE_SCOUTING_COUNT,
+      shownCount: index < INITIAL_VISIBLE_SCOUTING_COUNT ? 1 : 0,
       name: stageName,
       fullName,
       age,

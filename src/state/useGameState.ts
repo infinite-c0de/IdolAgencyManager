@@ -48,7 +48,7 @@ export type GameState = {
   saveSlots: SaveSlot[];
   createAgency: (payload: CreateAgencyPayload) => boolean;
   recruitTrainee: (traineeId: string) => RecruitResult;
-  refreshScoutingCandidates: (activeFilter: string) => RefreshScoutingResult;
+  refreshScoutingCandidates: (activeFilter: string, overrideCost?: number) => RefreshScoutingResult;
   createGroup: (payload: CreateGroupPayload) => CreateGroupResult;
   addGroupMembers: (payload: AddGroupMembersPayload) => AddGroupMembersResult;
   setTrainingPlan: (targetId: string, plan: Record<string, string>) => void;

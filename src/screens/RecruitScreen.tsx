@@ -1,5 +1,5 @@
-import { RefreshCw, Sparkles, UserPlus, X } from 'lucide-react-native';
-import React, { useState } from 'react';
+import { Heart, RefreshCw, Sparkles, UserPlus, X } from 'lucide-react-native';
+import React, { useMemo, useState } from 'react';
 import {
   Animated,
   Image,
@@ -14,7 +14,14 @@ import { AppShell } from '../components/AppShell';
 import { Gradient } from '../components/ui/Gradient';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
-import { fmt } from '../utils/format';
+import { fmt, fmtCount } from '../utils/format';
+
+const BASE_REFRESH_COST = 12_000_000;
+const FILTER_COST: Record<string, number> = {
+  skill: 2_000_000,
+  gender: 3_000_000,
+  nationality: 5_000_000,
+};
 
 const filters = ['All', 'Vocal', 'Dance', 'Rap', 'Visual', 'Charisma'];
 
@@ -49,10 +56,24 @@ export function RecruitScreen() {
   const [confirm, setConfirm] = useState<Trainee | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState('All');
+  const [genderFilter, setGenderFilter] = useState<'All' | 'male' | 'female'>('All');
+  const [nationalityFilter, setNationalityFilter] = useState('All');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const visibleCandidates = trainees.filter(t => t.isScoutingVisible !== false);
-  const list = visibleCandidates.filter(t => activeFilter === 'All' || t.skill === activeFilter);
+
+  // Build nationality list from the current visible pool
+  const nationalities = useMemo(() => {
+    const set = new Set(visibleCandidates.map(t => t.nationality));
+    return ['All', ...Array.from(set).sort()];
+  }, [visibleCandidates]);
+
+  const list = visibleCandidates.filter(t => {
+    if (activeFilter !== 'All' && t.skill !== activeFilter) return false;
+    if (genderFilter !== 'All' && t.gender !== genderFilter) return false;
+    if (nationalityFilter !== 'All' && t.nationality !== nationalityFilter) return false;
+    return true;
+  });
 
   const handleRecruit = (traineeId: string) => {
     const result = recruitTrainee(traineeId);
@@ -60,6 +81,10 @@ export function RecruitScreen() {
       const recruited = trainees.find(t => t.id === traineeId) ?? null;
       setConfirm(recruited);
       setExpandedId(null);
+      return;
+    }
+    if (result.reason === 'ROSTER_FULL') {
+      setError('Your agency has reached the 30-idol limit. You cannot recruit more idols at this time.');
       return;
     }
     if (result.reason === 'INSUFFICIENT_FUNDS') {
@@ -74,7 +99,7 @@ export function RecruitScreen() {
   };
 
   const handleRefresh = () => {
-    const result = refreshScoutingCandidates(activeFilter);
+    const result = refreshScoutingCandidates(activeFilter, refreshCost);
     if (result.ok) {
       if (activeFilter !== 'All' && result.filterMatches === 0) {
         setError('Candidates refreshed — no matches for this filter right now.');
@@ -82,46 +107,115 @@ export function RecruitScreen() {
       return;
     }
     if (result.reason === 'INSUFFICIENT_FUNDS') {
-      setError('Not enough budget to refresh candidates. (₩12,000,000 required)');
+      setError(`Not enough budget to refresh. ${refreshCostLabel} required for current filters.`);
       return;
     }
     setError('No more candidates to show right now.');
   };
 
+  const activeFilterCount = (activeFilter !== 'All' ? 1 : 0) + (genderFilter !== 'All' ? 1 : 0) + (nationalityFilter !== 'All' ? 1 : 0);
+
+  const refreshCost =
+    BASE_REFRESH_COST +
+    (activeFilter !== 'All' ? FILTER_COST.skill : 0) +
+    (genderFilter !== 'All' ? FILTER_COST.gender : 0) +
+    (nationalityFilter !== 'All' ? FILTER_COST.nationality : 0);
+
+  const refreshCostLabel = `₩${(refreshCost / 1_000_000).toFixed(0)}M`;
+
   return (
-    <AppShell title="Scout" subtitle={`${list.length} candidates visible`}>
-      {/* Filter + refresh bar */}
-      <View style={styles.controlBar}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterScroll}>
-          {filters.map(f => {
-            const active = activeFilter === f;
-            const accent = SKILL_COLOR[f];
-            return (
-              <TouchableOpacity
-                key={f}
-                onPress={() => setActiveFilter(f)}
-                style={[
-                  styles.filterChip,
-                  active && { borderColor: accent ?? colors.tealBright, backgroundColor: 'rgba(103,232,249,0.07)' },
-                ]}
-                activeOpacity={0.7}>
-                {accent && active && (
-                  <View style={[styles.filterDot, { backgroundColor: accent }]} />
-                )}
-                <Text style={[styles.filterText, active && { color: accent ?? colors.tealBright }]}>
-                  {f}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-        <TouchableOpacity style={styles.refreshPill} onPress={handleRefresh} activeOpacity={0.8}>
-          <RefreshCw size={12} color={colors.tealBright} />
-          <Text style={styles.refreshPillText}>₩12M</Text>
-        </TouchableOpacity>
+    <AppShell title="Scout" subtitle={`${list.length} of ${visibleCandidates.length} candidates`}>
+
+      {/* ── FILTER PANEL ── */}
+      <View style={styles.filterPanel}>
+
+        {/* Skill row */}
+        <View style={styles.filterSection}>
+          <Text style={styles.filterSectionLabel}>SKILL</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
+            {filters.map(f => {
+              const active = activeFilter === f;
+              const accent = SKILL_COLOR[f];
+              return (
+                <TouchableOpacity
+                  key={f}
+                  onPress={() => setActiveFilter(f)}
+                  style={[styles.filterChip, active && { borderColor: (accent ?? colors.tealBright) + 'AA', backgroundColor: (accent ?? colors.tealBright) + '18' }]}
+                  activeOpacity={0.7}>
+                  {accent && <View style={[styles.filterDot, { backgroundColor: accent, opacity: active ? 1 : 0.35 }]} />}
+                  <Text style={[styles.filterText, active && { color: accent ?? colors.tealBright, fontWeight: '700' }]}>{f}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {/* Gender row */}
+        <View style={styles.filterSection}>
+          <Text style={styles.filterSectionLabel}>GENDER</Text>
+          <View style={styles.genderToggle}>
+            {(['All', 'female', 'male'] as const).map(g => {
+              const active = genderFilter === g;
+              const label = g === 'All' ? 'All' : g === 'female' ? '♀ Female' : '♂ Male';
+              const color = g === 'female' ? '#F9A8D4' : g === 'male' ? '#93C5FD' : colors.teal;
+              return (
+                <TouchableOpacity
+                  key={g}
+                  onPress={() => setGenderFilter(g)}
+                  style={[styles.genderBtn, active && { borderColor: color + '66', backgroundColor: color + '18' }]}
+                  activeOpacity={0.7}>
+                  <Text style={[styles.genderBtnText, active && { color, fontWeight: '700' }]}>{label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Nationality row */}
+        <View style={styles.filterSection}>
+          <Text style={styles.filterSectionLabel}>NATIONALITY</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
+            {nationalities.map(n => {
+              const active = nationalityFilter === n;
+              return (
+                <TouchableOpacity
+                  key={n}
+                  onPress={() => setNationalityFilter(n)}
+                  style={[styles.filterChip, active && { borderColor: 'rgba(103,232,249,0.6)', backgroundColor: 'rgba(34,211,238,0.1)' }]}
+                  activeOpacity={0.7}>
+                  <Text style={[styles.filterText, active && { color: colors.tealBright, fontWeight: '700' }]}>{n}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {/* Refresh CTA + match count */}
+        <View style={styles.refreshRow}>
+          <View>
+            <View style={styles.matchCount}>
+              <Text style={styles.matchNum}>{list.length}</Text>
+              <Text style={styles.matchLabel}> match{list.length !== 1 ? 'es' : ''}</Text>
+            </View>
+            {activeFilterCount > 0 && (
+              <Text style={styles.filterActiveLabel}>{activeFilterCount} filter{activeFilterCount > 1 ? 's' : ''} active</Text>
+            )}
+          </View>
+          <View style={styles.refreshSide}>
+            {activeFilterCount > 0 && (
+              <View style={styles.costBreakdown}>
+                <Text style={styles.costBreakdownText}>₩12M base</Text>
+                {activeFilter !== 'All' && <Text style={styles.costBreakdownText}>+₩2M skill</Text>}
+                {genderFilter !== 'All' && <Text style={styles.costBreakdownText}>+₩3M gender</Text>}
+                {nationalityFilter !== 'All' && <Text style={styles.costBreakdownText}>+₩5M nation</Text>}
+              </View>
+            )}
+            <TouchableOpacity style={styles.refreshBtn} onPress={handleRefresh} activeOpacity={0.85}>
+              <RefreshCw size={13} color={colors.slate900} />
+              <Text style={styles.refreshBtnText}>Refresh  {refreshCostLabel}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
 
       {/* Candidate grid */}
@@ -232,6 +326,7 @@ function CandidateCard({
   const skillColor = SKILL_COLOR[t.skill] ?? colors.tealBright;
   const archetypeColor = ARCHETYPE_COLOR[t.personalityProfile?.archetype ?? 'All-Rounder'] ?? colors.mutedForeground;
   const dominance = t.personalityProfile?.dominance ?? 55;
+  const initialFans = Math.round(40 + t.potential * 0.35) * 3200;
 
   return (
     <TouchableOpacity
@@ -260,7 +355,7 @@ function CandidateCard({
         </View>
         <Text style={styles.artFlag}>{t.flag}</Text>
 
-        {/* Bottom overlay — name + potential */}
+        {/* Bottom overlay — name + potential + fans */}
         <View style={styles.artBottom}>
           <View style={styles.artBottomLeft}>
             <Text style={styles.artName}>{t.name}</Text>
@@ -312,7 +407,7 @@ function CandidateCard({
             </View>
           )}
 
-          {/* Languages + full name */}
+          {/* Languages + full name + fans */}
           <View style={styles.metaRow}>
             <View style={styles.metaItem}>
               <Text style={styles.metaKey}>FULL NAME</Text>
@@ -322,6 +417,11 @@ function CandidateCard({
               <Text style={styles.metaKey}>LANGUAGES</Text>
               <Text style={styles.metaVal}>{t.languages.join(' · ')}</Text>
             </View>
+          </View>
+          <View style={styles.fansRow}>
+            <Heart size={12} color="#F9A8D4" />
+            <Text style={styles.fansRowKey}>INITIAL FANBASE</Text>
+            <Text style={styles.fansRowVal}>{fmtCount(initialFans)} fans</Text>
           </View>
 
           {/* Recruit footer */}
@@ -361,15 +461,27 @@ function TraitPill({ label, color }: { label: string; color: string }) {
 }
 
 const styles = StyleSheet.create({
-  controlBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
+  // ── Filter panel ──
+  filterPanel: {
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: 'rgba(20,23,34,0.85)',
+    padding: spacing.md,
+    gap: spacing.md,
+  },
+  filterSection: {
+    gap: 6,
+  },
+  filterSectionLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    color: colors.mutedForeground,
   },
   filterScroll: {
     flexDirection: 'row',
     gap: 6,
-    paddingRight: spacing.sm,
   },
   filterChip: {
     flexDirection: 'row',
@@ -392,21 +504,82 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.mutedForeground,
   },
-  refreshPill: {
+
+  genderToggle: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  genderBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    borderRadius: radius.lg,
+    borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: 'rgba(103,232,249,0.45)',
-    backgroundColor: 'rgba(34,211,238,0.07)',
+    borderColor: colors.border,
+    backgroundColor: colors.whiteA05,
     paddingHorizontal: spacing.md,
-    paddingVertical: 7,
+    paddingVertical: 6,
   },
-  refreshPillText: {
+  genderBtnText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '600',
+    color: colors.mutedForeground,
+  },
+  refreshRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    paddingTop: spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  matchCount: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  matchNum: {
+    fontSize: 18,
+    fontWeight: '900',
     color: colors.tealBright,
+  },
+  matchLabel: {
+    fontSize: 11,
+    color: colors.mutedForeground,
+  },
+  filterActiveLabel: {
+    fontSize: 10,
+    color: colors.mutedForeground,
+    marginTop: 1,
+  },
+  refreshSide: {
+    alignItems: 'flex-end',
+    gap: 5,
+  },
+  costBreakdown: {
+    flexDirection: 'row',
+    gap: 6,
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+  },
+  costBreakdownText: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: colors.mutedForeground,
+  },
+  refreshBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: radius.lg,
+    backgroundColor: colors.teal,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  refreshBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.slate900,
   },
 
   grid: {
@@ -533,6 +706,22 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: colors.tealBright,
   },
+  fansBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: 'rgba(249,168,212,0.45)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+  },
+  fansText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#F9A8D4',
+  },
 
   // Tap hint
   tapHint: {
@@ -655,6 +844,26 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: colors.foreground,
+  },
+  fansRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(249,168,212,0.12)',
+  },
+  fansRowKey: {
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    color: 'rgba(249,168,212,0.6)',
+    flex: 1,
+  },
+  fansRowVal: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#F9A8D4',
   },
 
   recruitRow: {

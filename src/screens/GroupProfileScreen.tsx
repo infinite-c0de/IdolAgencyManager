@@ -13,6 +13,8 @@ import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 import { fmt } from '../utils/format';
 
+const MAX_GROUP_SIZE = 6;
+
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 function avg(values: number[]) {
@@ -132,6 +134,7 @@ export function GroupProfileScreen() {
         GROUP_NOT_FOUND: 'Group not found.',
         NO_MEMBERS_SELECTED: 'Select at least one idol to add.',
         MEMBER_UNAVAILABLE: 'One or more selected idols are already assigned.',
+        TOO_MANY_MEMBERS: `Groups are limited to ${MAX_GROUP_SIZE} members. Remove some selections.`,
       };
       Alert.alert('Cannot add members', messages[result.reason]);
       return;

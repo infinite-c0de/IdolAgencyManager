@@ -16,8 +16,10 @@ import {
 } from 'lucide-react-native';
 import React, { ComponentType, ReactNode } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { AppShell, Card, SectionTitle, SkillBar, StatusDot } from '../components/AppShell';import { RadarChart } from '../components/charts';
+import { AppShell, Card, SectionTitle, SkillBar, StatusDot } from '../components/AppShell';
+import { RadarChart } from '../components/charts';
 import { Gradient } from '../components/ui/Gradient';
+import { fmtCount } from '../utils/format';
 import type { RootStackParamList, RootStackScreenProps } from '../navigation/types';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
@@ -158,11 +160,20 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
           </View>
         )}
 
-        {/* Vitals */}
+        {/* Vitals + Fanbase — 4-column grid */}
         <View style={styles.vitalRow}>
           <Vital Icon={Heart} label="Health" v={i.health} color="#FDA4AF" />
           <Vital Icon={Activity} label="Morale" v={i.morale} color={colors.violetBright} />
           <Vital Icon={Zap} label="Energy" v={i.energy} color={colors.mint} />
+          <View style={styles.vital}>
+            <View style={styles.vitalHead}>
+              <Heart size={12} color="#F9A8D4" />
+              <Text style={styles.tinyMuted}> Fans</Text>
+            </View>
+            <Text style={[styles.vitalValue, { color: '#F9A8D4' }]}>
+              {fmtCount(i.popularity * 3200)}
+            </Text>
+          </View>
         </View>
       </Card>
 

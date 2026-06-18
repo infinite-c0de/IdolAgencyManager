@@ -36,6 +36,7 @@ export type CreateGroupResult =
         | 'MISSING_FAN_NAME'
         | 'MISSING_CONCEPT'
         | 'NOT_ENOUGH_MEMBERS'
+        | 'TOO_MANY_MEMBERS'
         | 'MEMBER_UNAVAILABLE'
         | 'MISSING_REQUIRED_ROLE'
         | 'INVALID_ROLE_ASSIGNMENT';
@@ -52,7 +53,7 @@ export type AddGroupMembersPayload = {
 
 export type AddGroupMembersResult =
   | { ok: true; groupName: string; addedCount: number }
-  | { ok: false; reason: 'GROUP_NOT_FOUND' | 'NO_MEMBERS_SELECTED' | 'MEMBER_UNAVAILABLE' };
+  | { ok: false; reason: 'GROUP_NOT_FOUND' | 'NO_MEMBERS_SELECTED' | 'MEMBER_UNAVAILABLE' | 'TOO_MANY_MEMBERS' };
 
 export type AddGroupMembersBuildResult =
   | { ok: true; group: Group; updatedIdols: Idol[]; addedCount: number }
