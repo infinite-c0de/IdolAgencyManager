@@ -308,22 +308,92 @@ export function buildGroupRadar(members: GroupMember[]): GroupRadarPoint[] {
   ];
 }
 
-export function buildGroupReadiness(members: GroupMember[], isActive: boolean): GroupReadiness {
+export function buildGroupReadiness(members: GroupMember[], group: import('../../types').Group): GroupReadiness {
   const vocalAvg = avg(members.map(member => member.stats.vocal));
   const danceAvg = avg(members.map(member => member.stats.dance));
   const hasLeader = members.some(member => member.role.includes('Leader'));
+  const hasRelease = (group.releases?.length ?? 0) > 0;
 
   const checks = [
     { ok: members.length >= 3, t: '≥ 3 members' },
     { ok: hasLeader, t: 'Leader assigned' },
     { ok: vocalAvg >= 70, t: 'Vocal avg ≥ 70' },
     { ok: danceAvg >= 70, t: 'Dance avg ≥ 70' },
-    { ok: isActive, t: 'Debut song' },
-    { ok: isActive, t: 'Promotion plan' },
+    { ok: hasRelease, t: 'Debut song' },
+    { ok: group.status === 'Active', t: 'Promotion plan' },
   ];
 
   return {
     ready: members.length >= 3 && hasLeader && vocalAvg >= 70 && danceAvg >= 70,
     checks,
+  };
+}
+
+/** Pure projection used both for preview and actual release. */
+export function projectRelease(
+  group: Group,
+  members: Idol[],
+  quality: 1 | 2 | 3 | 4 | 5,
+  budget: number,
+): import('./types').ReleaseDebutProjection {
+  const avgPopularity = members.reduce((s, m) => s + m.popularity, 0) / Math.max(members.length, 1);
+  const avgStat = members.reduce((s, m) => s + m.stats.vocal + m.stats.dance + m.stats.charisma, 0) / Math.max(members.length * 3, 1);
+  const synergyFactor = group.synergy / 100;
+  const qualityMultiplier = [0.5, 0.75, 1.0, 1.35, 1.8][quality - 1];
+  const budgetFactor = Math.min(2.0, 1 + budget / 500_000_000);
+  const baseScore = (avgPopularity * 0.4 + avgStat * 0.4 + synergyFactor * 20) * qualityMultiplier * budgetFactor;
+
+  const chartPosition = Math.max(1, Math.round(100 - baseScore * 0.85));
+  const totalSales = Math.round(baseScore * 4200 * (group.status === 'Pre-debut' ? 1.2 : 1.0));
+  const fansGained = Math.round(baseScore * 680 * qualityMultiplier);
+  const reputationGained = Math.round(Math.min(12, baseScore / 8 + quality));
+  const revenueGained = Math.round(totalSales * 3_800 * qualityMultiplier);
+
+  return { chartPosition, totalSales, fansGained, reputationGained, revenueGained };
+}
+
+export function releaseDebut(
+  groups: Group[],
+  idols: Idol[],
+  payload: import('./types').ReleaseDebutPayload,
+  currentWeek: number,
+): import('./types').ReleaseDebutBuildResult {
+  const group = groups.find(g => g.id === payload.groupId);
+  if (!group) return { ok: false, reason: 'GROUP_NOT_FOUND' };
+  const members = idols.filter(m => group.memberIds.includes(m.id));
+  if (members.length < 2) return { ok: false, reason: 'NOT_ENOUGH_MEMBERS' };
+
+  const projection = projectRelease(group, members, payload.quality, payload.budget);
+  const popularityBoost = Math.min(15, Math.round(projection.fansGained / 1200));
+
+  const release: import('../../types').Release = {
+    id: `${group.id}-rel-${Date.now()}`,
+    title: payload.title,
+    concept: payload.concept,
+    quality: payload.quality,
+    language: payload.language,
+    budgetSpent: payload.budget,
+    weekReleased: currentWeek,
+    chartPosition: projection.chartPosition,
+    totalSales: projection.totalSales,
+    fansGained: projection.fansGained,
+    reputationGained: projection.reputationGained,
+    revenueGained: projection.revenueGained,
+  };
+
+  const updatedGroup: Group = {
+    ...group,
+    status: 'Active',
+    popularity: Math.min(100, group.popularity + popularityBoost),
+    monthlyRevenue: Math.round(group.monthlyRevenue + projection.revenueGained / 4),
+    releases: [...(group.releases ?? []), release],
+  };
+
+  return {
+    ok: true,
+    group: updatedGroup,
+    projection,
+    moneyDelta: -payload.budget + projection.revenueGained,
+    reputationDelta: projection.reputationGained,
   };
 }

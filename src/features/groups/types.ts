@@ -59,6 +59,31 @@ export type AddGroupMembersBuildResult =
   | { ok: true; group: Group; updatedIdols: Idol[]; addedCount: number }
   | Extract<AddGroupMembersResult, { ok: false }>;
 
+export type ReleaseDebutPayload = {
+  groupId: string;
+  title: string;
+  concept: string;
+  quality: 1 | 2 | 3 | 4 | 5;
+  language: string;
+  budget: number;
+};
+
+export type ReleaseDebutProjection = {
+  chartPosition: number;
+  totalSales: number;
+  fansGained: number;
+  reputationGained: number;
+  revenueGained: number;
+};
+
+export type ReleaseDebutResult =
+  | { ok: true; projection: ReleaseDebutProjection }
+  | { ok: false; reason: 'GROUP_NOT_FOUND' | 'INSUFFICIENT_FUNDS' | 'NOT_ENOUGH_MEMBERS' };
+
+export type ReleaseDebutBuildResult =
+  | { ok: true; group: Group; projection: ReleaseDebutProjection; moneyDelta: number; reputationDelta: number }
+  | Extract<ReleaseDebutResult, { ok: false }>;
+
 export type UseGroupActionsParams = {
   idols: Idol[];
   groups: Group[];

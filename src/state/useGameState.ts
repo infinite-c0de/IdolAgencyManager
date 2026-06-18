@@ -17,7 +17,10 @@ import type {
   AddGroupMembersResult,
   CreateGroupPayload,
   CreateGroupResult,
+  ReleaseDebutPayload,
+  ReleaseDebutResult,
 } from '../features/groups';
+import { releaseDebut as releaseDebutService } from '../features/groups';
 import type { FinanceTransaction, RevenueHistoryPoint, SaveSlotSummary, TrainingPlans } from '../features/saves';
 import { calculateWeeklyProgression } from '../features/simulation';
 import type { Agency, Group, Idol, Trainee } from '../types';
@@ -53,6 +56,7 @@ export type GameState = {
   addGroupMembers: (payload: AddGroupMembersPayload) => AddGroupMembersResult;
   setTrainingPlan: (targetId: string, plan: Record<string, string>) => void;
   advanceWeek: () => void;
+  releaseDebut: (payload: ReleaseDebutPayload) => ReleaseDebutResult;
   startNewGameInSlot: (slotId: number) => Promise<void>;
   loadGameFromSlot: (slotId: number) => Promise<'AgencyDashboard' | 'Onboarding' | false>;
   deleteSaveSlot: (slotId: number) => Promise<void>;
@@ -151,6 +155,7 @@ export function useGameState(): GameState {
       monthlyIncome: progression.nextMonthlyIncome,
       reputation: progression.nextReputation,
       ranking: progression.nextRanking,
+      money: economy.agency.money - progression.trainingCostAmount,
     }));
 
     setIdols(progression.nextIdols);
@@ -174,11 +179,17 @@ export function useGameState(): GameState {
         amount: -Math.max(expenseAmount, progression.weeklyExpenseAmount),
         date: dateLabel,
       };
-      return [
-        ...current,
-        weeklyIncome,
-        weeklyOperations,
-      ].slice(-40);
+      const entries: FinanceTransaction[] = [weeklyIncome, weeklyOperations];
+      if (progression.trainingCostAmount > 0) {
+        entries.push({
+          id: baseId + 3,
+          label: 'Training Costs',
+          type: 'expense',
+          amount: -progression.trainingCostAmount,
+          date: dateLabel,
+        });
+      }
+      return [...current, ...entries].slice(-40);
     });
 
     setRevenueHistory(current => {
@@ -186,6 +197,32 @@ export function useGameState(): GameState {
     });
 
     setCurrentWeek(week => week + 1);
+  };
+
+  const releaseDebut = (payload: ReleaseDebutPayload): ReleaseDebutResult => {
+    const result = releaseDebutService(groups, idols, payload, currentWeek);
+    if (!result.ok) return result;
+
+    setGroups(current => current.map(g => (g.id === payload.groupId ? result.group : g)));
+    setAgency(current => ({
+      ...current,
+      money: current.money + result.moneyDelta,
+      reputation: Math.min(100, current.reputation + result.reputationDelta),
+    }));
+    setTransactions(current => {
+      const baseId = current[current.length - 1]?.id ?? 0;
+      const dateLabel = `Week ${currentWeek}`;
+      const entries: FinanceTransaction[] = [];
+      if (payload.budget > 0) {
+        entries.push({ id: baseId + 1, label: `Release: ${payload.title}`, type: 'expense', amount: -payload.budget, date: dateLabel });
+      }
+      if (result.projection.revenueGained > 0) {
+        entries.push({ id: baseId + 2, label: `Release Revenue: ${payload.title}`, type: 'income', amount: result.projection.revenueGained, date: dateLabel });
+      }
+      return [...current, ...entries].slice(-40);
+    });
+
+    return { ok: true, projection: result.projection };
   };
 
   return useMemo(
@@ -214,6 +251,7 @@ export function useGameState(): GameState {
       addGroupMembers,
       setTrainingPlan,
       advanceWeek,
+      releaseDebut,
       startNewGameInSlot,
       loadGameFromSlot,
       deleteSaveSlot,
@@ -240,6 +278,7 @@ export function useGameState(): GameState {
       addGroupMembers,
       setTrainingPlan,
       advanceWeek,
+      releaseDebut,
       startNewGameInSlot,
       loadGameFromSlot,
       deleteSaveSlot,

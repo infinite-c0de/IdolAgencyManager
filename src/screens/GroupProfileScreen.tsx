@@ -110,7 +110,7 @@ export function GroupProfileScreen() {
     [groups, idols],
   );
   const radar = buildGroupRadar(members);
-  const readiness = buildGroupReadiness(members, group.status === 'Active');
+  const readiness = buildGroupReadiness(members, group);
   const stats = buildPerformanceStats(members);
   const synergyTier = getSynergyTier(group.synergy);
 
@@ -219,7 +219,11 @@ export function GroupProfileScreen() {
         {members.length > 0 ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filmScroll}>
             {members.map(member => (
-              <View key={member.id} style={styles.filmCell}>
+              <TouchableOpacity
+                key={member.id}
+                style={styles.filmCell}
+                onPress={() => navigation.navigate('IdolProfile', { id: member.id })}
+                activeOpacity={0.85}>
                 {member.image ? (
                   <Image source={member.image} resizeMode="cover" style={styles.filmPhoto} />
                 ) : (
@@ -230,7 +234,7 @@ export function GroupProfileScreen() {
                 <View style={styles.filmShade} />
                 <Text style={styles.filmName} numberOfLines={1}>{member.stageName}</Text>
                 <Text style={styles.filmRole} numberOfLines={1}>{member.role}</Text>
-              </View>
+              </TouchableOpacity>
             ))}
           </ScrollView>
         ) : (
@@ -279,6 +283,37 @@ export function GroupProfileScreen() {
           ))}
         </View>
       </Card>
+
+      {/* ── RELEASES HISTORY ── */}
+      {(group.releases?.length ?? 0) > 0 && (
+        <Card>
+          <SectionTitle>DISCOGRAPHY</SectionTitle>
+          <View style={styles.releaseList}>
+            {[...(group.releases ?? [])].reverse().map((rel, idx) => (
+              <View key={rel.id} style={[styles.releaseRow, idx > 0 && styles.releaseRowBorder]}>
+                <View style={styles.releaseLeft}>
+                  <Text style={styles.releaseTitle} numberOfLines={1}>"{rel.title}"</Text>
+                  <Text style={styles.releaseMeta}>{rel.concept} · {rel.language} · Week {rel.weekReleased}</Text>
+                </View>
+                <View style={styles.releaseStats}>
+                  <View style={styles.releaseStat}>
+                    <Text style={styles.releaseStatVal}>#{rel.chartPosition}</Text>
+                    <Text style={styles.releaseStatLabel}>CHART</Text>
+                  </View>
+                  <View style={styles.releaseStat}>
+                    <Text style={[styles.releaseStatVal, { color: colors.mint }]}>+{fmtCount(rel.fansGained)}</Text>
+                    <Text style={styles.releaseStatLabel}>FANS</Text>
+                  </View>
+                  <View style={styles.releaseStat}>
+                    <Text style={[styles.releaseStatVal, { color: colors.tealBright }]}>{fmt(rel.revenueGained)}</Text>
+                    <Text style={styles.releaseStatLabel}>REVENUE</Text>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        </Card>
+      )}
 
       {/* ── ADD MEMBERS MODAL ── */}
       <Modal visible={openAddModal} transparent animationType="fade" onRequestClose={closeAddModal}>
@@ -521,6 +556,18 @@ const styles = StyleSheet.create({
   readinessText: { fontSize: 10, fontWeight: '600', flexShrink: 1 },
   readinessTextOn: { color: colors.foreground },
   readinessTextOff: { color: colors.mutedForeground },
+
+  // ── Discography ──
+  releaseList: { gap: 0 },
+  releaseRow: { paddingVertical: spacing.md, gap: spacing.sm },
+  releaseRowBorder: { borderTopWidth: 1, borderTopColor: colors.border },
+  releaseLeft: { gap: 3 },
+  releaseTitle: { fontSize: 15, fontWeight: '800', color: colors.foreground },
+  releaseMeta: { fontSize: 10, color: colors.mutedForeground },
+  releaseStats: { flexDirection: 'row', gap: spacing.md },
+  releaseStat: { alignItems: 'center', gap: 2, minWidth: 52 },
+  releaseStatVal: { fontSize: 13, fontWeight: '900', color: colors.foreground },
+  releaseStatLabel: { fontSize: 8, fontWeight: '700', letterSpacing: 1.2, color: colors.mutedForeground },
 
   // ── KPI (kept for Mini component) ──
   kpiItem: {

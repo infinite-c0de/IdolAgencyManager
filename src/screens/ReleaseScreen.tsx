@@ -1,67 +1,143 @@
 import { ChevronRight, Music2, Sparkles } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card } from '../components/AppShell';
 import { Gradient } from '../components/ui/Gradient';
+import { projectRelease } from '../features/groups';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
-import { fmt } from '../utils/format';
+import { fmt, fmtCount } from '../utils/format';
 
-const stepNames = ['Group', 'Concept', 'Quality', 'Language', 'Budget'];
-const qualityNames = ['Demo', 'Standard', 'Premium', 'Cinematic'];
-const BUDGET_MIN = 20_000_000;
+const STEP_NAMES = ['Group', 'Title', 'Concept', 'Quality', 'Budget'];
+const QUALITY_LABELS: Record<number, string> = { 1: 'Demo', 2: 'Standard', 3: 'Premium', 4: 'Cinematic', 5: 'Legendary' };
+const QUALITY_COST: Record<number, number> = { 1: 20_000_000, 2: 60_000_000, 3: 120_000_000, 4: 220_000_000, 5: 380_000_000 };
+const BUDGET_MIN = 10_000_000;
 const BUDGET_MAX = 500_000_000;
 const BUDGET_STEP = 10_000_000;
 
+type ResultData = {
+  groupName: string;
+  title: string;
+  concept: string;
+  chartPosition: number;
+  totalSales: number;
+  fansGained: number;
+  reputationGained: number;
+  revenueGained: number;
+  budgetSpent: number;
+  isDebut: boolean;
+};
+
 export function ReleaseScreen() {
-  const { groups, conceptOptions, languageOptions } = useGame();
+  const { groups, idols, agency, conceptOptions, languageOptions, releaseDebut } = useGame();
   const [step, setStep] = useState(1);
-  const [group, setGroup] = useState(groups[0]?.id ?? '');
+  const [groupId, setGroupId] = useState(groups[0]?.id ?? '');
+  const [title, setTitle] = useState('');
   const [concept, setConcept] = useState(conceptOptions[0]);
-  const [quality, setQuality] = useState(2);
+  const [quality, setQuality] = useState<1 | 2 | 3 | 4 | 5>(2);
   const [lang, setLang] = useState(languageOptions[0]);
-  const [budget, setBudget] = useState(120_000_000);
-  const [done, setDone] = useState(false);
-  const canContinue = step !== 1 || Boolean(group);
+  const [budget, setBudget] = useState(60_000_000);
+  const [result, setResult] = useState<ResultData | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!group && groups[0]) {
-      setGroup(groups[0].id);
+    if (!groupId && groups[0]) setGroupId(groups[0].id);
+  }, [groups, groupId]);
+
+  const selectedGroup = groups.find(g => g.id === groupId);
+  const members = useMemo(
+    () => (selectedGroup ? idols.filter(i => selectedGroup.memberIds.includes(i.id)) : []),
+    [selectedGroup, idols],
+  );
+
+  const projection = useMemo(() => {
+    if (!selectedGroup || members.length < 2) return null;
+    return projectRelease(selectedGroup, members, quality, budget);
+  }, [selectedGroup, members, quality, budget]);
+
+  const totalCost = QUALITY_COST[quality] + budget;
+  const canAfford = agency.money >= totalCost;
+  const canContinue =
+    step === 1 ? Boolean(groupId) && members.length >= 2 :
+    step === 2 ? title.trim().length > 0 :
+    true;
+
+  const handleRelease = () => {
+    if (!selectedGroup) return;
+    if (!canAfford) { setError(`Not enough funds. You need ${fmt(totalCost)} to release this single.`); return; }
+    const res = releaseDebut({
+      groupId,
+      title: title.trim() || `${selectedGroup.name} Debut`,
+      concept,
+      quality,
+      language: lang,
+      budget,
+    });
+    if (!res.ok) {
+      if (res.reason === 'INSUFFICIENT_FUNDS') setError('Not enough budget to release this single.');
+      else if (res.reason === 'NOT_ENOUGH_MEMBERS') setError('The group needs at least 2 members to release.');
+      else setError('Could not release. Please check the group and try again.');
+      return;
     }
-  }, [group, groups]);
+    setResult({
+      groupName: selectedGroup.name,
+      title: title.trim() || `${selectedGroup.name} Debut`,
+      concept,
+      chartPosition: res.projection.chartPosition,
+      totalSales: res.projection.totalSales,
+      fansGained: res.projection.fansGained,
+      reputationGained: res.projection.reputationGained,
+      revenueGained: res.projection.revenueGained,
+      budgetSpent: totalCost,
+      isDebut: selectedGroup.status === 'Pre-debut',
+    });
+  };
 
   return (
-    <AppShell title="New Release" subtitle="Plan a debut single">
+    <AppShell title="New Release" subtitle="Plan and publish a single">
+
       <Card glow="teal">
+        {/* Step header */}
         <View style={styles.stepHead}>
-          <Text style={styles.tinyMuted}>Step {step} of 5</Text>
-          <Text style={styles.stepName}>{stepNames[step - 1]}</Text>
+          <Text style={styles.tinyMuted}>Step {step} of {STEP_NAMES.length}</Text>
+          <Text style={styles.stepName}>{STEP_NAMES[step - 1]}</Text>
         </View>
         <View style={styles.progressTrack}>
-          <Gradient colors={[colors.teal, colors.violet]} direction="to-r" style={[styles.progressFill, { width: `${step * 20}%` }]} />
+          <Gradient colors={[colors.teal, colors.violet]} direction="to-r" style={[styles.progressFill, { width: `${(step / STEP_NAMES.length) * 100}%` }]} />
         </View>
 
+        {/* Step bodies */}
         <View style={styles.stepBody}>
+
           {step === 1 && (
             <View style={styles.col}>
               {groups.length === 0 && (
                 <View style={styles.emptyBox}>
-                  <Text style={styles.emptyTitle}>No group ready</Text>
-                  <Text style={styles.tinyMuted}>Create a group from recruited idols before planning a release.</Text>
+                  <Text style={styles.emptyTitle}>No group available</Text>
+                  <Text style={styles.tinyMuted}>Create a group from your recruited idols before planning a release.</Text>
                 </View>
               )}
               {groups.map(g => {
-                const active = group === g.id;
+                const mCount = idols.filter(i => g.memberIds.includes(i.id)).length;
+                const active = groupId === g.id;
+                const isDebut = g.status === 'Pre-debut';
                 return (
                   <TouchableOpacity
                     key={g.id}
-                    onPress={() => setGroup(g.id)}
+                    onPress={() => setGroupId(g.id)}
                     style={[styles.optionCard, active ? styles.optActive : styles.optIdle]}
                     activeOpacity={0.85}>
-                    <Text style={styles.optTitle}>{g.name}</Text>
-                    <Text style={styles.tinyMuted}>
-                      {g.memberIds.length} members · {g.concept}
-                    </Text>
+                    <View style={styles.optRow}>
+                      <Text style={styles.optTitle}>{g.name}</Text>
+                      <View style={[styles.statusPill, isDebut ? styles.pillDebut : styles.pillActive]}>
+                        <Text style={styles.pillText}>{g.status}</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.tinyMuted}>{mCount} members · {g.concept}</Text>
+                    {mCount < 2 && <Text style={styles.warnText}>⚠ Needs at least 2 members</Text>}
+                    {(g.releases?.length ?? 0) > 0 && (
+                      <Text style={styles.releaseCountText}>{g.releases!.length} previous release{g.releases!.length > 1 ? 's' : ''}</Text>
+                    )}
                   </TouchableOpacity>
                 );
               })}
@@ -69,122 +145,125 @@ export function ReleaseScreen() {
           )}
 
           {step === 2 && (
-            <View style={styles.chipWrap}>
-              {conceptOptions.map(c => {
-                const active = concept === c;
-                return (
+            <View style={styles.col}>
+              <Text style={styles.label}>Song Title</Text>
+              <TextInput
+                style={styles.titleInput}
+                value={title}
+                onChangeText={setTitle}
+                placeholder={`e.g. ${selectedGroup?.name ?? 'Group'} Debut`}
+                placeholderTextColor={colors.mutedForeground}
+                maxLength={40}
+              />
+              <Text style={styles.tinyMuted}>{title.length}/40</Text>
+              <Text style={styles.label} >Language</Text>
+              <View style={styles.chipWrap}>
+                {languageOptions.map(l => (
                   <TouchableOpacity
-                    key={c}
-                    onPress={() => setConcept(c)}
-                    style={[styles.chip, active ? styles.chipActive : styles.chipIdle]}
+                    key={l}
+                    onPress={() => setLang(l)}
+                    style={[styles.chip, lang === l ? styles.chipActive : styles.chipIdle]}
                     activeOpacity={0.8}>
-                    <Text style={[styles.chipText, active && styles.chipTextActive]}>{c}</Text>
+                    <Text style={[styles.chipText, lang === l && styles.chipTextActive]}>{l}</Text>
                   </TouchableOpacity>
-                );
-              })}
+                ))}
+              </View>
             </View>
           )}
 
           {step === 3 && (
-            <View>
-              <View style={styles.rowBetween}>
-                <Text style={styles.label}>Production Quality</Text>
-                <Text style={styles.valueText}>{qualityNames[quality]}</Text>
-              </View>
-              <View style={styles.segment}>
-                {qualityNames.map((q, idx) => {
-                  const active = quality === idx;
-                  return (
-                    <TouchableOpacity
-                      key={q}
-                      onPress={() => setQuality(idx)}
-                      style={[styles.segItem, active && styles.segActive]}
-                      activeOpacity={0.8}>
-                      <Text style={[styles.segText, active && styles.segTextActive]}>{q}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-              <Text style={styles.hint}>Higher quality boosts chart potential but increases production cost.</Text>
+            <View style={styles.chipWrap}>
+              {conceptOptions.map(c => (
+                <TouchableOpacity
+                  key={c}
+                  onPress={() => setConcept(c)}
+                  style={[styles.chip, concept === c ? styles.chipActive : styles.chipIdle]}
+                  activeOpacity={0.8}>
+                  <Text style={[styles.chipText, concept === c && styles.chipTextActive]}>{c}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
           )}
 
           {step === 4 && (
-            <View style={styles.chipWrap}>
-              {languageOptions.map(l => {
-                const active = lang === l;
-                return (
+            <View style={styles.col}>
+              <View style={styles.rowBetween}>
+                <Text style={styles.label}>Production Quality</Text>
+                <Text style={styles.valueText}>{QUALITY_LABELS[quality]}</Text>
+              </View>
+              <View style={styles.segment}>
+                {([1, 2, 3, 4, 5] as const).map(q => (
                   <TouchableOpacity
-                    key={l}
-                    onPress={() => setLang(l)}
-                    style={[styles.chip, active ? styles.chipActive : styles.chipIdle]}
+                    key={q}
+                    onPress={() => setQuality(q)}
+                    style={[styles.segItem, quality === q && styles.segActive]}
                     activeOpacity={0.8}>
-                    <Text style={[styles.chipText, active && styles.chipTextActive]}>{l}</Text>
+                    <Text style={[styles.segText, quality === q && styles.segTextActive]}>{QUALITY_LABELS[q]}</Text>
                   </TouchableOpacity>
-                );
-              })}
+                ))}
+              </View>
+              <Text style={styles.hint}>Production cost: {fmt(QUALITY_COST[quality])}</Text>
+              <Text style={styles.hint}>Higher quality boosts chart potential and fan growth.</Text>
             </View>
           )}
 
           {step === 5 && (
-            <View>
+            <View style={styles.col}>
               <View style={styles.rowBetween}>
-                <Text style={styles.label}>Promotion budget</Text>
+                <Text style={styles.label}>Promotion Budget</Text>
                 <Text style={styles.valueText}>{fmt(budget)}</Text>
               </View>
               <View style={styles.stepperRow}>
-                <TouchableOpacity
-                  style={styles.stepperBtn}
-                  onPress={() => setBudget(b => Math.max(BUDGET_MIN, b - BUDGET_STEP))}
-                  activeOpacity={0.8}>
+                <TouchableOpacity style={styles.stepperBtn} onPress={() => setBudget(b => Math.max(BUDGET_MIN, b - BUDGET_STEP))} activeOpacity={0.8}>
                   <Text style={styles.stepperSign}>−</Text>
                 </TouchableOpacity>
                 <View style={styles.budgetTrack}>
-                  <Gradient
-                    colors={[colors.teal, colors.violet]}
-                    direction="to-r"
-                    style={[
-                      styles.budgetFill,
-                      { width: `${((budget - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100}%` },
-                    ]}
-                  />
+                  <Gradient colors={[colors.teal, colors.violet]} direction="to-r" style={[styles.budgetFill, { width: `${((budget - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100}%` }]} />
                 </View>
-                <TouchableOpacity
-                  style={styles.stepperBtn}
-                  onPress={() => setBudget(b => Math.min(BUDGET_MAX, b + BUDGET_STEP))}
-                  activeOpacity={0.8}>
+                <TouchableOpacity style={styles.stepperBtn} onPress={() => setBudget(b => Math.min(BUDGET_MAX, b + BUDGET_STEP))} activeOpacity={0.8}>
                   <Text style={styles.stepperSign}>＋</Text>
                 </TouchableOpacity>
               </View>
+              <Text style={styles.hint}>More budget = wider reach and faster fan growth.</Text>
             </View>
           )}
         </View>
 
-        <View style={styles.estRow}>
-          <Est k="Cost" v={fmt(80_000_000 + quality * 40_000_000)} />
-          <Est k="Fan +" v="+185K" c={colors.mint} />
-          <Est k="Revenue" v={fmt(420_000_000)} c={colors.tealBright} />
-          <Est k="Risk" v={quality >= 3 ? 'High' : 'Medium'} c={colors.violetBright} />
-        </View>
+        {/* Live projection strip */}
+        {projection && (
+          <View style={styles.estRow}>
+            <Est k="Total Cost" v={fmt(totalCost)} c={canAfford ? undefined : '#FDA4AF'} />
+            <Est k="Chart" v={`#${projection.chartPosition}`} c={colors.violetBright} />
+            <Est k="Fans +" v={`+${fmtCount(projection.fansGained)}`} c={colors.mint} />
+            <Est k="Revenue" v={fmt(projection.revenueGained)} c={colors.tealBright} />
+          </View>
+        )}
+        {!canAfford && step === 5 && (
+          <Text style={styles.fundWarn}>⚠ Insufficient funds — you need {fmt(totalCost - agency.money)} more</Text>
+        )}
 
+        {/* Navigation */}
         <View style={styles.navRow}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => setStep(s => Math.max(1, s - 1))} activeOpacity={0.8}>
-            <Text style={styles.backText}>Back</Text>
-          </TouchableOpacity>
-          {step < 5 ? (
+          {step > 1 ? (
+            <TouchableOpacity style={styles.backBtn} onPress={() => setStep(s => s - 1)} activeOpacity={0.8}>
+              <Text style={styles.backText}>Back</Text>
+            </TouchableOpacity>
+          ) : <View style={styles.backBtn} />}
+
+          {step < STEP_NAMES.length ? (
             <TouchableOpacity
               style={[styles.nextBtn, !canContinue && styles.nextBtnDisabled]}
-              onPress={() => {
-                if (canContinue) {
-                  setStep(s => s + 1);
-                }
-              }}
+              onPress={() => canContinue && setStep(s => s + 1)}
               activeOpacity={0.8}>
-              <Text style={styles.nextText}>Next </Text>
+              <Text style={styles.nextText}>Next</Text>
               <ChevronRight size={14} color={colors.slate900} />
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity onPress={() => setDone(true)} activeOpacity={0.85} style={styles.flex1}>
+            <TouchableOpacity
+              style={[styles.flex1, (!canAfford) && styles.nextBtnDisabled]}
+              onPress={handleRelease}
+              activeOpacity={0.85}
+              disabled={!canAfford}>
               <Gradient colors={[colors.teal, colors.violet]} direction="to-r" style={styles.releaseBtn}>
                 <Sparkles size={14} color={colors.slate900} />
                 <Text style={styles.nextText}> Release</Text>
@@ -194,28 +273,51 @@ export function ReleaseScreen() {
         </View>
       </Card>
 
-      <Modal visible={done} transparent animationType="fade" onRequestClose={() => setDone(false)}>
+      {/* Error modal */}
+      <Modal visible={error !== null} transparent animationType="fade" onRequestClose={() => setError(null)}>
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
-            <View style={styles.modalHead}>
-              <Music2 size={20} color={colors.tealBright} />
-              <Text style={styles.modalTitle}> Single Released</Text>
-            </View>
-            <Text style={styles.tinyMuted}>
-              {groups.find(g => g.id === group)?.name} · {concept} · {lang}
-            </Text>
-            <View style={styles.resultGrid}>
-              <Result k="1st Week Sales" v="284,500" />
-              <Result k="New Fans" v="+212K" c={colors.mint} />
-              <Result k="Revenue" v={fmt(486_000_000)} c={colors.tealBright} />
-              <Result k="Chart Position" v="#3" c={colors.violetBright} />
-              <Result k="Reputation" v="+6" c={colors.mint} />
-              <Result k="Critic Score" v="8.4 / 10" />
-            </View>
-            <TouchableOpacity style={styles.continueBtn} onPress={() => setDone(false)} activeOpacity={0.8}>
-              <Text style={styles.continueText}>Continue</Text>
+            <Text style={styles.modalTitle}>Cannot Release</Text>
+            <Text style={styles.tinyMuted}>{error}</Text>
+            <TouchableOpacity style={styles.continueBtn} onPress={() => setError(null)} activeOpacity={0.8}>
+              <Text style={styles.continueText}>OK</Text>
             </TouchableOpacity>
           </View>
+        </View>
+      </Modal>
+
+      {/* Success modal */}
+      <Modal visible={result !== null} transparent animationType="fade" onRequestClose={() => { setResult(null); setStep(1); setTitle(''); }}>
+        <View style={styles.modalBackdrop}>
+          <ScrollView contentContainerStyle={styles.modalScrollContent} showsVerticalScrollIndicator={false}>
+            <View style={styles.modalCard}>
+              <View style={styles.modalHead}>
+                <Music2 size={20} color={colors.tealBright} />
+                <Text style={styles.modalTitle}> {result?.isDebut ? 'Debut Released!' : 'Single Released!'}</Text>
+              </View>
+              <Text style={styles.tinyMuted}>{result?.groupName} · "{result?.title}" · {result?.concept}</Text>
+              {result?.isDebut && (
+                <View style={styles.debutBadge}>
+                  <Sparkles size={12} color={colors.slate900} />
+                  <Text style={styles.debutBadgeText}>GROUP NOW ACTIVE</Text>
+                </View>
+              )}
+              <View style={styles.resultGrid}>
+                <Result k="1st Week Sales" v={fmtCount(result?.totalSales ?? 0)} />
+                <Result k="New Fans" v={`+${fmtCount(result?.fansGained ?? 0)}`} c={colors.mint} />
+                <Result k="Release Revenue" v={fmt(result?.revenueGained ?? 0)} c={colors.tealBright} />
+                <Result k="Chart Position" v={`#${result?.chartPosition ?? '—'}`} c={colors.violetBright} />
+                <Result k="Reputation +" v={`+${result?.reputationGained ?? 0}`} c={colors.mint} />
+                <Result k="Total Spent" v={fmt(result?.budgetSpent ?? 0)} />
+              </View>
+              <TouchableOpacity
+                style={styles.continueBtn}
+                onPress={() => { setResult(null); setStep(1); setTitle(''); }}
+                activeOpacity={0.8}>
+                <Text style={styles.continueText}>Continue</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
         </View>
       </Modal>
     </AppShell>
@@ -242,16 +344,14 @@ function Result({ k, v, c }: { k: string; v: string; c?: string }) {
 
 const styles = StyleSheet.create({
   flex1: { flex: 1 },
+  col: { gap: spacing.sm },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   tinyMuted: { fontSize: 11, color: colors.mutedForeground },
-  emptyBox: {
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.whiteA05,
-    padding: spacing.md,
-    gap: 4,
-  },
+  warnText: { fontSize: 10, color: '#FDA4AF', marginTop: 2 },
+  releaseCountText: { fontSize: 10, color: colors.teal, marginTop: 2 },
+  fundWarn: { fontSize: 11, color: '#FDA4AF', marginTop: spacing.sm, textAlign: 'center' },
+
+  emptyBox: { borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.whiteA05, padding: spacing.md, gap: 4 },
   emptyTitle: { color: colors.foreground, fontSize: 14, fontWeight: '800' },
 
   stepHead: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.sm },
@@ -260,11 +360,19 @@ const styles = StyleSheet.create({
   progressFill: { height: '100%' },
 
   stepBody: { marginTop: spacing.lg, minHeight: 160 },
-  col: { gap: spacing.sm },
-  optionCard: { borderRadius: radius.lg, borderWidth: 1, padding: spacing.md },
+  optionCard: { borderRadius: radius.lg, borderWidth: 1, padding: spacing.md, gap: 4 },
   optIdle: { borderColor: colors.border, backgroundColor: colors.whiteA05 },
   optActive: { borderColor: 'rgba(34,211,238,0.6)', backgroundColor: 'rgba(34,211,238,0.06)' },
-  optTitle: { fontSize: 18, fontWeight: '700', color: colors.foreground },
+  optRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  optTitle: { fontSize: 17, fontWeight: '800', color: colors.foreground },
+  statusPill: { borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1 },
+  pillDebut: { borderColor: 'rgba(167,139,250,0.5)', backgroundColor: 'rgba(167,139,250,0.1)' },
+  pillActive: { borderColor: 'rgba(52,211,153,0.5)', backgroundColor: 'rgba(52,211,153,0.1)' },
+  pillText: { fontSize: 9, fontWeight: '700', color: colors.foreground, letterSpacing: 0.5 },
+
+  label: { fontSize: 11, fontWeight: '700', color: colors.foreground, marginBottom: 4 },
+  valueText: { fontSize: 11, fontWeight: '700', color: colors.tealBright },
+  titleInput: { borderRadius: radius.lg, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: colors.whiteA05, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, fontSize: 16, fontWeight: '700', color: colors.foreground, marginBottom: 4 },
 
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: { borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 6, borderWidth: 1 },
@@ -273,16 +381,14 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 12, fontWeight: '600', color: colors.foreground },
   chipTextActive: { color: colors.tealBright },
 
-  label: { fontSize: 11, color: colors.foreground },
-  valueText: { fontSize: 11, fontWeight: '700', color: colors.tealBright },
-  segment: { marginTop: spacing.md, flexDirection: 'row', borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
+  segment: { marginTop: spacing.sm, flexDirection: 'row', borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
   segItem: { flex: 1, alignItems: 'center', paddingVertical: spacing.sm, backgroundColor: colors.whiteA05 },
   segActive: { backgroundColor: 'rgba(34,211,238,0.12)' },
-  segText: { fontSize: 11, fontWeight: '600', color: colors.mutedForeground },
+  segText: { fontSize: 9, fontWeight: '600', color: colors.mutedForeground },
   segTextActive: { color: colors.tealBright },
-  hint: { marginTop: spacing.sm, fontSize: 11, color: colors.mutedForeground },
+  hint: { marginTop: 6, fontSize: 10, color: colors.mutedForeground },
 
-  stepperRow: { marginTop: spacing.md, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  stepperRow: { marginTop: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   stepperBtn: { width: 40, height: 40, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.whiteA05, alignItems: 'center', justifyContent: 'center' },
   stepperSign: { fontSize: 20, color: colors.tealBright, fontWeight: '700' },
   budgetTrack: { flex: 1, height: 6, borderRadius: radius.full, backgroundColor: colors.whiteA10, overflow: 'hidden' },
@@ -295,15 +401,18 @@ const styles = StyleSheet.create({
   navRow: { marginTop: spacing.lg, flexDirection: 'row', gap: spacing.sm },
   backBtn: { flex: 1, alignItems: 'center', borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.whiteA05, paddingVertical: spacing.sm },
   backText: { fontSize: 14, color: colors.foreground },
-  nextBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: radius.lg, backgroundColor: colors.teal, paddingVertical: spacing.sm },
-  nextBtnDisabled: { opacity: 0.5 },
+  nextBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: radius.lg, backgroundColor: colors.teal, paddingVertical: spacing.sm, gap: 4 },
+  nextBtnDisabled: { opacity: 0.45 },
   nextText: { fontSize: 14, fontWeight: '700', color: colors.slate900 },
   releaseBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: radius.lg, paddingVertical: spacing.sm },
 
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
-  modalCard: { width: '100%', maxWidth: 440, borderRadius: radius['2xl'], borderWidth: 1, borderColor: 'rgba(34,211,238,0.6)', backgroundColor: 'rgba(20,23,34,0.98)', padding: spacing.xl },
-  modalHead: { flexDirection: 'row', alignItems: 'center' },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.68)', justifyContent: 'center', padding: spacing.lg },
+  modalScrollContent: { flexGrow: 1, justifyContent: 'center' },
+  modalCard: { borderRadius: radius['2xl'], borderWidth: 1, borderColor: 'rgba(34,211,238,0.5)', backgroundColor: 'rgba(14,18,30,0.98)', padding: spacing.xl },
+  modalHead: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   modalTitle: { fontSize: 20, fontWeight: '900', color: colors.tealBright },
+  debutBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', marginTop: spacing.sm, borderRadius: radius.full, backgroundColor: colors.teal, paddingHorizontal: spacing.sm, paddingVertical: 4 },
+  debutBadgeText: { fontSize: 9, fontWeight: '900', letterSpacing: 1.2, color: colors.slate900 },
   resultGrid: { marginTop: spacing.md, flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   result: { flexGrow: 1, flexBasis: '46%', borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.whiteA05, padding: spacing.md },
   resultK: { fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, color: colors.mutedForeground },

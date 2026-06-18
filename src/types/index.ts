@@ -111,6 +111,21 @@ export type Idol = {
   image?: number;
 };
 
+export type Release = {
+  id: string;
+  title: string;
+  concept: string;
+  quality: 1 | 2 | 3 | 4 | 5;
+  language: string;
+  budgetSpent: number;
+  weekReleased: number;
+  chartPosition: number;
+  totalSales: number;
+  fansGained: number;
+  reputationGained: number;
+  revenueGained: number;
+};
+
 export type Group = {
   id: string;
   name: string;
@@ -124,6 +139,7 @@ export type Group = {
   memberIds: string[];
   roleAssignments?: Partial<Record<GroupRole, string>>;
   gradient: string[];
+  releases?: Release[];
 };
 
 export type Trainee = {

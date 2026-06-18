@@ -431,7 +431,7 @@ function NewGroupModal({
                         style={[styles.logoOption, active && styles.selectedChip]}
                         onPress={() => setLogo({ kind: 'preset', preset: preset.id })}
                         activeOpacity={0.8}>
-                        <AgencyLogoMark preset={preset.id} size={22} />
+                        <AgencyLogoMark preset={preset.id} size={38} />
                       </TouchableOpacity>
                     );
                   })}
@@ -451,7 +451,7 @@ function NewGroupModal({
                         style={[styles.memberChip, active && styles.selectedChip]}
                         onPress={() => toggleMember(i.id)}
                         activeOpacity={0.8}>
-                        <Avatar name={i.stageName} gradient={i.gradient} image={i.image} size={18} />
+                        <Avatar name={i.stageName} gradient={i.gradient} image={i.image} size={24} />
                         <Text style={[styles.memberChipText, active && styles.selectedChipText]}> {i.stageName}</Text>
                       </TouchableOpacity>
                     );
@@ -667,14 +667,14 @@ const styles = StyleSheet.create({
   chipWrap: { marginTop: spacing.sm, flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   logoWrap: { marginTop: spacing.sm, flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   logoOption: {
-    width: 42,
-    height: 42,
+    width: 40,
+    height: 40,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.whiteA05,
+    padding: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   memberChip: {
     flexDirection: 'row',
@@ -683,7 +683,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.whiteA05,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: 4,
     paddingVertical: 4,
   },
   memberChipText: { fontSize: 11, color: colors.foreground },

@@ -1,12 +1,10 @@
-import { Activity, Heart, Sparkles, Zap } from 'lucide-react-native';
-import React, { ComponentType, useEffect, useMemo, useState } from 'react';
+import { FastForward } from 'lucide-react-native';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card } from '../components/AppShell';
-import { Gradient } from '../components/ui/Gradient';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
-
-type IconType = ComponentType<{ size?: number; color?: string }>;
+import { fmt } from '../utils/format';
 
 const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
@@ -33,36 +31,48 @@ function getTrainingAccent(id: string, name: string): string {
 }
 
 export function TrainingScreen() {
-  const { idols, groups, trainingTypes, trainingPlans, setTrainingPlan, advanceWeek } = useGame();
-  const [selectedIdol, setSelectedIdol] = useState(idols[0]?.id ?? '');
+  const { idols, groups, trainingTypes, trainingPlans, setTrainingPlan, advanceWeek, agency } = useGame();
   const [selectedType, setSelectedType] = useState(trainingTypes[0]?.id ?? '');
   const [selectedTarget, setSelectedTarget] = useState<string>('SOLO_DEFAULT');
   const [toast, setToast] = useState<string | null>(null);
 
   const targetOptions = useMemo(
     () => [
-      { id: 'SOLO_DEFAULT', label: 'Solo' },
+      { id: 'SOLO_DEFAULT', label: 'Solo / Default' },
       ...groups.map(group => ({ id: group.id, label: group.name })),
     ],
     [groups],
   );
 
-  const grid = trainingPlans[selectedTarget] ?? {};
-  const canPlan = idols.length > 0 && trainingTypes.length > 0;
-
+  // Auto-select first group if there are no solo idols and a group exists
   useEffect(() => {
-    if (!selectedIdol && idols[0]) setSelectedIdol(idols[0].id);
-  }, [idols, selectedIdol]);
+    const hasSoloIdols = idols.some(i => !i.group);
+    if (!hasSoloIdols && groups.length > 0 && selectedTarget === 'SOLO_DEFAULT') {
+      setSelectedTarget(groups[0].id);
+    }
+  }, [idols, groups, selectedTarget]);
 
-  useEffect(() => {
-    if (!selectedType && trainingTypes[0]) setSelectedType(trainingTypes[0].id);
-  }, [selectedType, trainingTypes]);
-
+  // Keep selectedTarget valid if the referenced group was deleted
   useEffect(() => {
     if (!targetOptions.some(option => option.id === selectedTarget)) {
       setSelectedTarget('SOLO_DEFAULT');
     }
   }, [selectedTarget, targetOptions]);
+
+  useEffect(() => {
+    if (!selectedType && trainingTypes[0]) setSelectedType(trainingTypes[0].id);
+  }, [selectedType, trainingTypes]);
+
+  // Idols that follow the currently selected plan
+  const targetMembers = useMemo(() => {
+    if (selectedTarget === 'SOLO_DEFAULT') return idols.filter(i => !i.group);
+    const group = groups.find(g => g.id === selectedTarget);
+    if (!group) return [];
+    return idols.filter(i => group.memberIds.includes(i.id));
+  }, [selectedTarget, idols, groups]);
+
+  const grid = trainingPlans[selectedTarget] ?? {};
+  const canPlan = trainingTypes.length > 0;
 
   const toggle = (key: string) =>
     setTrainingPlan(selectedTarget, {
@@ -76,11 +86,32 @@ export function TrainingScreen() {
     setTimeout(() => setToast(null), 2500);
   };
 
+  // Compute total weekly training cost across all plans × idols
+  const SESSION_COST: Record<string, number> = { vocal: 800_000, dance: 800_000, rap: 800_000, acting: 600_000, lang: 600_000, media: 600_000, rest: 200_000 };
+  const weeklyCost = useMemo(() => {
+    let total = 0;
+    const groupIdByName = new Map(groups.map(g => [g.name, g.id]));
+    for (const idol of idols) {
+      const key = idol.group ? groupIdByName.get(idol.group) ?? idol.group : undefined;
+      const plan = key ? trainingPlans[key] ?? trainingPlans[idol.group ?? ''] ?? trainingPlans.SOLO_DEFAULT ?? {} : trainingPlans.SOLO_DEFAULT ?? {};
+      for (const typeId of Object.values(plan)) total += SESSION_COST[typeId] ?? 0;
+    }
+    return total;
+  }, [trainingPlans, idols, groups]);
+  const canAffordWeek = agency.money >= weeklyCost;
+
   const simulateAction = (
-    <TouchableOpacity style={styles.nextWeekBtn} onPress={simulate} activeOpacity={0.8}>
-      <Sparkles size={14} color={colors.slate900} />
-      <Text style={styles.nextWeekText}>Next Week</Text>
-    </TouchableOpacity>
+    <View style={styles.nextWeekWrap}>
+      {weeklyCost > 0 && (
+        <Text style={[styles.costPreview, !canAffordWeek && styles.costPreviewWarn]}>
+          {fmt(weeklyCost)}/wk
+        </Text>
+      )}
+      <TouchableOpacity style={[styles.nextWeekBtn, !canAffordWeek && styles.nextWeekBtnWarn]} onPress={simulate} activeOpacity={0.8}>
+        <FastForward size={14} color={colors.slate900} />
+        <Text style={styles.nextWeekText}>Next Week</Text>
+      </TouchableOpacity>
+    </View>
   );
 
   const selectedTrainType = trainingTypes.find(t => t.id === selectedType);
@@ -88,11 +119,10 @@ export function TrainingScreen() {
   return (
     <AppShell title="Training" subtitle="Plan the week, then advance" action={simulateAction}>
 
-      {/* ── Target + Idol strip — compact single row per section ── */}
+      {/* ── Target selector + member preview ── */}
       <Card>
-        {/* Target selector */}
         <View style={styles.rowLabel}>
-          <Text style={styles.rowLabelText}>TARGET</Text>
+          <Text style={styles.rowLabelText}>PLAN FOR</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
             {targetOptions.map(option => {
               const active = selectedTarget === option.id;
@@ -109,34 +139,33 @@ export function TrainingScreen() {
           </ScrollView>
         </View>
 
-        {/* Idol selector */}
-        {idols.length > 0 && (
-          <View style={[styles.rowLabel, { marginTop: spacing.md }]}>
-            <Text style={styles.rowLabelText}>IDOL</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.idolStrip}>
-              {idols.map(i => {
-                const active = selectedIdol === i.id;
-                return (
-                  <TouchableOpacity
-                    key={i.id}
-                    onPress={() => setSelectedIdol(i.id)}
-                    style={[styles.idolPill, active && styles.chipActive]}
-                    activeOpacity={0.8}>
-                    <View style={[styles.idolThumb, active && styles.idolThumbActive]}>
-                      {i.image ? (
-                        <Image source={i.image} resizeMode="cover" style={styles.idolThumbImage} />
-                      ) : (
-                        <Text style={styles.idolThumbFallback}>{i.stageName.slice(0, 1)}</Text>
-                      )}
-                    </View>
-                    <Text style={[styles.idolPillName, active && styles.chipTextActive]} numberOfLines={1}>
-                      {i.stageName}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+        {/* Members following this plan */}
+        {targetMembers.length > 0 ? (
+          <View style={styles.memberPreviewRow}>
+            <Text style={styles.memberPreviewLabel}>
+              {targetMembers.length} idol{targetMembers.length !== 1 ? 's' : ''} follow this schedule
+            </Text>
+            <View style={styles.memberChipRow}>
+              {targetMembers.map(i => (
+                <View key={i.id} style={styles.memberChip}>
+                  <View style={styles.memberAvatar}>
+                    {i.image ? (
+                      <Image source={i.image} resizeMode="cover" style={styles.memberAvatarImg} />
+                    ) : (
+                      <Text style={styles.memberAvatarFallback}>{i.stageName.slice(0, 1)}</Text>
+                    )}
+                  </View>
+                  <Text style={styles.memberChipName} numberOfLines={1}>{i.stageName}</Text>
+                </View>
+              ))}
+            </View>
           </View>
+        ) : (
+          <Text style={styles.memberPreviewEmpty}>
+            {selectedTarget === 'SOLO_DEFAULT'
+              ? 'No solo idols yet — assign idols to groups or recruit more.'
+              : 'No members in this group yet.'}
+          </Text>
         )}
       </Card>
 
@@ -186,14 +215,24 @@ export function TrainingScreen() {
             </View>
           )}
         </View>
-        <View style={styles.weekGrid}>
+
+        {/* Header row */}
+        <View style={styles.gridRow}>
+          <View style={styles.gridRowLabelCell} />
           {days.map(d => (
             <View key={d} style={styles.dayHeadCell}>
               <Text style={styles.dayHead}>{d}</Text>
             </View>
           ))}
-          {[0, 1, 2].flatMap(row =>
-            days.map(d => {
+        </View>
+
+        {/* Session rows */}
+        {(['AM', 'PM', 'EVE'] as const).map((rowLabel, row) => (
+          <View key={row} style={styles.gridRow}>
+            <View style={styles.gridRowLabelCell}>
+              <Text style={styles.gridRowLabel}>{rowLabel}</Text>
+            </View>
+            {days.map(d => {
               const key = `${row}-${d}`;
               const v = grid[key];
               const matchType = v ? trainingTypes.find(t => t.id === v) : null;
@@ -218,9 +257,9 @@ export function TrainingScreen() {
                   {label ? <Text style={[styles.slotText, { color: accent }]} numberOfLines={1}>{label}</Text> : null}
                 </TouchableOpacity>
               );
-            }),
-          )}
-        </View>
+            })}
+          </View>
+        ))}
       </Card>
 
       {/* Toast */}
@@ -234,6 +273,9 @@ export function TrainingScreen() {
 }
 
 const styles = StyleSheet.create({
+  nextWeekWrap: { alignItems: 'flex-end', gap: 3 },
+  costPreview: { fontSize: 9, fontWeight: '700', color: colors.mint, letterSpacing: 0.5 },
+  costPreviewWarn: { color: '#FDA4AF' },
   nextWeekBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -243,10 +285,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
+  nextWeekBtnWarn: { backgroundColor: '#F87171' },
   nextWeekText: { fontSize: 11, fontWeight: '700', color: colors.slate900 },
 
   rowLabel: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  rowLabelText: { fontSize: 9, fontWeight: '800', letterSpacing: 1.5, color: colors.mutedForeground, width: 42 },
+  rowLabelText: { fontSize: 9, fontWeight: '800', letterSpacing: 1.5, color: colors.mutedForeground, width: 48 },
   chipRow: { flexDirection: 'row', gap: 6 },
   targetChip: {
     borderRadius: radius.full,
@@ -260,32 +303,44 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 11, fontWeight: '600', color: colors.mutedForeground },
   chipTextActive: { color: colors.tealBright },
 
-  idolStrip: { flexDirection: 'row', gap: 6 },
-  idolPill: {
-    alignItems: 'center',
-    gap: 4,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.whiteA05,
-    padding: spacing.xs,
-    minWidth: 52,
+  memberPreviewRow: {
+    marginTop: spacing.md,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    gap: spacing.sm,
   },
-  idolThumb: {
-    width: 38,
-    height: 38,
-    borderRadius: radius.md,
+  memberPreviewLabel: { fontSize: 10, fontWeight: '600', color: colors.mutedForeground },
+  memberChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  memberChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(34,211,238,0.3)',
+    backgroundColor: 'rgba(34,211,238,0.05)',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  memberAvatar: {
+    width: 22,
+    height: 22,
+    borderRadius: radius.full,
     backgroundColor: colors.whiteA05,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  idolThumbActive: { borderColor: 'rgba(34,211,238,0.8)' },
-  idolThumbImage: { width: '100%', height: '100%' },
-  idolThumbFallback: { fontSize: 14, fontWeight: '700', color: colors.mutedForeground },
-  idolPillName: { fontSize: 9, fontWeight: '600', color: colors.foreground, maxWidth: 52, textAlign: 'center' },
+  memberAvatarImg: { width: '100%', height: '100%' },
+  memberAvatarFallback: { fontSize: 10, fontWeight: '700', color: colors.mutedForeground },
+  memberChipName: { fontSize: 10, fontWeight: '700', color: colors.tealBright },
+  memberPreviewEmpty: {
+    marginTop: spacing.sm,
+    fontSize: 11,
+    color: colors.mutedForeground,
+    fontStyle: 'italic',
+  },
 
   typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   typeTile: {
@@ -331,11 +386,13 @@ const styles = StyleSheet.create({
   activeTypeDot: { width: 6, height: 6, borderRadius: radius.full },
   activeTypeName: { fontSize: 10, fontWeight: '700' },
 
-  weekGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
-  dayHeadCell: { width: '12.7%', alignItems: 'center' },
+  gridRow: { flexDirection: 'row', gap: 4, marginBottom: 4, alignItems: 'center' },
+  gridRowLabelCell: { width: 28, alignItems: 'flex-end', paddingRight: 2 },
+  gridRowLabel: { fontSize: 8, fontWeight: '800', letterSpacing: 0.8, color: colors.mutedForeground },
+  dayHeadCell: { flex: 1, alignItems: 'center' },
   dayHead: { fontSize: 9, fontWeight: '800', letterSpacing: 0.8, color: colors.mutedForeground },
   slot: {
-    width: '12.7%',
+    flex: 1,
     aspectRatio: 1,
     borderRadius: radius.md,
     borderWidth: 1,

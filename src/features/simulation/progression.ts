@@ -26,6 +26,7 @@ export type WeeklyProgressionResult = {
   nextRanking: number;
   weeklyIncomeAmount: number;
   weeklyExpenseAmount: number;
+  trainingCostAmount: number;
   revenuePoint: RevenuePoint;
 };
 
@@ -148,6 +149,28 @@ export function calculateWeeklyProgression({
     city.officeRentWeekly * city.operationalCostMultiplier + weeklyIncomeAmount * city.taxRate,
   );
 
+  // Training costs: ₩800K per vocal/dance/rap session, ₩600K for acting/media/lang, ₩200K for rest
+  const SESSION_COST: Record<string, number> = {
+    vocal: 800_000,
+    dance: 800_000,
+    rap: 800_000,
+    acting: 600_000,
+    lang: 600_000,
+    media: 600_000,
+    rest: 200_000,
+  };
+  let trainingCostAmount = 0;
+  for (const idol of idols) {
+    const groupPlanKey = idol.group ? (new Map(groups.map(g => [g.name, g.id])).get(idol.group) ?? idol.group) : undefined;
+    const plan =
+      groupPlanKey
+        ? trainingPlans[groupPlanKey] ?? trainingPlans[idol.group ?? ''] ?? trainingPlans.SOLO_DEFAULT ?? {}
+        : trainingPlans.SOLO_DEFAULT ?? {};
+    for (const typeId of Object.values(plan)) {
+      trainingCostAmount += SESSION_COST[typeId] ?? 0;
+    }
+  }
+
   return {
     nextIdols,
     nextGroups,
@@ -156,6 +179,7 @@ export function calculateWeeklyProgression({
     nextRanking,
     weeklyIncomeAmount,
     weeklyExpenseAmount,
+    trainingCostAmount,
     revenuePoint: {
       m: `W${currentWeek + 1}`,
       group: Math.round(groupsRevenue / 4),

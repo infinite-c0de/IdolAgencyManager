@@ -12,12 +12,14 @@ import {
   MoreHorizontal,
   Music,
   Star,
+  Users,
   Zap,
 } from 'lucide-react-native';
 import React, { ComponentType, ReactNode } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card, SectionTitle, SkillBar, StatusDot } from '../components/AppShell';
 import { RadarChart } from '../components/charts';
+import { AgencyLogoMark } from '../components/ui/AgencyLogoMark';
 import { Gradient } from '../components/ui/Gradient';
 import { fmtCount } from '../utils/format';
 import type { RootStackParamList, RootStackScreenProps } from '../navigation/types';
@@ -43,8 +45,9 @@ function resolveImageAspectRatio(source?: number) {
 
 export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>) {
   const navigation = useNavigation<Nav>();
-  const { idols } = useGame();
+  const { idols, groups } = useGame();
   const i = idols.find(x => x.id === route.params.id);
+  const idolGroup = i?.group ? groups.find(g => g.name === i.group) : undefined;
 
   if (!i) {
     return (
@@ -94,10 +97,10 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
         <HeroArt image={i.image} stageName={i.stageName}>
           <View style={styles.heroFooter}>
             <View style={styles.rowBetweenEnd}>
-              <View>
-                <Text style={styles.heroName}>{i.stageName}</Text>
-                <Text style={styles.heroRole}>
-                  {i.role} · {i.group ?? 'Solo'}
+              <View style={styles.flex1}>
+                <Text style={styles.heroName} numberOfLines={1}>{i.stageName}</Text>
+                <Text style={styles.heroRole} numberOfLines={2}>
+                  {i.role}
                 </Text>
               </View>
               <View style={styles.heroStatus}>
@@ -157,6 +160,38 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
                 style={[styles.domFill, { width: `${i.personalityProfile.dominance}%` }]}
               />
             </View>
+          </View>
+        )}
+
+        {/* Group info */}
+        {idolGroup ? (
+          <View style={styles.groupInfoRow}>
+            <AgencyLogoMark
+              preset={idolGroup.logo?.kind === 'preset' ? idolGroup.logo.preset : 1}
+              size={38}
+            />
+            <View style={styles.groupInfoText}>
+              <Text style={styles.groupInfoName}>{idolGroup.name}</Text>
+              <View style={styles.groupInfoMeta}>
+                <View style={[styles.groupStatusDot, { backgroundColor: idolGroup.status === 'Active' ? colors.mint : colors.mutedForeground }]} />
+                <Text style={styles.groupInfoSub}>{idolGroup.status}</Text>
+                <Text style={styles.groupInfoDivider}>·</Text>
+                <Users size={10} color={colors.mutedForeground} />
+                <Text style={styles.groupInfoSub}>{idolGroup.memberIds.length} members</Text>
+              </View>
+            </View>
+            <View style={[styles.groupStatusPill, idolGroup.status === 'Active' ? styles.groupStatusActive : styles.groupStatusPre]}>
+              <Text style={[styles.groupStatusText, idolGroup.status === 'Active' ? styles.groupStatusTextActive : styles.groupStatusTextPre]}>
+                {idolGroup.status === 'Active' ? 'ACTIVE' : 'PRE-DEBUT'}
+              </Text>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.groupInfoRow}>
+            <View style={styles.groupInfoSoloIcon}>
+              <Text style={styles.groupInfoSoloEmoji}>🎤</Text>
+            </View>
+            <Text style={styles.groupInfoSoloLabel}>Solo Artist</Text>
           </View>
         )}
 
@@ -339,12 +374,13 @@ const styles = StyleSheet.create({
     zIndex: 2,
     backgroundColor: 'rgba(0,0,0,0.1)',
   },
-  heroFooter: { zIndex: 3, padding: spacing.lg, backgroundColor: 'rgba(0,0,0,0.35)' },
-  heroName: { fontSize: 28, fontWeight: '900', color: colors.tealBright },
-  heroRole: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.8)' },
+  heroFooter: { zIndex: 3, paddingHorizontal: spacing.xl, paddingVertical: spacing.md, backgroundColor: 'rgba(0,0,0,0.35)' },
+  heroName: { fontSize: 22, fontWeight: '900', color: colors.tealBright },
+  heroRole: { fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, color: 'rgba(255,255,255,0.8)' },
   heroStatus: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexShrink: 0,
     borderRadius: radius.full,
     backgroundColor: colors.black40,
     paddingHorizontal: 10,
@@ -410,6 +446,37 @@ const styles = StyleSheet.create({
   },
   infoKey: { fontSize: 12, color: colors.mutedForeground },
   infoVal: { fontSize: 12, fontWeight: '600', color: colors.foreground, textAlign: 'right', flexShrink: 1 },
+
+  // ── Group info ──
+  groupInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  groupInfoText: { flex: 1, gap: 3 },
+  groupInfoName: { fontSize: 14, fontWeight: '800', color: colors.foreground },
+  groupInfoMeta: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  groupStatusDot: { width: 6, height: 6, borderRadius: radius.full },
+  groupInfoSub: { fontSize: 10, color: colors.mutedForeground },
+  groupInfoDivider: { fontSize: 10, color: colors.mutedForeground },
+  groupStatusPill: {
+    borderRadius: radius.full,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  groupStatusActive: { borderColor: 'rgba(52,211,153,0.5)', backgroundColor: 'rgba(52,211,153,0.08)' },
+  groupStatusPre: { borderColor: colors.border, backgroundColor: colors.whiteA05 },
+  groupStatusText: { fontSize: 8, fontWeight: '800', letterSpacing: 1 },
+  groupStatusTextActive: { color: colors.mint },
+  groupStatusTextPre: { color: colors.mutedForeground },
+  groupInfoSoloIcon: { width: 38, height: 38, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.whiteA05 },
+  groupInfoSoloEmoji: { fontSize: 18 },
+  groupInfoSoloLabel: { fontSize: 13, fontWeight: '700', color: colors.mutedForeground },
 
   vitalRow: { marginTop: spacing.lg, flexDirection: 'row', gap: spacing.sm },
   vital: {

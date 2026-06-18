@@ -111,16 +111,6 @@ export function IdolsScreen() {
                     </View>
                   )}
 
-                  {/* Group watermark */}
-                  {i.group && (
-                    <View style={styles.groupWatermark}>
-                      <AgencyLogoMark
-                        preset={groupForIdol?.logo?.kind === 'preset' ? groupForIdol.logo.preset : 1}
-                        size={52}
-                      />
-                    </View>
-                  )}
-
                   {/* Top badges */}
                   <View style={styles.topLeft}>
                     <View style={[styles.statusPill, { borderColor: statusDotColor + '66' }]}>
@@ -132,8 +122,19 @@ export function IdolsScreen() {
 
                   {/* Bottom overlay */}
                   <View style={styles.artBottom}>
-                    <Text style={styles.artName} numberOfLines={1}>{i.stageName}</Text>
-                    <Text style={styles.artRole} numberOfLines={1}>{i.role}</Text>
+                    <View style={styles.artBottomLeft}>
+                      <Text style={styles.artName} numberOfLines={1}>{i.stageName}</Text>
+                      <Text style={styles.artRole} numberOfLines={1}>{i.role}</Text>
+                    </View>
+                    {i.group && groupForIdol && (
+                      <View style={styles.artGroupBadge}>
+                        <AgencyLogoMark
+                          preset={groupForIdol.logo?.kind === 'preset' ? groupForIdol.logo.preset : 1}
+                          size={22}
+                        />
+                        <Text style={styles.artGroupName} numberOfLines={1}>{i.group}</Text>
+                      </View>
+                    )}
                   </View>
                 </View>
 
@@ -244,7 +245,6 @@ const styles = StyleSheet.create({
   artPhoto: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
   artFallback: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(34,211,238,0.05)' },
   artFallbackText: { fontSize: 24, fontWeight: '900', color: 'rgba(103,232,249,0.3)', letterSpacing: 3 },
-  groupWatermark: { position: 'absolute', right: -6, bottom: -8, opacity: 0.2, zIndex: 1 },
 
   topLeft: { position: 'absolute', top: spacing.xs, left: spacing.xs, zIndex: 3 },
   statusPill: {
@@ -266,9 +266,27 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 3,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
     padding: spacing.xs,
     paddingHorizontal: spacing.sm,
     backgroundColor: 'rgba(0,0,0,0.58)',
+  },
+  artBottomLeft: { flex: 1, marginRight: spacing.xs },
+  artGroupBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    flexShrink: 0,
+    maxWidth: '55%',
+  },
+  artGroupName: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: 'rgba(255,255,255,0.85)',
+    letterSpacing: 0.4,
+    flexShrink: 1,
   },
   artName: { fontSize: 12, fontWeight: '800', color: colors.foreground },
   artRole: { fontSize: 9, color: 'rgba(255,255,255,0.6)', marginTop: 1 },
