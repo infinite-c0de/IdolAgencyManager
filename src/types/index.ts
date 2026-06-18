@@ -31,23 +31,7 @@ export type GroupRole =
   | 'Visual'
   | 'Center';
 
-export type AgencyLogoPreset =
-  | 'NEON_STAR'
-  | 'AURORA_CROWN'
-  | 'LUNAR_SPOTLIGHT'
-  | 'NOVA_COMPASS'
-  | 'CRYSTAL_WINGS'
-  | 'PRISM_DIAMOND'
-  | 'STAGE_LIGHTS'
-  | 'HEART_ORBIT'
-  | 'SOUNDWAVE'
-  | 'STAR_RING'
-  | 'LOTUS_IDOL'
-  | 'OCEAN_WAVE'
-  | 'ORBIT_STAR'
-  | 'NEON_CHEVRON'
-  | 'WINGED_STAR'
-  | 'CRYSTAL_CITY';
+export type AgencyLogoPreset = number;
 
 export type AgencyLogo =
   | { kind: 'none' }

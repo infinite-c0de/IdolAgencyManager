@@ -81,6 +81,43 @@ const idolSaOn = require('../assets/idols/idol_saon.webp');
 const idolSeR = require('../assets/idols/idol_ser.webp');
 const idolTos = require('../assets/idols/idol_tos.webp');
 
+export const LOGO_IMAGES: Record<number, ReturnType<typeof require>> = {
+  1:  require('../assets/logos/1.webp'),
+  2:  require('../assets/logos/2.webp'),
+  3:  require('../assets/logos/3.webp'),
+  4:  require('../assets/logos/4.webp'),
+  5:  require('../assets/logos/5.webp'),
+  6:  require('../assets/logos/6.webp'),
+  7:  require('../assets/logos/7.webp'),
+  8:  require('../assets/logos/8.webp'),
+  9:  require('../assets/logos/9.webp'),
+  10: require('../assets/logos/10.webp'),
+  11: require('../assets/logos/11.webp'),
+  12: require('../assets/logos/12.webp'),
+  13: require('../assets/logos/13.webp'),
+  14: require('../assets/logos/14.webp'),
+  15: require('../assets/logos/15.webp'),
+  16: require('../assets/logos/16.webp'),
+  17: require('../assets/logos/17.webp'),
+  18: require('../assets/logos/18.webp'),
+  19: require('../assets/logos/19.webp'),
+  20: require('../assets/logos/20.webp'),
+  21: require('../assets/logos/21.webp'),
+  22: require('../assets/logos/22.webp'),
+  23: require('../assets/logos/23.webp'),
+  24: require('../assets/logos/24.webp'),
+  25: require('../assets/logos/25.webp'),
+  26: require('../assets/logos/26.webp'),
+  27: require('../assets/logos/27.webp'),
+  28: require('../assets/logos/28.webp'),
+  29: require('../assets/logos/29.webp'),
+  30: require('../assets/logos/30.webp'),
+  31: require('../assets/logos/31.webp'),
+  32: require('../assets/logos/32.webp'),
+  33: require('../assets/logos/33.webp'),
+  34: require('../assets/logos/34.webp'),
+  35: require('../assets/logos/35.webp'),
+};
 
 export const initialAgency: Agency = {
   name: 'NEW AGENCY',

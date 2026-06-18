@@ -41,8 +41,8 @@ function scoreRoleFit(idol: Idol, role: GroupRole) {
   if (role === 'Leader') {
     return Math.round(
       idol.stats.charisma * 0.35 +
-        idol.stats.stamina * 0.2 +
-        (idol.personalityProfile?.traits.responsibility ?? 60) * 0.45,
+      idol.stats.stamina * 0.2 +
+      (idol.personalityProfile?.traits.responsibility ?? 60) * 0.45,
     );
   }
   if (role === 'Main Vocal') return idol.stats.vocal;
@@ -100,82 +100,82 @@ export function GroupsScreen() {
             onPress={() => navigation.navigate('GroupProfile', { groupId: g.id })}
             activeOpacity={0.92}>
             <Card glow={g.status === 'Active' ? 'teal' : 'violet'}>
-            <View style={styles.headerRow}>
-              <View style={styles.headerLeft}>
-                <Gradient colors={g.gradient} style={styles.groupIcon}>
-                  <AgencyLogoMark
-                    preset={g.logo?.kind === 'preset' ? g.logo.preset : 'NEON_STAR'}
-                    size={20}
-                  />
-                </Gradient>
-                <View style={styles.flex1}>
-                  <Text style={styles.groupName} numberOfLines={1}>
-                    {g.name}
-                  </Text>
-                  <Text style={styles.tinyMuted}>
-                    Fandom · <Text style={styles.fanName}>{g.fanName}</Text> · {g.concept}
+              <View style={styles.headerRow}>
+                <View style={styles.headerLeft}>
+                  <View style={styles.groupIcon}>
+                    <AgencyLogoMark
+                      preset={g.logo?.kind === 'preset' ? g.logo.preset : 1}
+                      size={46}
+                    />
+                  </View>
+                  <View style={styles.flex1}>
+                    <Text style={styles.groupName} numberOfLines={1}>
+                      {g.name}
+                    </Text>
+                    <Text style={styles.tinyMuted}>
+                      Fandom · <Text style={styles.fanName}>{g.fanName}</Text> · {g.concept}
+                    </Text>
+                  </View>
+                </View>
+                <View
+                  style={[
+                    styles.statusBadge,
+                    g.status === 'Active' ? styles.statusTeal : styles.statusViolet,
+                  ]}>
+                  <Text style={[styles.statusBadgeText, g.status === 'Active' ? styles.tealText : styles.violetText]}>
+                    {g.status}
                   </Text>
                 </View>
               </View>
-              <View
-                style={[
-                  styles.statusBadge,
-                  g.status === 'Active' ? styles.statusTeal : styles.statusViolet,
-                ]}>
-                <Text style={[styles.statusBadgeText, g.status === 'Active' ? styles.tealText : styles.violetText]}>
-                  {g.status}
+
+              <View style={styles.miniRow}>
+                <Mini label="Popularity" v={`${g.popularity}%`} />
+                <Mini label="Members" v={`${members.length}`} />
+                <Mini label="Income" v={g.monthlyRevenue ? fmt(g.monthlyRevenue) : '—'} />
+              </View>
+
+              <View style={styles.bodyRow}>
+                <Text style={styles.subLabel}>MEMBERS & ROLES</Text>
+                <View style={styles.memberList}>
+                  {members.map(m => {
+                    const hasLeaderRole = m.role.includes('Leader');
+                    return (
+                      <View key={m.id} style={styles.memberItem}>
+                        <Avatar name={m.stageName} gradient={m.gradient} image={m.image} size={32} />
+                        <View style={styles.flex1}>
+                          <View style={styles.memberNameRow}>
+                            {hasLeaderRole && <Crown size={12} color={colors.amber} />}
+                            <Text style={styles.memberName}> {m.stageName}</Text>
+                          </View>
+                          <Text style={styles.tinyMuted}>{m.role}</Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+
+              <View style={styles.readiness}>
+                <Text style={styles.subLabel}>DEBUT READINESS</Text>
+                <View style={styles.checkGrid}>
+                  {readiness.checks.map(c => (
+                    <View key={c.t} style={styles.checkItem}>
+                      <View style={[styles.checkDot, c.ok ? styles.checkOn : styles.checkOff]} />
+                      <Text style={c.ok ? styles.checkTextOn : styles.checkTextOff}>{c.t}</Text>
+                    </View>
+                  ))}
+                </View>
+                <Text style={styles.readyText}>
+                  {readiness.ready ? (
+                    <Text style={styles.mintText}>Ready to debut</Text>
+                  ) : (
+                    <Text style={styles.amberText}>Almost there</Text>
+                  )}
+                </Text>
+                <Text style={styles.readinessHint}>
+                  Trigger rules: 3+ members, leader assigned, balanced performance stats, debut content, promotion plan.
                 </Text>
               </View>
-            </View>
-
-            <View style={styles.miniRow}>
-              <Mini label="Popularity" v={`${g.popularity}%`} />
-              <Mini label="Members" v={`${members.length}`} />
-              <Mini label="Income" v={g.monthlyRevenue ? fmt(g.monthlyRevenue) : '—'} />
-            </View>
-
-            <View style={styles.bodyRow}>
-              <Text style={styles.subLabel}>MEMBERS & ROLES</Text>
-              <View style={styles.memberList}>
-                {members.map(m => {
-                  const hasLeaderRole = m.role.includes('Leader');
-                  return (
-                    <View key={m.id} style={styles.memberItem}>
-                      <Avatar name={m.stageName} gradient={m.gradient} image={m.image} size={32} />
-                      <View style={styles.flex1}>
-                        <View style={styles.memberNameRow}>
-                          {hasLeaderRole && <Crown size={12} color={colors.amber} />}
-                          <Text style={styles.memberName}> {m.stageName}</Text>
-                        </View>
-                        <Text style={styles.tinyMuted}>{m.role}</Text>
-                      </View>
-                    </View>
-                  );
-                })}
-              </View>
-            </View>
-
-            <View style={styles.readiness}>
-              <Text style={styles.subLabel}>DEBUT READINESS</Text>
-              <View style={styles.checkGrid}>
-                {readiness.checks.map(c => (
-                  <View key={c.t} style={styles.checkItem}>
-                    <View style={[styles.checkDot, c.ok ? styles.checkOn : styles.checkOff]} />
-                    <Text style={c.ok ? styles.checkTextOn : styles.checkTextOff}>{c.t}</Text>
-                  </View>
-                ))}
-              </View>
-              <Text style={styles.readyText}>
-                {readiness.ready ? (
-                  <Text style={styles.mintText}>Ready to debut</Text>
-                ) : (
-                  <Text style={styles.amberText}>Almost there</Text>
-                )}
-              </Text>
-              <Text style={styles.readinessHint}>
-                Trigger rules: 3+ members, leader assigned, balanced performance stats, debut content, promotion plan.
-              </Text>
-            </View>
             </Card>
           </TouchableOpacity>
         );
@@ -573,7 +573,12 @@ const styles = StyleSheet.create({
 
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.md },
   headerLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  groupIcon: { width: 40, height: 40, borderRadius: radius.lg, alignItems: 'center', justifyContent: 'center' },
+  groupIcon: {
+    borderRadius: radius.xl,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(103,232,249,0.25)',
+  },
   groupName: { color: colors.tealBright, fontSize: 22, fontWeight: '900' },
   fanName: { color: colors.violetBright, fontWeight: '600' },
   statusBadge: { borderRadius: radius.full, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 4 },
@@ -620,7 +625,7 @@ const styles = StyleSheet.create({
   readinessHint: { marginTop: 6, fontSize: 10, lineHeight: 14, color: colors.mutedForeground },
 
   // Modal
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: spacing.lg },  modalCard: {
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: spacing.lg }, modalCard: {
     width: '100%',
     maxWidth: 440,
     maxHeight: '85%',

@@ -67,7 +67,7 @@ function AgencyLogoBadge({ logo }: { logo: ReturnType<typeof useGame>['agency'][
 
   return (
     <View style={styles.logo}>
-      <AgencyLogoMark preset={logo.kind === 'preset' ? logo.preset : 'NEON_STAR'} size={38} />
+      <AgencyLogoMark preset={logo.kind === 'preset' ? logo.preset : 1} size={38} />
     </View>
   );
 }

@@ -166,7 +166,7 @@ export function GroupProfileScreen() {
               {group.logo?.kind === 'custom' ? (
                 <Image source={{ uri: group.logo.uri }} resizeMode="cover" style={styles.heroLogoImage} />
               ) : (
-                <AgencyLogoMark preset={group.logo?.kind === 'preset' ? group.logo.preset : 'NEON_STAR'} size={44} />
+                <AgencyLogoMark preset={group.logo?.kind === 'preset' ? group.logo.preset : 1} size={44} />
               )}
             </View>
             <Text style={styles.heroGroupName} numberOfLines={2}>{group.name}</Text>
@@ -234,7 +234,7 @@ export function GroupProfileScreen() {
         <SectionTitle>PERFORMANCE</SectionTitle>
         <View style={styles.perfRow}>
           <View style={styles.radarWrap}>
-            <RadarChart data={radar} size={155} fillStops={[colors.teal, colors.violet]} />
+            <RadarChart data={radar} size={120} fillStops={[colors.teal, colors.violet]} />
           </View>
           <View style={styles.vBars}>
             {stats.map(stat => (
@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
   filmShade: {
     position: 'absolute',
     bottom: 0, left: 0, right: 0,
-    height: 50,
+    height: 38,
     backgroundColor: 'rgba(0,0,0,0.65)',
   },
   filmName: {

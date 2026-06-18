@@ -19,7 +19,7 @@ import type { AgencyLogo } from '../types';
 import { colors, radius, spacing } from '../theme';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
-const LOGO_CELL_SIZE = 60;
+const LOGO_CELL_SIZE = 62;
 
 export function OnboardingScreen() {
   const navigation = useNavigation<Nav>();
@@ -125,27 +125,23 @@ export function OnboardingScreen() {
                 logo.kind === 'custom' ? styles.logoPresetActive : styles.logoPresetIdle,
               ]}
               activeOpacity={0.85}>
-              {logo.kind === 'custom' ? (
-                <Image source={{ uri: logo.uri }} resizeMode="cover" style={styles.importLogoPreview} />
-              ) : (
-                <ImagePlus size={16} color={colors.tealBright} />
-              )}
+              <ImagePlus size={16} color={colors.tealBright} />
               <Text style={styles.importLogoTitle}>Import Image</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.logoGrid}>
-          {agencyLogoPresets.map(preset => {
-            const active = logo.kind === 'preset' && logo.preset === preset.id;
-            return (
-              <TouchableOpacity
-                key={preset.id}
-                onPress={() => setLogo({ kind: 'preset', preset: preset.id })}
-                style={[styles.logoPreset, active ? styles.logoPresetActive : styles.logoPresetIdle]}
-                activeOpacity={0.85}>
-                <AgencyLogoMark preset={preset.id} size={58} />
-              </TouchableOpacity>
-            );
-          })}
+            {agencyLogoPresets.map(preset => {
+              const active = logo.kind === 'preset' && logo.preset === preset.id;
+              return (
+                <TouchableOpacity
+                  key={preset.id}
+                  onPress={() => setLogo({ kind: 'preset', preset: preset.id })}
+                  style={[styles.logoPreset, active ? styles.logoPresetActive : styles.logoPresetIdle]}
+                  activeOpacity={0.85}>
+                  <AgencyLogoMark preset={preset.id} size={58} />
+                </TouchableOpacity>
+              );
+            })}
           </View>
           {logo.kind === 'custom' ? (
             <View style={styles.customLogoPreviewWrap}>

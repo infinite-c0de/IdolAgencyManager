@@ -115,7 +115,7 @@ export function IdolsScreen() {
                   {i.group && (
                     <View style={styles.groupWatermark}>
                       <AgencyLogoMark
-                        preset={groupForIdol?.logo?.kind === 'preset' ? groupForIdol.logo.preset : 'NEON_STAR'}
+                        preset={groupForIdol?.logo?.kind === 'preset' ? groupForIdol.logo.preset : 1}
                         size={52}
                       />
                     </View>

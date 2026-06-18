@@ -75,23 +75,25 @@ export function AgencyDashboardScreen() {
       <View style={styles.hero}>
         {/* Left column – agency identity */}
         <View style={styles.heroLeft}>
-          <View style={styles.heroBadgeRow}>
-            <View style={styles.agencyLogoBadge}>
+          <View style={styles.heroIdentityRow}>
+            {/* Logo */}
+            <View style={styles.heroLogoWrap}>
               {agency.logo.kind === 'custom' ? (
-                <Image source={{ uri: agency.logo.uri }} resizeMode="cover" style={styles.agencyLogoImage} />
+                <Image source={{ uri: agency.logo.uri }} resizeMode="cover" style={styles.heroLogoImage} />
               ) : (
-                <AgencyLogoMark preset={agency.logo.kind === 'preset' ? agency.logo.preset : 'NEON_STAR'} size={32} />
+                <AgencyLogoMark preset={agency.logo.kind === 'preset' ? agency.logo.preset : 1} size={65} />
               )}
             </View>
-            <View style={styles.careerPill}>
-              <Text style={styles.careerPillText}>Career</Text>
+            {/* Text stack */}
+            <View style={styles.heroTextStack}>
+              <Text style={styles.heroEyebrow}>CAREER</Text>
+              <Text style={styles.heroAgencyName} numberOfLines={1}>{agency.name}</Text>
+              <View style={styles.heroMeta}>
+                <Text style={styles.heroMetaText}>{agency.ceoName}</Text>
+                {agency.ceoName ? <Text style={styles.heroMetaDot}>·</Text> : null}
+                <Text style={styles.heroMetaText}>{agency.city}</Text>
+              </View>
             </View>
-          </View>
-          <Text style={styles.heroAgencyName} numberOfLines={2}>{agency.name}</Text>
-          <View style={styles.heroMeta}>
-            <Text style={styles.heroMetaText}>{agency.ceoName || 'CEO Unassigned'}</Text>
-            <Text style={styles.heroMetaDot}>·</Text>
-            <Text style={styles.heroMetaText}>{agency.city}</Text>
           </View>
         </View>
 
@@ -220,7 +222,7 @@ export function AgencyDashboardScreen() {
                   activeOpacity={0.84}>
                   <View style={styles.groupRowLeft}>
                     <AgencyLogoMark
-                      preset={group.logo?.kind === 'preset' ? group.logo.preset : 'NEON_STAR'}
+                      preset={group.logo?.kind === 'preset' ? group.logo.preset : 1}
                       size={28}
                     />
                     <View>
@@ -457,30 +459,28 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     paddingVertical: spacing.sm,
   },
-  heroLeft: { flex: 1, gap: 6 },
-  heroBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  agencyLogoBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.lg,
+  heroLeft: { flex: 1 },
+  heroIdentityRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(34,211,238,0.5)',
-    backgroundColor: colors.whiteA05,
+    gap: spacing.md,
+  },
+  heroLogoWrap: {
+    borderRadius: radius.xl,
     overflow: 'hidden',
-  },
-  agencyLogoImage: { width: '100%', height: '100%' },
-  careerPill: {
-    borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: 'rgba(103,232,249,0.4)',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
+    borderColor: 'rgba(103,232,249,0.25)',
   },
-  careerPillText: { fontSize: 9, fontWeight: '700', letterSpacing: 1, color: colors.tealBright },
-  heroAgencyName: { fontSize: 26, fontWeight: '900', color: colors.foreground, letterSpacing: -0.5, lineHeight: 30 },
-  heroMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  heroLogoImage: { width: 52, height: 52 },
+  heroTextStack: { flex: 1, gap: 3 },
+  heroEyebrow: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 2,
+    color: colors.teal,
+  },
+  heroAgencyName: { fontSize: 22, fontWeight: '900', color: colors.foreground, letterSpacing: -0.5 },
+  heroMeta: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   heroMetaText: { fontSize: 11, color: colors.mutedForeground },
   heroMetaDot: { fontSize: 11, color: colors.border },
 
@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: 40,
+    height: 28,
     backgroundColor: 'rgba(0,0,0,0.6)',
   },
   filmName: {
