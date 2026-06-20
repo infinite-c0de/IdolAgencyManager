@@ -267,17 +267,23 @@ export function addMembersToExistingGroup(
     return { ok: false, reason: 'MEMBER_UNAVAILABLE' };
   }
 
+  // Bare skill-word roles (e.g. "Visual Trainee" → "Visual") look like formal
+  // GroupRole assignments. Replace them with "Member" so newly added idols
+  // don't automatically appear as role-holders.
+  const BARE_SKILL_ROLES = new Set(['Vocal', 'Dance', 'Rap', 'Visual', 'Charisma', 'Acting']);
+
   const updatedGroupMemberIds = uniq([...group.memberIds, ...requestedIds]);
-  const updatedIdols = idols.map(idol =>
-    requestedIds.includes(idol.id)
-      ? {
-          ...idol,
-          group: group.name,
-          status: 'Active' as const,
-          role: idol.role.replace(' Trainee', ''),
-        }
-      : idol,
-  );
+  const updatedIdols = idols.map(idol => {
+    if (!requestedIds.includes(idol.id)) return idol;
+    const cleanedRole = idol.role.replace(' Trainee', '');
+    const displayRole = BARE_SKILL_ROLES.has(cleanedRole) ? 'Member' : cleanedRole;
+    return {
+      ...idol,
+      group: group.name,
+      status: 'Active' as const,
+      role: displayRole,
+    };
+  });
   const updatedMembers = updatedGroupMemberIds
     .map(id => updatedIdols.find(idol => idol.id === id))
     .filter((idol): idol is Idol => Boolean(idol));

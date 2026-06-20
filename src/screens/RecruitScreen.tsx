@@ -12,9 +12,13 @@ import {
 } from 'react-native';
 import { AppShell } from '../components/AppShell';
 import { Gradient } from '../components/ui/Gradient';
+import { traineeArtPool } from '../data/gameData';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 import { fmt, fmtCount } from '../utils/format';
+
+// All nationalities that can ever appear — derived from the static art pool once
+const ALL_NATIONALITIES = ['All', ...Array.from(new Set(traineeArtPool.map(t => t.nationality))).sort()];
 
 const BASE_REFRESH_COST = 12_000_000;
 const FILTER_COST: Record<string, number> = {
@@ -62,12 +66,7 @@ export function RecruitScreen() {
 
   const visibleCandidates = trainees.filter(t => t.isScoutingVisible !== false);
 
-  // Build nationality list from the full trainee pool (not just visible)
-  const nationalities = useMemo(() => {
-    const set = new Set(trainees.map(t => t.nationality));
-    return ['All', ...Array.from(set).sort()];
-  }, [trainees]);
-
+  const nationalities = ALL_NATIONALITIES;
   const list = visibleCandidates.filter(t => {
     if (activeFilter !== 'All' && t.skill !== activeFilter) return false;
     if (genderFilter !== 'All' && t.gender !== genderFilter) return false;
