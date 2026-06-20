@@ -18,7 +18,7 @@ import { colors, radius, spacing } from '../theme';
 import { fmt, fmtCount } from '../utils/format';
 
 // All nationalities that can ever appear — derived from the static art pool once
-const ALL_NATIONALITIES = ['All', ...Array.from(new Set(traineeArtPool.map(t => t.nationality))).sort()];
+const ALL_NATIONALITIES = ['All', ...Array.from(new Set(traineeArtPool.map(t => t.availableNationality))).sort()];
 
 const BASE_REFRESH_COST = 12_000_000;
 const FILTER_COST: Record<string, number> = {
