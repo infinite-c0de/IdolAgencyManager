@@ -17,8 +17,20 @@ import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 import { fmt, fmtCount } from '../utils/format';
 
-// All nationalities that can ever appear — derived from the static art pool once
-const ALL_NATIONALITIES = ['All', ...Array.from(new Set(traineeArtPool.map(t => t.availableNationality))).sort()];
+// All nationalities that can ever appear — derived from static art constraints once.
+// `availableNationality` can be "All" or comma-separated values (e.g. "Thai, Chinese"),
+// so we normalize/split and keep a single unique "All" option for chip keys.
+const ALL_NATIONALITIES = [
+  'All',
+  ...Array.from(
+    new Set(
+      traineeArtPool
+        .flatMap(t => t.availableNationality.split(','))
+        .map(v => v.trim())
+        .filter(v => v.length > 0 && v !== 'All'),
+    ),
+  ).sort(),
+];
 
 const BASE_REFRESH_COST = 12_000_000;
 const FILTER_COST: Record<string, number> = {

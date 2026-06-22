@@ -1,7 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Crown, Plus, Sparkles, Users } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Image,
@@ -54,7 +54,7 @@ function scoreRoleFit(idol: Idol, role: GroupRole) {
 
 export function GroupsScreen() {
   const navigation = useNavigation<Nav>();
-  const { groups, idols, conceptOptions, createGroup } = useGame();
+  const { agency, groups, idols, conceptOptions, createGroup } = useGame();
   const [open, setOpen] = useState(false);
   const [ceremony, setCeremony] = useState<{ groupName: string; memberIds: string[] } | null>(null);
   const active = groups.filter(g => g.status === 'Active').length;
@@ -92,7 +92,7 @@ export function GroupsScreen() {
 
       {groups.map(g => {
         const members = getGroupMembers(g, idols);
-        const readiness = buildGroupReadiness(members, g.status === 'Active');
+        const readiness = buildGroupReadiness(members, g);
 
         return (
           <TouchableOpacity
@@ -185,6 +185,8 @@ export function GroupsScreen() {
         visible={open}
         onClose={() => setOpen(false)}
         idols={idols}
+        groups={groups}
+        agencyLogo={agency.logo}
         concepts={conceptOptions}
         createGroup={createGroup}
         onCreated={handleCreated}
@@ -301,6 +303,8 @@ function NewGroupModal({
   visible,
   onClose,
   idols,
+  groups,
+  agencyLogo,
   concepts,
   createGroup,
   onCreated,
@@ -308,14 +312,33 @@ function NewGroupModal({
   visible: boolean;
   onClose: () => void;
   idols: ReturnType<typeof useGame>['idols'];
+  groups: ReturnType<typeof useGame>['groups'];
+  agencyLogo: ReturnType<typeof useGame>['agency']['logo'];
   concepts: ReturnType<typeof useGame>['conceptOptions'];
   createGroup: ReturnType<typeof useGame>['createGroup'];
   onCreated: (groupName: string, memberIds: string[]) => void;
 }) {
+  const usedLogoPresetIds = useMemo(() => {
+    const ids = new Set<number>();
+    if (agencyLogo.kind === 'preset') {
+      ids.add(agencyLogo.preset);
+    }
+    groups.forEach(group => {
+      if (group.logo?.kind === 'preset') {
+        ids.add(group.logo.preset);
+      }
+    });
+    return ids;
+  }, [agencyLogo, groups]);
+  const availableLogoPresets = useMemo(
+    () => agencyLogoPresets.filter(preset => !usedLogoPresetIds.has(preset.id)),
+    [usedLogoPresetIds],
+  );
+  const initialPresetId = availableLogoPresets[0]?.id ?? agencyLogoPresets[0].id;
   const [name, setName] = useState('');
   const [fan, setFan] = useState('');
   const [concept, setConcept] = useState(concepts[0] ?? '');
-  const [logo, setLogo] = useState<AgencyLogo>({ kind: 'preset', preset: agencyLogoPresets[0].id });
+  const [logo, setLogo] = useState<AgencyLogo>({ kind: 'preset', preset: initialPresetId });
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [roleAssignments, setRoleAssignments] = useState<Partial<Record<GroupRole, string>>>({});
   const available = idols.filter(i => !i.group);
@@ -324,14 +347,25 @@ function NewGroupModal({
     name.trim().length > 0 &&
     fan.trim().length > 0 &&
     concept.trim().length > 0 &&
+    availableLogoPresets.length > 0 &&
     selectedIds.length >= 2 &&
     hasRequiredRoles;
+
+  useEffect(() => {
+    const currentPreset = logo.kind === 'preset' ? logo.preset : null;
+    const stillAvailable =
+      currentPreset !== null &&
+      availableLogoPresets.some(preset => preset.id === currentPreset);
+    if (!stillAvailable && availableLogoPresets.length > 0) {
+      setLogo({ kind: 'preset', preset: availableLogoPresets[0].id });
+    }
+  }, [logo, availableLogoPresets]);
 
   const closeAndReset = () => {
     setName('');
     setFan('');
     setConcept(concepts[0] ?? '');
-    setLogo({ kind: 'preset', preset: agencyLogoPresets[0].id });
+    setLogo({ kind: 'preset', preset: availableLogoPresets[0]?.id ?? agencyLogoPresets[0].id });
     setSelectedIds([]);
     setRoleAssignments({});
     onClose();
@@ -423,7 +457,7 @@ function NewGroupModal({
               <View>
                 <Text style={styles.fieldLabel}>GROUP LOGO</Text>
                 <View style={styles.logoWrap}>
-                  {agencyLogoPresets.map(preset => {
+                  {availableLogoPresets.map(preset => {
                     const active = logo.kind === 'preset' && logo.preset === preset.id;
                     return (
                       <TouchableOpacity
@@ -436,6 +470,11 @@ function NewGroupModal({
                     );
                   })}
                 </View>
+                {availableLogoPresets.length === 0 && (
+                  <Text style={styles.helperText}>
+                    All preset logos are already used by this agency or existing groups.
+                  </Text>
+                )}
               </View>
               <View>
                 <Text style={styles.fieldLabel}>AVAILABLE MEMBERS ({selectedIds.length}/6 SELECTED)</Text>

@@ -108,9 +108,15 @@ function pickGenderedNames(nationality: string, gender: 'male' | 'female') {
     return pool;
   }
 
+  const fallbackPool =
+    scoutingNationalityProfiles
+      .map(item => item[gender])
+      .find(item => item.stageNames.length > 0 && item.givenNames.length > 0) ??
+    scoutingNationalityProfiles[0]?.[gender];
+
   return {
-    stageNames: profile?.stageNames.slice(0, 10) ?? ['Star'],
-    givenNames: profile?.givenNames.slice(0, 10) ?? ['Name'],
+    stageNames: fallbackPool?.stageNames.slice(0, 10) ?? ['Star'],
+    givenNames: fallbackPool?.givenNames.slice(0, 10) ?? ['Name'],
   };
 }
 

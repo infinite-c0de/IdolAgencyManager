@@ -1,7 +1,7 @@
 import type { AgencyLogoPreset, Idol, Trainee } from '../../types';
 
 export const agencyLogoPresets: Array<{ id: AgencyLogoPreset; label: string }> = Array.from(
-  { length: 35 },
+  { length: 36 },
   (_, i) => ({ id: i + 1, label: `Logo ${i + 1}` }),
 );
 
