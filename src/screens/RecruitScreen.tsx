@@ -278,7 +278,7 @@ export function RecruitScreen() {
             {/* Paid refresh — clearly labeled */}
             <TouchableOpacity style={styles.refreshBtn} onPress={handleRefresh} activeOpacity={0.85}>
               <RefreshCw size={13} color={colors.slate900} />
-              <Text style={styles.refreshBtnText}>New Pool {refreshCostLabel}</Text>
+              <Text style={styles.refreshBtnText}>Refresh {refreshCostLabel}</Text>
             </TouchableOpacity>
           </View>
         </View>
