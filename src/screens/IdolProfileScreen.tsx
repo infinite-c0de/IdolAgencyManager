@@ -60,11 +60,11 @@ function resolveImageAspectRatio(source?: number) {
 function formatTrainingMonths(months: number) {
   const safeMonths = Math.max(0, Math.round(months));
   if (safeMonths < 12) {
-    return `${safeMonths}m`;
+    return `${safeMonths}months`;
   }
   const years = Math.floor(safeMonths / 12);
   const remain = safeMonths % 12;
-  return remain === 0 ? `${years}y` : `${years}y ${remain}m`;
+  return remain === 0 ? `${years}years` : `${years}years\n${remain}months`;
 }
 
 export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>) {
@@ -172,7 +172,7 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
             </View>
             <View style={styles.trainingBadge}>
               <Text style={styles.trainingNum}>{formatTrainingMonths(i.trainingMonths)}</Text>
-              <Text style={styles.trainingLabel}>MONTHS{'\n'}TRAINING</Text>
+              <Text style={styles.trainingLabel}>TRAINING</Text>
             </View>
           </View>
 
@@ -472,7 +472,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     minWidth: 52,
   },
-  trainingNum: { fontSize: 22, fontWeight: '900', color: colors.tealBright, lineHeight: 26 },
+  trainingNum: { fontSize: 12, fontWeight: '900', color: colors.tealBright },
   trainingLabel: { fontSize: 8, fontWeight: '700', letterSpacing: 1, color: colors.mutedForeground, textAlign: 'center' },
 
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.md },
