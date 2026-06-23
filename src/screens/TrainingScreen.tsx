@@ -34,10 +34,9 @@ function getTrainingAccent(id: string, name: string): string {
 }
 
 export function TrainingScreen() {
-  const { idols, groups, trainingTypes, trainingPlans, setTrainingPlan, advanceWeek, agency } = useGame();
+  const { idols, groups, trainingTypes, trainingPlans, setTrainingPlan, advanceWeek, agency, currentWeek } = useGame();
   const [selectedType, setSelectedType] = useState(trainingTypes[0]?.id ?? '');
   const [selectedTarget, setSelectedTarget] = useState<string>('SOLO_DEFAULT');
-  const [toast, setToast] = useState<string | null>(null);
 
   const targetOptions = useMemo(
     () => [
@@ -94,11 +93,7 @@ export function TrainingScreen() {
         {
           text: 'Advance',
           style: 'default',
-          onPress: () => {
-            advanceWeek();
-            setToast(idols.length > 0 ? 'Week advanced — training applied.' : 'Week advanced.');
-            setTimeout(() => setToast(null), 2500);
-          },
+          onPress: () => { advanceWeek(); },
         },
       ],
     );
@@ -264,25 +259,20 @@ export function TrainingScreen() {
         ))}
       </Card>
 
-      {/* Toast */}
-      {toast && (
-        <View style={styles.toast}>
-          <Text style={styles.toastText}>{toast}</Text>
-        </View>
-      )}
-
-      {/* ── ADVANCE WEEK ── bottom CTA */}
-      <View style={[styles.advanceWrap, !canAffordWeek && styles.advanceWrapWarn]}>
+      {/* ── ADVANCE WEEK ── week block card */}
+      <View style={[styles.weekBlock, !canAffordWeek && styles.weekBlockWarn]}>
+        <Text style={styles.weekLabel}>WEEK</Text>
+        <Text style={[styles.weekNum, !canAffordWeek && styles.weekNumWarn]}>{currentWeek}</Text>
         {weeklyCost > 0 && (
-          <Text style={[styles.costPreview, !canAffordWeek && styles.costPreviewWarn]}>
-            Training cost this week: {fmt(weeklyCost)}
+          <Text style={[styles.costLine, !canAffordWeek && styles.costLineWarn]}>
+            Training  {fmt(weeklyCost)}
           </Text>
         )}
         <TouchableOpacity
           style={[styles.nextWeekBtn, !canAffordWeek && styles.nextWeekBtnWarn]}
           onPress={simulate}
           activeOpacity={0.8}>
-          <FastForward size={16} color={colors.slate900} />
+          <FastForward size={13} color={colors.slate900} />
           <Text style={styles.nextWeekText}>Advance to Next Week</Text>
         </TouchableOpacity>
       </View>
@@ -291,18 +281,22 @@ export function TrainingScreen() {
 }
 
 const styles = StyleSheet.create({
-  advanceWrap: {
+  weekBlock: {
+    alignItems: 'center',
+    gap: 4,
     borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: colors.tealActiveBorder,
     backgroundColor: colors.tealActiveBg,
-    padding: spacing.md,
-    gap: spacing.sm,
-    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
   },
-  advanceWrapWarn: { borderColor: 'rgba(248,113,113,0.3)', backgroundColor: 'rgba(248,113,113,0.04)' },
-  costPreview: { fontSize: 11, fontWeight: '700', color: colors.mint, letterSpacing: 0.5 },
-  costPreviewWarn: { color: colors.hotSoft },
+  weekBlockWarn: { borderColor: 'rgba(248,113,133,0.4)', backgroundColor: 'rgba(248,113,133,0.04)' },
+  weekLabel: { fontSize: 9, fontWeight: '800', letterSpacing: 2, color: colors.mutedForeground },
+  weekNum: { fontSize: 40, fontWeight: '900', color: colors.tealBright, lineHeight: 44 },
+  weekNumWarn: { color: colors.hot },
+  costLine: { fontSize: 11, fontWeight: '700', color: colors.mint, letterSpacing: 0.4 },
+  costLineWarn: { color: colors.hotSoft },
   nextWeekBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -313,9 +307,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
     width: '100%',
+    marginTop: spacing.xs,
   },
   nextWeekBtnWarn: { backgroundColor: '#F87171' },
-  nextWeekText: { fontSize: 14, fontWeight: '800', color: colors.slate900 },
+  nextWeekText: { fontSize: 13, fontWeight: '900', color: colors.slate900 },
 
   rowLabel: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   rowLabelText: { fontSize: 9, fontWeight: '800', letterSpacing: 1.5, color: colors.mutedForeground, width: 48 },
@@ -435,18 +430,4 @@ const styles = StyleSheet.create({
   slotPlus: { fontSize: 14, color: colors.mutedForeground, lineHeight: 16 },
   slotText: { fontSize: 7, fontWeight: '700', lineHeight: 9 },
 
-  toast: {
-    position: 'absolute',
-    left: spacing.lg,
-    right: spacing.lg,
-    bottom: 96,
-    borderRadius: radius['2xl'],
-    borderWidth: 1,
-    borderColor: colors.tealActiveBorder,
-    backgroundColor: 'rgba(18,21,32,0.98)',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-  },
-  toastText: { fontSize: 13, fontWeight: '600', color: colors.tealBright },
 });

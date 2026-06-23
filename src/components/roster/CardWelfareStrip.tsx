@@ -1,8 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, spacing, statColors } from '../../theme';
-import { IdolStats } from '../../types';
-import { STAT_FULL } from './rosterConstants';
+import { colors, spacing } from '../../theme';
 
 function welfareColor(value: number, baseColor: string): string {
   if (value < 30) return colors.hot;
@@ -10,34 +8,24 @@ function welfareColor(value: number, baseColor: string): string {
   return baseColor;
 }
 
-function getTopStat(stats: IdolStats): { label: string; value: number; color: string } {
-  const entries = Object.entries(stats) as [keyof typeof statColors, number][];
-  const [key, value] = entries.reduce((best, cur) => (cur[1] > best[1] ? cur : best));
-  return {
-    label: STAT_FULL[key] ?? key,
-    value,
-    color: statColors[key] ?? colors.tealBright,
-  };
-}
-
 type Props = {
+  health: number;
   morale: number;
   energy: number;
-  stats: IdolStats;
 };
 
-export function CardWelfareStrip({ morale, energy, stats }: Props) {
+export function CardWelfareStrip({ health, morale, energy }: Props) {
+  const healthColor = welfareColor(health, colors.hotSoft);
   const moraleColor = welfareColor(morale, colors.teal);
   const energyColor = welfareColor(energy, colors.mint);
-  const topStat = getTopStat(stats);
 
   return (
     <View style={styles.strip}>
+      <StatCell label="HEALTH" value={health} color={healthColor} />
+      <View style={styles.divider} />
       <StatCell label="MORALE" value={morale} color={moraleColor} />
-      {/* <View style={styles.divider} /> */}
+      <View style={styles.divider} />
       <StatCell label="ENERGY" value={energy} color={energyColor} />
-      {/* <View style={styles.divider} /> */}
-      <StatCell label={topStat.label.toUpperCase()} value={topStat.value} color={topStat.color} />
     </View>
   );
 }

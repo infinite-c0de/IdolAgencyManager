@@ -38,9 +38,9 @@ export function RosterIdolCard({ idol, groupLogoPreset, onPress }: Props) {
         groupLogoPreset={groupLogoPreset}
       />
       <CardWelfareStrip
+        health={idol.health}
         morale={idol.morale}
         energy={idol.energy}
-        stats={idol.stats}
       />
     </TouchableOpacity>
   );

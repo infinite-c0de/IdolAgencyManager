@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { AppShell } from '../components/AppShell';
-import { CandidateCard } from '../components/recruit/CandidateCard';
+import { ScoutCard } from '../components/scout/ScoutCard';
 import { SKILL_COLOR } from '../components/recruit/recruitConstants';
 import { BASE_REFRESH_COST, traineeArtPool } from '../data/gameData';
 import { useGame } from '../state/GameContext';
@@ -263,7 +263,7 @@ export function RecruitScreen() {
       {/* Candidate grid */}
       <View style={styles.grid}>
         {list.map(t => (
-          <CandidateCard
+          <ScoutCard
             key={t.id}
             trainee={t}
             expanded={expandedId === t.id}
