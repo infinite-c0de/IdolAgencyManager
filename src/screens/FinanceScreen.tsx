@@ -1,29 +1,81 @@
 import { ArrowDownRight, ArrowUpRight, Wallet } from 'lucide-react-native';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { AppShell, Card, SectionTitle } from '../components/AppShell';
 import { AreaChart, ResponsiveChart } from '../components/charts';
 import { MetricCard } from '../components/ui/MetricCard';
 import { MetricGrid } from '../components/ui/MetricGrid';
 import { getCityByName } from '../features/cities';
-import { selectFinanceSummary, selectProfitLossSeries } from '../features/economy';
+import {
+  calculateTotalFanbase,
+  formatCompactCount,
+  selectFinanceSummary,
+  selectProfitLossSeries,
+} from '../features/economy';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 import { fmt } from '../utils/format';
 
-const costs = [
-  { l: 'Training', v: 28, c: colors.teal },
-  { l: 'Promotion', v: 36, c: colors.violetBright },
-  { l: 'Recruitment', v: 14, c: colors.mint },
-  { l: 'Staff', v: 18, c: colors.amber },
-  { l: 'Other', v: 4, c: '#FDA4AF' },
-];
+const COST_COLORS: Record<string, string> = {
+  Training: colors.teal,
+  Promotion: colors.violetBright,
+  Recruitment: colors.mint,
+  Release: colors.amber,
+  Operations: '#FDA4AF',
+  Other: colors.mutedForeground,
+};
 
 export function FinanceScreen() {
-  const { agency, cities, revenueHistory, transactions } = useGame();
+  const { agency, cities, revenueHistory, transactions, idols, groups } = useGame();
   const city = getCityByName(cities, agency.city);
   const pl = selectProfitLossSeries(revenueHistory);
   const { income, expense, net } = selectFinanceSummary(agency, city, transactions);
+  const fanbase = calculateTotalFanbase(idols, groups);
+  const costs = useMemo(() => {
+    const expenseTransactions = transactions.filter(transaction => transaction.amount < 0);
+    const total = Math.abs(
+      expenseTransactions.reduce((sum, transaction) => sum + transaction.amount, 0),
+    );
+    if (total <= 0) {
+      return [
+        { l: 'Training', v: 0, c: COST_COLORS.Training },
+        { l: 'Promotion', v: 0, c: COST_COLORS.Promotion },
+        { l: 'Recruitment', v: 0, c: COST_COLORS.Recruitment },
+        { l: 'Release', v: 0, c: COST_COLORS.Release },
+        { l: 'Operations', v: 0, c: COST_COLORS.Operations },
+      ];
+    }
+
+    const bucketTotals: Record<string, number> = {
+      Training: 0,
+      Promotion: 0,
+      Recruitment: 0,
+      Release: 0,
+      Operations: 0,
+      Other: 0,
+    };
+
+    expenseTransactions.forEach(transaction => {
+      const label = transaction.label.toLowerCase();
+      const amount = Math.abs(transaction.amount);
+      if (label.includes('training')) bucketTotals.Training += amount;
+      else if (label.includes('promotion') || label.includes('promo')) bucketTotals.Promotion += amount;
+      else if (label.includes('recruit')) bucketTotals.Recruitment += amount;
+      else if (label.includes('release') || label.includes('production')) bucketTotals.Release += amount;
+      else if (label.includes('operation') || label.includes('tax')) bucketTotals.Operations += amount;
+      else bucketTotals.Other += amount;
+    });
+
+    return Object.entries(bucketTotals)
+      .map(([l, amount]) => ({
+        l,
+        v: Math.round((amount / total) * 100),
+        c: COST_COLORS[l] ?? COST_COLORS.Other,
+      }))
+      .filter(item => item.v > 0)
+      .sort((a, b) => b.v - a.v)
+      .slice(0, 5);
+  }, [transactions]);
 
   return (
     <AppShell title="Finance" subtitle="Numbers that move the agency">
@@ -54,6 +106,12 @@ export function FinanceScreen() {
             valueColor={colors.tealBright}
             containerStyle={styles.kpiCard}
           />
+          <MetricCard
+            label="Fanbase"
+            value={formatCompactCount(fanbase)}
+            valueColor={colors.violetBright}
+            containerStyle={styles.kpiCard}
+          />
         </MetricGrid>
       </Card>
 
@@ -74,39 +132,44 @@ export function FinanceScreen() {
                 <Text style={styles.costPct}>{r.v}%</Text>
               </View>
               <View style={styles.costTrack}>
-                <View style={[styles.costFill, { width: `${r.v * 2}%`, backgroundColor: r.c }]} />
+                <View style={[styles.costFill, { width: `${r.v}%`, backgroundColor: r.c }]} />
               </View>
             </View>
           ))}
+          {costs.length === 0 && <Text style={styles.tinyMuted}>No expense transactions recorded yet.</Text>}
         </View>
       </Card>
 
       <Card>
         <SectionTitle>TRANSACTIONS</SectionTitle>
         <View>
-          {transactions.map((t, idx) => (
-            <View
-              key={t.id}
-              style={[styles.txn, idx < transactions.length - 1 && styles.txnDivider]}>
-              <View style={[styles.txnIcon, t.type === 'income' ? styles.txnIncome : styles.txnExpense]}>
-                {t.type === 'income' ? (
-                  <ArrowUpRight size={16} color={colors.mint} />
-                ) : (
-                  <ArrowDownRight size={16} color="#FDA4AF" />
-                )}
-              </View>
-              <View style={styles.flex1}>
-                <Text style={styles.txnLabel} numberOfLines={1}>
-                  {t.label}
+          {transactions.length === 0 ? (
+            <Text style={styles.tinyMuted}>No transactions yet. Run weekly actions to generate records.</Text>
+          ) : (
+            transactions.map((t, idx) => (
+              <View
+                key={t.id}
+                style={[styles.txn, idx < transactions.length - 1 && styles.txnDivider]}>
+                <View style={[styles.txnIcon, t.type === 'income' ? styles.txnIncome : styles.txnExpense]}>
+                  {t.type === 'income' ? (
+                    <ArrowUpRight size={16} color={colors.mint} />
+                  ) : (
+                    <ArrowDownRight size={16} color="#FDA4AF" />
+                  )}
+                </View>
+                <View style={styles.flex1}>
+                  <Text style={styles.txnLabel} numberOfLines={1}>
+                    {t.label}
+                  </Text>
+                  <Text style={styles.tinyMuted}>{t.date}</Text>
+                </View>
+                <Text style={[styles.txnAmount, { color: t.amount > 0 ? colors.mint : '#FDA4AF' }]}>
+                  {t.amount > 0 ? '+' : ''}
+                  {fmt(t.amount)}
                 </Text>
-                <Text style={styles.tinyMuted}>{t.date}</Text>
               </View>
-              <Text style={[styles.txnAmount, { color: t.amount > 0 ? colors.mint : '#FDA4AF' }]}>
-                {t.amount > 0 ? '+' : ''}
-                {fmt(t.amount)}
-              </Text>
-            </View>
-          ))}
+            ))
+          )}
         </View>
       </Card>
     </AppShell>

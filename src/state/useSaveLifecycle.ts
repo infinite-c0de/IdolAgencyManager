@@ -28,6 +28,7 @@ export function useSaveLifecycle({
   groups,
   revenueHistory,
   transactions,
+  promotionSchedule,
   trainingPlans,
   currentWeek,
   isAgencyCreated,
@@ -39,6 +40,7 @@ export function useSaveLifecycle({
   setGroups,
   setRevenueHistory,
   setTransactions,
+  setPromotionSchedule,
   setTrainingPlans,
   setCurrentWeek,
   setIsAgencyCreated,
@@ -89,6 +91,7 @@ export function useSaveLifecycle({
     );
     setRevenueHistory(save.revenueHistory.map(point => ({ ...point })));
     setTransactions(save.transactions.map(transaction => ({ ...transaction })));
+    setPromotionSchedule(save.promotionSchedule.map(entry => ({ ...entry })));
     setTrainingPlans(
       Object.fromEntries(
         Object.entries(save.trainingPlans).map(([targetId, plan]) => [targetId, { ...plan }]),
@@ -143,6 +146,7 @@ export function useSaveLifecycle({
         groups,
         revenueHistory,
         transactions,
+        promotionSchedule,
         trainingPlans,
         currentWeek,
         isAgencyCreated,
@@ -167,6 +171,7 @@ export function useSaveLifecycle({
     groups,
     revenueHistory,
     transactions,
+    promotionSchedule,
     trainingPlans,
     currentWeek,
     isAgencyCreated,
@@ -182,6 +187,7 @@ export function useSaveLifecycle({
     setGroups([]);
     setRevenueHistory(cloneInitialRevenueHistory());
     setTransactions(cloneInitialTransactions());
+    setPromotionSchedule([]);
     setTrainingPlans(createInitialTrainingPlans());
     setCurrentWeek(1);
     setIsAgencyCreated(false);
@@ -227,6 +233,7 @@ export function useSaveLifecycle({
       setGroups([]);
       setRevenueHistory(cloneInitialRevenueHistory());
       setTransactions(cloneInitialTransactions());
+      setPromotionSchedule([]);
       setTrainingPlans(createInitialTrainingPlans());
       setCurrentWeek(1);
       setIsAgencyCreated(false);

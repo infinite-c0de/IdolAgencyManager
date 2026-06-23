@@ -1,4 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
+import type { PromotionScheduleEntry } from '../simulation';
 import type { Agency, Group, Idol, Trainee } from '../../types';
 
 export type RevenueHistoryPoint = {
@@ -25,6 +26,7 @@ export type SaveData = {
   groups: Group[];
   revenueHistory: RevenueHistoryPoint[];
   transactions: FinanceTransaction[];
+  promotionSchedule: PromotionScheduleEntry[];
   trainingPlans: TrainingPlans;
   currentWeek: number;
   isAgencyCreated: boolean;
@@ -49,6 +51,7 @@ export type UseSaveLifecycleParams = {
   groups: Group[];
   revenueHistory: RevenueHistoryPoint[];
   transactions: FinanceTransaction[];
+  promotionSchedule: PromotionScheduleEntry[];
   trainingPlans: TrainingPlans;
   currentWeek: number;
   isAgencyCreated: boolean;
@@ -60,6 +63,7 @@ export type UseSaveLifecycleParams = {
   setGroups: Dispatch<SetStateAction<Group[]>>;
   setRevenueHistory: Dispatch<SetStateAction<RevenueHistoryPoint[]>>;
   setTransactions: Dispatch<SetStateAction<FinanceTransaction[]>>;
+  setPromotionSchedule: Dispatch<SetStateAction<PromotionScheduleEntry[]>>;
   setTrainingPlans: Dispatch<SetStateAction<TrainingPlans>>;
   setCurrentWeek: Dispatch<SetStateAction<number>>;
   setIsAgencyCreated: Dispatch<SetStateAction<boolean>>;

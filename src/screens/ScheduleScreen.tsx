@@ -1,11 +1,15 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CalendarDays, Lock, Megaphone, Sparkles } from 'lucide-react-native';
-import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card, SectionTitle } from '../components/AppShell';
 import { formatCompactCount } from '../features/economy';
-import { selectDynamicSchedule, selectPromotionOptions } from '../features/simulation';
+import {
+  selectDynamicSchedule,
+  selectPromotionOptions,
+  type DynamicScheduleItem,
+} from '../features/simulation';
 import type { RootStackParamList } from '../navigation/types';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
@@ -14,6 +18,7 @@ import { fmt } from '../utils/format';
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 const eventColor = {
   teal: colors.tealBright,
@@ -24,17 +29,175 @@ const eventColor = {
 
 function toDurationLabel(hours: number) {
   if (hours >= 24 && hours % 24 === 0) {
-    const days = Math.round(hours / 24);
-    return `${days} day${days > 1 ? 's' : ''}`;
+    const dayCount = Math.round(hours / 24);
+    return `${dayCount} day${dayCount > 1 ? 's' : ''}`;
   }
   return `${hours}h`;
 }
 
+function parseWeekFromDate(dateLabel: string) {
+  const match = dateLabel.match(/Week\s+(\d+)/i);
+  return match ? Number.parseInt(match[1], 10) : null;
+}
+
+function dateHasDay(dateLabel: string, dayLabel: string) {
+  return dateLabel.toLowerCase().includes(dayLabel.toLowerCase());
+}
+
 export function ScheduleScreen() {
   const navigation = useNavigation<Nav>();
-  const { agency, cities, idols, groups } = useGame();
+  const {
+    agency,
+    cities,
+    idols,
+    groups,
+    runPromotion,
+    currentWeek,
+    transactions,
+    promotionSchedule,
+    addPromotionScheduleEntry,
+  } = useGame();
   const schedule = selectDynamicSchedule(idols, groups);
-  const promotions = selectPromotionOptions(cities, agency, idols, groups);
+  const [selectedGroupId, setSelectedGroupId] = useState(groups[0]?.id ?? '');
+  const [selectedDayIndex, setSelectedDayIndex] = useState(2);
+  const selectedGroup = useMemo(
+    () => groups.find(group => group.id === selectedGroupId) ?? null,
+    [groups, selectedGroupId],
+  );
+  const promotions = useMemo(
+    () => selectPromotionOptions(cities, agency, idols, selectedGroup ? [selectedGroup] : []),
+    [cities, agency, idols, selectedGroup],
+  );
+  const [error, setError] = useState<string | null>(null);
+  const [promotionResult, setPromotionResult] = useState<{
+    name: string;
+    fans: number;
+    revenue: number;
+    net: number;
+    reputation: number;
+    groupName: string;
+    factor: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!selectedGroupId && groups[0]) {
+      setSelectedGroupId(groups[0].id);
+      return;
+    }
+    if (selectedGroupId && !groups.some(group => group.id === selectedGroupId)) {
+      setSelectedGroupId(groups[0]?.id ?? '');
+    }
+  }, [groups, selectedGroupId]);
+
+  const effectiveSchedule: DynamicScheduleItem[] = useMemo(() => {
+    const entries = promotionSchedule
+      .filter(item => item.week === currentWeek)
+      .map((item, index) => ({
+        id: `promo-log-${item.id}`,
+        num: schedule.length + index + 1,
+        title: `${item.groupName} · ${item.promotionName}`,
+        category: `Scheduled · Net ${fmt(item.net)}`,
+        date: `Week ${item.week} · ${dayLabels[item.dayIndex]}`,
+        dayIndex: item.dayIndex,
+        progress: 100,
+        accent: item.net >= 0 ? ('violet' as const) : ('hot' as const),
+        badge: 'ready' as const,
+      }));
+    return [...schedule, ...entries];
+  }, [promotionSchedule, currentWeek, schedule]);
+
+  const getPromotionLockReason = (promotion: (typeof promotions)[number]) => {
+    if (promotion.lockedReason) {
+      return promotion.lockedReason;
+    }
+    if (!selectedGroup) {
+      return 'Select a group to schedule this promotion.';
+    }
+    const groupTag = `(${selectedGroup.name})`;
+    const sameWeekPromotion = transactions.some(transaction => {
+      if (transaction.type !== 'expense') return false;
+      if (!transaction.label.includes('Promotion Spend:')) return false;
+      if (!transaction.label.includes(promotion.name) || !transaction.label.includes(groupTag)) return false;
+      const week = parseWeekFromDate(transaction.date);
+      return week === currentWeek;
+    });
+    if (sameWeekPromotion) {
+      return 'Cooldown: this promotion already ran this week for the selected group.';
+    }
+
+    const selectedDay = dayLabels[selectedDayIndex];
+    const sameDayAnyPromotion = transactions.some(transaction => {
+      if (transaction.type !== 'expense') return false;
+      if (!transaction.label.includes('Promotion Spend:')) return false;
+      if (!transaction.label.includes(groupTag)) return false;
+      const week = parseWeekFromDate(transaction.date);
+      return week === currentWeek && dateHasDay(transaction.date, selectedDay);
+    });
+    if (sameDayAnyPromotion) {
+      return `Cooldown: ${selectedGroup.name} already has a promotion on ${selectedDay}.`;
+    }
+
+    const queuedSameDay = promotionSchedule.some(item =>
+      item.week === currentWeek &&
+      item.dayIndex === selectedDayIndex &&
+      item.groupName === selectedGroup.name,
+    );
+    if (queuedSameDay) {
+      return `Cooldown: ${selectedGroup.name} already booked on ${selectedDay}.`;
+    }
+    return undefined;
+  };
+
+  const handleRunPromotion = (promotionId: string) => {
+    const selectedPromotion = promotions.find(item => item.id === promotionId);
+    const selectedLockReason = selectedPromotion ? getPromotionLockReason(selectedPromotion) : undefined;
+    if (selectedLockReason) {
+      setError(selectedLockReason);
+      return;
+    }
+    if (!selectedGroup) {
+      setError('Select a group before scheduling a promotion.');
+      return;
+    }
+
+    const result = runPromotion({
+      promotionId,
+      groupId: selectedGroup.id,
+      week: currentWeek,
+      dayIndex: selectedDayIndex,
+    });
+    if (!result.ok) {
+      if (result.reason === 'INSUFFICIENT_FUNDS') {
+        setError('Not enough funds for this promotion.');
+      } else if (result.reason === 'PROMOTION_LOCKED') {
+        setError('This promotion is still locked. Debut requirements are not met yet.');
+      } else if (result.reason === 'GROUP_NOT_FOUND') {
+        setError('No active target group was found for this promotion.');
+      } else {
+        setError('Could not run this promotion right now. Please try again.');
+      }
+      return;
+    }
+
+    setPromotionResult({
+      name: result.promotionName,
+      fans: result.fansGained,
+      revenue: result.revenueGained,
+      net: result.netDelta,
+      reputation: result.reputationGained,
+      groupName: result.groupName,
+      factor: result.performanceFactor,
+    });
+    addPromotionScheduleEntry({
+      id: `${result.groupId}-${promotionId}-${Date.now()}`,
+      week: currentWeek,
+      dayIndex: selectedDayIndex,
+      groupName: result.groupName,
+      promotionName: result.promotionName,
+      net: result.netDelta,
+      fans: result.fansGained,
+    });
+  };
 
   const releaseAction = (
     <TouchableOpacity style={styles.releaseBtn} onPress={() => navigation.navigate('Release')} activeOpacity={0.8}>
@@ -49,7 +212,7 @@ export function ScheduleScreen() {
         <SectionTitle>THIS WEEK</SectionTitle>
         <View style={styles.weekRow}>
           {days.map((d, i) => {
-            const events = schedule.filter(item => item.dayIndex === i);
+            const events = effectiveSchedule.filter(item => item.dayIndex === i);
             const first = events[0];
             const cellStyle =
               first?.accent === 'teal'
@@ -76,7 +239,7 @@ export function ScheduleScreen() {
       <Card>
         <SectionTitle>UPCOMING ACTIVITIES</SectionTitle>
         <View style={styles.list}>
-          {schedule.map(s => (
+          {effectiveSchedule.map(s => (
             <View key={s.id} style={styles.activity}>
               <CalendarDays size={20} color={colors.tealBright} />
               <View style={styles.flex1}>
@@ -95,14 +258,47 @@ export function ScheduleScreen() {
 
       <Card glow="violet">
         <SectionTitle>PROMOTION CATALOG</SectionTitle>
+        <Text style={styles.tinyMuted}>Step 1: pick group</Text>
+        <View style={styles.selectRow}>
+          {groups.map(group => {
+            const active = selectedGroupId === group.id;
+            return (
+              <TouchableOpacity
+                key={group.id}
+                style={[styles.selectChip, active ? styles.selectChipActive : styles.selectChipIdle]}
+                onPress={() => setSelectedGroupId(group.id)}
+                activeOpacity={0.8}>
+                <Text style={[styles.selectChipText, active && styles.selectChipTextActive]}>{group.name}</Text>
+              </TouchableOpacity>
+            );
+          })}
+          {groups.length === 0 && <Text style={styles.tinyMuted}>Create a group first to unlock promotions.</Text>}
+        </View>
+        <Text style={styles.tinyMuted}>Step 2: pick day in Week {currentWeek}</Text>
+        <View style={styles.selectRow}>
+          {days.map((day, index) => {
+            const active = selectedDayIndex === index;
+            return (
+              <TouchableOpacity
+                key={day}
+                style={[styles.selectChip, active ? styles.selectChipActive : styles.selectChipIdle]}
+                onPress={() => setSelectedDayIndex(index)}
+                activeOpacity={0.8}>
+                <Text style={[styles.selectChipText, active && styles.selectChipTextActive]}>{day}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
         <View style={styles.promoGrid}>
-          {promotions.map(p => (
-            <View key={p.id} style={styles.promo}>
+          {promotions.map(p => {
+            const lockReason = getPromotionLockReason(p);
+            return (
+              <View key={p.id} style={styles.promo}>
               <View style={styles.rowBetween}>
                 <Text style={styles.promoName}>{p.name}</Text>
-                {p.lockedReason ? <Lock size={16} color={colors.mutedForeground} /> : <Megaphone size={16} color={colors.violetBright} />}
+                {lockReason ? <Lock size={16} color={colors.mutedForeground} /> : <Megaphone size={16} color={colors.violetBright} />}
               </View>
-              <Text style={styles.tinyMuted}>Target · {p.target}</Text>
+              <Text style={styles.tinyMuted}>Target · {selectedGroup?.name ?? p.target}</Text>
               <View style={styles.statGrid}>
                 <Stat k="Cost" v={fmt(p.cost)} />
                 <Stat k="Fans" v={`+${formatCompactCount(p.fansGain)}`} c={colors.mint} />
@@ -112,16 +308,56 @@ export function ScheduleScreen() {
                 <Stat k="Est. Revenue" v={fmt(p.expectedRevenue)} c={colors.violetBright} />
                 <Stat k="Efficiency" v={`${p.efficiencyScore}`} />
               </View>
-              {p.lockedReason ? <Text style={styles.lockText}>{p.lockedReason}</Text> : null}
+              {lockReason ? <Text style={styles.lockText}>{lockReason}</Text> : null}
               <TouchableOpacity
-                style={[styles.scheduleBtn, p.lockedReason && styles.scheduleBtnDisabled]}
+                style={[styles.scheduleBtn, lockReason && styles.scheduleBtnDisabled]}
+                onPress={() => !lockReason && handleRunPromotion(p.id)}
+                disabled={Boolean(lockReason)}
                 activeOpacity={0.8}>
-                <Text style={styles.scheduleBtnText}>{p.lockedReason ? 'Locked' : 'Schedule'}</Text>
+                <Text style={styles.scheduleBtnText}>
+                  {lockReason ? 'Locked' : `Schedule ${dayLabels[selectedDayIndex]}`}
+                </Text>
               </TouchableOpacity>
-            </View>
-          ))}
+              </View>
+            );
+          })}
         </View>
       </Card>
+
+      <Modal visible={error !== null} transparent animationType="fade" onRequestClose={() => setError(null)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Promotion Failed</Text>
+            <Text style={styles.tinyMuted}>{error}</Text>
+            <TouchableOpacity style={styles.modalBtn} onPress={() => setError(null)} activeOpacity={0.8}>
+              <Text style={styles.modalBtnText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={promotionResult !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPromotionResult(null)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Promotion Complete</Text>
+            <Text style={styles.promoResultTitle}>{promotionResult?.groupName} · {promotionResult?.name}</Text>
+            <View style={styles.modalStats}>
+              <Stat k="Fans" v={`+${formatCompactCount(promotionResult?.fans ?? 0)}`} c={colors.mint} />
+              <Stat k="Revenue" v={fmt(promotionResult?.revenue ?? 0)} c={colors.tealBright} />
+              <Stat k="Net" v={fmt(promotionResult?.net ?? 0)} c={colors.violetBright} />
+              <Stat k="Reputation" v={`+${promotionResult?.reputation ?? 0}`} c={colors.mint} />
+              <Stat k="Performance" v={`${Math.round((promotionResult?.factor ?? 0) * 100)}%`} c={colors.tealBright} />
+            </View>
+            <TouchableOpacity style={styles.modalBtn} onPress={() => setPromotionResult(null)} activeOpacity={0.8}>
+              <Text style={styles.modalBtnText}>Continue</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </AppShell>
   );
 }
@@ -176,6 +412,12 @@ const styles = StyleSheet.create({
   promoGrid: { gap: spacing.sm },
   promo: { borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.whiteA05, padding: spacing.md },
   promoName: { fontSize: 13, fontWeight: '700', color: colors.foreground },
+  selectRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6, marginBottom: spacing.sm },
+  selectChip: { borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 6, borderWidth: 1 },
+  selectChipIdle: { borderColor: colors.border, backgroundColor: colors.whiteA05 },
+  selectChipActive: { borderColor: 'rgba(34,211,238,0.6)', backgroundColor: 'rgba(34,211,238,0.1)' },
+  selectChipText: { fontSize: 11, fontWeight: '600', color: colors.mutedForeground },
+  selectChipTextActive: { color: colors.tealBright },
   lockText: { marginTop: spacing.sm, fontSize: 10, color: colors.mutedForeground },
   statGrid: { marginTop: spacing.sm, flexDirection: 'row', flexWrap: 'wrap' },
   statItem: { width: '50%', flexDirection: 'row', justifyContent: 'space-between', paddingRight: spacing.md, marginBottom: 2 },
@@ -183,4 +425,12 @@ const styles = StyleSheet.create({
   scheduleBtn: { marginTop: spacing.md, borderRadius: radius.md, backgroundColor: colors.teal, paddingVertical: 6, alignItems: 'center' },
   scheduleBtnDisabled: { backgroundColor: colors.whiteA10 },
   scheduleBtnText: { fontSize: 11, fontWeight: '700', color: colors.slate900 },
+
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'center', padding: spacing.lg },
+  modalCard: { borderRadius: radius.xl, borderWidth: 1, borderColor: colors.borderStrong, backgroundColor: 'rgba(14,18,30,0.98)', padding: spacing.lg, gap: spacing.sm },
+  modalTitle: { fontSize: 18, fontWeight: '800', color: colors.tealBright },
+  promoResultTitle: { fontSize: 12, color: colors.foreground, fontWeight: '600' },
+  modalStats: { marginTop: spacing.sm, flexDirection: 'row', flexWrap: 'wrap' },
+  modalBtn: { marginTop: spacing.md, borderRadius: radius.md, backgroundColor: colors.teal, paddingVertical: spacing.sm, alignItems: 'center' },
+  modalBtnText: { fontSize: 12, fontWeight: '800', color: colors.slate900 },
 });

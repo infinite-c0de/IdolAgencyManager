@@ -20,6 +20,13 @@ const MIN_GROUP_MEMBERS = 2;
 const MAX_GROUP_MEMBERS = 6;
 const REQUIRED_ROLES: GroupRole[] = ['Leader', 'Main Vocal', 'Main Dancer'];
 const CORE_ROLES: GroupRole[] = ['Leader', 'Main Vocal', 'Main Dancer', 'Main Rapper', 'Visual', 'Center'];
+export const RELEASE_QUALITY_COST: Record<1 | 2 | 3 | 4 | 5, number> = {
+  1: 20_000_000,
+  2: 60_000_000,
+  3: 120_000_000,
+  4: 220_000_000,
+  5: 380_000_000,
+};
 
 function avg(values: number[]) {
   return Math.round(values.reduce((sum, value) => sum + value, 0) / Math.max(values.length, 1));
@@ -424,7 +431,12 @@ export function releaseDebut(
   if (members.length < 2) return { ok: false, reason: 'NOT_ENOUGH_MEMBERS' };
 
   const projection = projectRelease(group, members, payload.quality, payload.budget);
+  const productionCost = RELEASE_QUALITY_COST[payload.quality];
+  const promotionCost = payload.budget;
+  const totalSpent = productionCost + promotionCost;
   const popularityBoost = Math.min(15, Math.round(projection.fansGained / 1200));
+  const memberPopularityBoost = clampScore(Math.round(projection.fansGained / Math.max(members.length * 2_100, 1)));
+  const memberMoraleBoost = Math.max(1, Math.round(projection.reputationGained / 2));
 
   const release: import('../../types').Release = {
     id: `${group.id}-rel-${Date.now()}`,
@@ -432,7 +444,7 @@ export function releaseDebut(
     concept: payload.concept,
     quality: payload.quality,
     language: payload.language,
-    budgetSpent: payload.budget,
+    budgetSpent: totalSpent,
     weekReleased: currentWeek,
     chartPosition: projection.chartPosition,
     totalSales: projection.totalSales,
@@ -448,12 +460,26 @@ export function releaseDebut(
     monthlyRevenue: Math.round(group.monthlyRevenue + projection.revenueGained / 4),
     releases: [...(group.releases ?? []), release],
   };
+  const updatedIdols = idols.map(idol =>
+    group.memberIds.includes(idol.id)
+      ? {
+          ...idol,
+          popularity: clampScore(idol.popularity + memberPopularityBoost),
+          morale: clampScore(idol.morale + memberMoraleBoost),
+          status: 'Promoting' as const,
+        }
+      : idol,
+  );
 
   return {
     ok: true,
     group: updatedGroup,
+    updatedIdols,
     projection,
-    moneyDelta: -payload.budget + projection.revenueGained,
+    moneyDelta: -totalSpent + projection.revenueGained,
     reputationDelta: projection.reputationGained,
+    productionCost,
+    promotionCost,
+    totalSpent,
   };
 }

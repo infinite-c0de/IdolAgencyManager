@@ -5,6 +5,7 @@ import {
   traineeArtPool,
 } from '../../data/gameData';
 import { generateScoutingPoolFromArtPool, normalizePersonalityProfile } from '../idols';
+import type { PromotionScheduleEntry } from '../simulation';
 import type { Agency, AgencyLogo, Group, Idol, IdolStats, Release, Status, Trainee } from '../../types';
 import type { FinanceTransaction, RevenueHistoryPoint, SaveData, TrainingPlans } from './types';
 
@@ -198,6 +199,23 @@ function createDefaultTrainingPlans(): TrainingPlans {
   return { SOLO_DEFAULT: {} };
 }
 
+function normalizePromotionSchedule(raw: unknown): PromotionScheduleEntry[] {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+  return raw
+    .filter(isRecord)
+    .map((entry, index) => ({
+      id: str(entry.id, `promo-${index}`),
+      week: Math.max(1, Math.floor(num(entry.week, 1))),
+      dayIndex: Math.max(0, Math.min(6, Math.floor(num(entry.dayIndex, 0)))),
+      groupName: str(entry.groupName, 'Unknown Group'),
+      promotionName: str(entry.promotionName, 'Promotion'),
+      net: num(entry.net, 0),
+      fans: Math.max(0, Math.floor(num(entry.fans, 0))),
+    }));
+}
+
 // ─────────────────────────────────────────────
 // Public API
 // ─────────────────────────────────────────────
@@ -211,6 +229,7 @@ export function createDefaultSaveData(slotId: number): SaveData {
     groups: [],
     revenueHistory: cloneDefaultRevenueHistory(),
     transactions: cloneDefaultTransactions(),
+    promotionSchedule: [],
     trainingPlans: createDefaultTrainingPlans(),
     currentWeek: 1,
     isAgencyCreated: false,
@@ -242,6 +261,7 @@ export function normalizeSaveData(raw: unknown, slotId: number): SaveData | null
   const transactions = Array.isArray(raw.transactions)
     ? (raw.transactions as FinanceTransaction[])
     : defaults.transactions;
+  const promotionSchedule = normalizePromotionSchedule(raw.promotionSchedule);
   const trainingPlans =
     isRecord(raw.trainingPlans) ? (raw.trainingPlans as TrainingPlans) : defaults.trainingPlans;
   const currentWeek =
@@ -266,6 +286,7 @@ export function normalizeSaveData(raw: unknown, slotId: number): SaveData | null
     groups,
     revenueHistory,
     transactions,
+    promotionSchedule,
     trainingPlans,
     currentWeek,
     isAgencyCreated,

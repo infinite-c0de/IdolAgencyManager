@@ -164,6 +164,7 @@ export function createInitialSave(slotId: number): SaveData {
     groups: [],
     revenueHistory: cloneInitialRevenueHistory(),
     transactions: cloneInitialTransactions(),
+    promotionSchedule: [],
     trainingPlans: createInitialTrainingPlans(),
     currentWeek: 1,
     isAgencyCreated: false,

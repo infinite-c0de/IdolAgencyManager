@@ -3,14 +3,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card } from '../components/AppShell';
 import { Gradient } from '../components/ui/Gradient';
-import { projectRelease } from '../features/groups';
+import { projectRelease, RELEASE_QUALITY_COST } from '../features/groups';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 import { fmt, fmtCount } from '../utils/format';
 
 const STEP_NAMES = ['Group', 'Title', 'Concept', 'Quality', 'Budget'];
 const QUALITY_LABELS: Record<number, string> = { 1: 'Demo', 2: 'Standard', 3: 'Premium', 4: 'Cinematic', 5: 'Legendary' };
-const QUALITY_COST: Record<number, number> = { 1: 20_000_000, 2: 60_000_000, 3: 120_000_000, 4: 220_000_000, 5: 380_000_000 };
 const BUDGET_MIN = 10_000_000;
 const BUDGET_MAX = 500_000_000;
 const BUDGET_STEP = 10_000_000;
@@ -55,7 +54,7 @@ export function ReleaseScreen() {
     return projectRelease(selectedGroup, members, quality, budget);
   }, [selectedGroup, members, quality, budget]);
 
-  const totalCost = QUALITY_COST[quality] + budget;
+  const totalCost = RELEASE_QUALITY_COST[quality] + budget;
   const canAfford = agency.money >= totalCost;
   const canContinue =
     step === 1 ? Boolean(groupId) && members.length >= 2 :
@@ -202,7 +201,7 @@ export function ReleaseScreen() {
                   </TouchableOpacity>
                 ))}
               </View>
-              <Text style={styles.hint}>Production cost: {fmt(QUALITY_COST[quality])}</Text>
+              <Text style={styles.hint}>Production cost: {fmt(RELEASE_QUALITY_COST[quality])}</Text>
               <Text style={styles.hint}>Higher quality boosts chart potential and fan growth.</Text>
             </View>
           )}

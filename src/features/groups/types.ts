@@ -94,7 +94,17 @@ export type ReleaseDebutResult =
   | { ok: false; reason: 'GROUP_NOT_FOUND' | 'INSUFFICIENT_FUNDS' | 'NOT_ENOUGH_MEMBERS' };
 
 export type ReleaseDebutBuildResult =
-  | { ok: true; group: Group; projection: ReleaseDebutProjection; moneyDelta: number; reputationDelta: number }
+  | {
+      ok: true;
+      group: Group;
+      updatedIdols: Idol[];
+      projection: ReleaseDebutProjection;
+      moneyDelta: number;
+      reputationDelta: number;
+      productionCost: number;
+      promotionCost: number;
+      totalSpent: number;
+    }
   | Extract<ReleaseDebutResult, { ok: false }>;
 
 export type UseGroupActionsParams = {
