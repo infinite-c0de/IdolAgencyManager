@@ -84,9 +84,7 @@ export function calculateCityProjection(city: City) {
   const projectionAgency: Agency = {
     name: 'PROJECTED AGENCY',
     ceoName: '',
-    level: 1,
     money: city.startingBudget,
-    gems: 0,
     energy: 100,
     energyMax: 100,
     reputation: getStartingReputation(city),

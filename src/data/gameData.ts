@@ -133,9 +133,7 @@ export const LOGO_IMAGES: Record<number, ReturnType<typeof require>> = {
 export const initialAgency: Agency = {
   name: 'NEW AGENCY',
   ceoName: '',
-  level: 1,
   money: 0,
-  gems: 0,
   energy: 100,
   energyMax: 100,
   reputation: 0,

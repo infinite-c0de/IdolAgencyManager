@@ -14,6 +14,7 @@ import type {
   RecruitResult,
   RefreshScoutingResult,
   ScoutingFilters,
+  SpendAgencyMoneyResult,
   UseAgencyActionsParams,
 } from '../features/agency';
 import { getCityById } from '../features/cities';
@@ -162,5 +163,16 @@ export function useAgencyActions({
     };
   };
 
-  return { createAgency, recruitTrainee, refreshScoutingCandidates };
+  const spendAgencyMoney = (cost: number): SpendAgencyMoneyResult => {
+    if (cost <= 0) {
+      return { ok: true, cost: 0 };
+    }
+    if (agency.money < cost) {
+      return { ok: false, reason: 'INSUFFICIENT_FUNDS' };
+    }
+    setAgency(current => ({ ...current, money: Math.max(0, current.money - cost) }));
+    return { ok: true, cost };
+  };
+
+  return { createAgency, recruitTrainee, refreshScoutingCandidates, spendAgencyMoney };
 }

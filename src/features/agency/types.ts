@@ -16,6 +16,10 @@ export type RefreshScoutingResult =
   | { ok: true; cost: number; visibleCount: number; filterMatches: number }
   | { ok: false; reason: 'INSUFFICIENT_FUNDS' | 'NO_CANDIDATES' };
 
+export type SpendAgencyMoneyResult =
+  | { ok: true; cost: number }
+  | { ok: false; reason: 'INSUFFICIENT_FUNDS' };
+
 export type ScoutingFilters = {
   skill: string;
   gender: 'All' | 'male' | 'female';

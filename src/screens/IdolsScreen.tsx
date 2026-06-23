@@ -5,7 +5,6 @@ import React, { useMemo, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card } from '../components/AppShell';
 import { AgencyLogoMark } from '../components/ui/AgencyLogoMark';
-import { Gradient } from '../components/ui/Gradient';
 import { filterIdols, IDOL_STATUSES, type IdolFilterStatus } from '../features/idols';
 import type { RootStackParamList } from '../navigation/types';
 import { useGame } from '../state/GameContext';
@@ -13,13 +12,16 @@ import { colors, radius, spacing, statColors, statusColor } from '../theme';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
-const TOP_STATS: Array<{ key: keyof ReturnType<typeof useGame>['idols'][number]['stats']; label: string; color: string }> = [
-  { key: 'vocal',    label: 'VOC', color: statColors.vocal },
-  { key: 'dance',    label: 'DNC', color: statColors.dance },
-  { key: 'rap',      label: 'RAP', color: statColors.rap },
-  { key: 'visual',   label: 'VIS', color: statColors.visual },
-  { key: 'charisma', label: 'CHA', color: statColors.charisma },
-];
+const STAT_ABBREV: Record<string, string> = {
+  vocal: 'VOC', dance: 'DAN', rap: 'RAP', visual: 'VIS',
+  charisma: 'CHA', stamina: 'STM', variety: 'VAR', acting: 'ACT',
+};
+
+function getTopStat(stats: Record<string, number>): { label: string; value: number; color: string } {
+  const entries = Object.entries(stats) as [keyof typeof statColors, number][];
+  const [key, value] = entries.reduce((best, cur) => cur[1] > best[1] ? cur : best);
+  return { label: STAT_ABBREV[key] ?? key.slice(0, 3).toUpperCase(), value, color: statColors[key] ?? colors.tealBright };
+}
 function resolveImageAspectRatio(source?: number) {
   if (!source) return 0.72;
   const asset = Image.resolveAssetSource(source);
@@ -91,6 +93,7 @@ export function IdolsScreen() {
           const aspectRatio = resolveImageAspectRatio(i.image);
           const statusDotColor = statusColor[i.status] ?? colors.mutedForeground;
           const isActive = i.status === 'Active';
+          const topStat = getTopStat(i.stats);
 
           return (
             <TouchableOpacity
@@ -123,7 +126,7 @@ export function IdolsScreen() {
                   <View style={styles.artBottom}>
                     <View style={styles.artBottomLeft}>
                       <Text style={styles.artName} numberOfLines={1}>{i.stageName}</Text>
-                      <Text style={styles.artRole} numberOfLines={1}>{i.role}</Text>
+                      <Text style={styles.artRole} numberOfLines={2}>{i.role}</Text>
                     </View>
                     {i.group && groupForIdol && (
                       <View style={styles.artGroupBadge}>
@@ -137,26 +140,21 @@ export function IdolsScreen() {
                   </View>
                 </View>
 
-                {/* Stat mini-bars below art */}
-                <View style={styles.statStrip}>                  {TOP_STATS.map(stat => {
-                    const val = i.stats[stat.key];
-                    return (
-                      <View key={stat.key} style={styles.statCol}>
-                        <Text style={[styles.statVal, { color: stat.color }]}>{val}</Text>
-                        <View style={styles.statBarTrack}>
-                          <Gradient
-                            colors={[stat.color + '55', stat.color + 'CC']}
-                            direction="to-t"
-                            style={[styles.statBarFill, { height: `${val}%` }]}
-                          />
-                        </View>
-                        <Text style={[styles.statLabel, { color: stat.color }]}>{stat.label}</Text>
-                      </View>
-                    );
-                  })}
-                  <View style={styles.popCol}>
-                    <Text style={styles.popNum}>{i.popularity}</Text>
-                    <Text style={styles.popLabel}>POP</Text>
+                {/* Info strip */}
+                <View style={styles.infoStrip}>
+                  <View style={styles.infoCell}>
+                    <Text style={[styles.infoBig, { color: colors.violetBright }]}>{i.morale}</Text>
+                    <Text style={styles.infoTiny}>MORALE</Text>
+                  </View>
+                  <View style={styles.infoDivider} />
+                  <View style={styles.infoCell}>
+                    <Text style={[styles.infoBig, { color: colors.mint }]}>{i.energy}</Text>
+                    <Text style={styles.infoTiny}>ENERGY</Text>
+                  </View>
+                  <View style={styles.infoDivider} />
+                  <View style={styles.infoCell}>
+                    <Text style={[styles.infoBig, { color: topStat.color }]}>{topStat.value}</Text>
+                    <Text style={styles.infoTiny}>{topStat.label}</Text>
                   </View>
                 </View>
               </View>
@@ -215,7 +213,7 @@ const styles = StyleSheet.create({
   filterChipText: { fontSize: 11, fontWeight: '600', color: colors.mutedForeground },
   filterChipTextActive: { color: colors.tealBright },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  grid: { flexDirection: 'row', flexWrap: 'wrap'},
   cardWrap: { width: '50%', padding: spacing.xs },
   card: {
     borderRadius: radius.xl,
@@ -283,29 +281,36 @@ const styles = StyleSheet.create({
   artName: { fontSize: 12, fontWeight: '800', color: colors.foreground },
   artRole: { fontSize: 10, color: 'rgba(255,255,255,0.6)', marginTop: 1 },
 
-  statStrip: {
+  infoStrip: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.sm,
-    gap: 4,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    alignItems: 'center',
+    backgroundColor: 'rgba(8,11,18,0.88)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.06)',
   },
-  statCol: { flex: 1, alignItems: 'center', gap: 2 },
-  statBarTrack: {
-    width: '100%',
+  infoCell: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 9,
+    gap: 2,
+  },
+  infoDivider: {
+    width: 1,
     height: 22,
-    borderRadius: radius.sm,
-    backgroundColor: colors.whiteA10,
-    overflow: 'hidden',
-    justifyContent: 'flex-end',
+    alignSelf: 'center',
+    backgroundColor: 'rgba(255,255,255,0.07)',
   },
-  statBarFill: { width: '100%', borderRadius: radius.sm },
-  statVal: { fontSize: 10, fontWeight: '900', lineHeight: 11 },
-  statLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
-  popCol: { flex: 1, alignItems: 'center', gap: 2 },
-  popNum: { fontSize: 16, fontWeight: '900', color: colors.tealBright, lineHeight: 18 },
-  popLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 0.4, color: colors.mutedForeground },
+  infoBig: {
+    fontSize: 14,
+    fontWeight: '900',
+    lineHeight: 16,
+  },
+  infoTiny: {
+    fontSize: 7.5,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    color: colors.mutedForeground,
+  },
 
 
   emptyState: { width: '100%', alignItems: 'center', paddingVertical: 40, gap: spacing.sm },

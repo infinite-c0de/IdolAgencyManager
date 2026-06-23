@@ -522,8 +522,6 @@ export function releaseDebut(
     projection,
     moneyDelta: -totalSpent + projection.revenueGained,
     reputationDelta: projection.reputationGained,
-    // Premium currency reward scales with release quality.
-    gemsDelta: payload.quality * 3,
     productionCost,
     promotionCost,
     totalSpent,

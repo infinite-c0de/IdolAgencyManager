@@ -9,7 +9,13 @@ import {
   languageOptions,
   trainingTypes,
 } from '../data/gameData';
-import type { CreateAgencyPayload, RecruitResult, RefreshScoutingResult, ScoutingFilters } from '../features/agency';
+import type {
+  CreateAgencyPayload,
+  RecruitResult,
+  RefreshScoutingResult,
+  ScoutingFilters,
+  SpendAgencyMoneyResult,
+} from '../features/agency';
 import { getCityByName } from '../features/cities';
 import { applyWeeklyEconomyTick, defaultEconomyModifiers } from '../features/economy';
 import type {
@@ -61,6 +67,7 @@ export type GameState = {
   createAgency: (payload: CreateAgencyPayload) => boolean;
   recruitTrainee: (traineeId: string) => RecruitResult;
   refreshScoutingCandidates: (filters: ScoutingFilters, overrideCost?: number) => RefreshScoutingResult;
+  spendAgencyMoney: (cost: number) => SpendAgencyMoneyResult;
   createGroup: (payload: CreateGroupPayload) => CreateGroupResult;
   addGroupMembers: (payload: AddGroupMembersPayload) => AddGroupMembersResult;
   updateGroupRoles: (payload: UpdateGroupRolesPayload) => UpdateGroupRolesResult;
@@ -130,7 +137,7 @@ export function useGameState(): GameState {
     setScoutingLastGrowthAt,
   });
 
-  const { createAgency, recruitTrainee, refreshScoutingCandidates } = useAgencyActions({
+  const { createAgency, recruitTrainee, refreshScoutingCandidates, spendAgencyMoney } = useAgencyActions({
     agency,
     idols,
     trainees,
@@ -178,7 +185,6 @@ export function useGameState(): GameState {
       monthlyIncome: progression.nextMonthlyIncome,
       reputation: progression.nextReputation,
       ranking: progression.nextRanking,
-      level: progression.nextLevel,
       // Action energy regenerates each week so promotions are rate-limited.
       energy: agency.energyMax,
     }));
@@ -240,7 +246,6 @@ export function useGameState(): GameState {
       ...current,
       money: current.money + result.moneyDelta,
       reputation: Math.min(100, current.reputation + result.reputationDelta),
-      gems: current.gems + result.gemsDelta,
     }));
     setTransactions(current => {
       const baseId = current[current.length - 1]?.id ?? 0;
@@ -353,6 +358,7 @@ export function useGameState(): GameState {
       createAgency,
       recruitTrainee,
       refreshScoutingCandidates,
+      spendAgencyMoney,
       createGroup,
       addGroupMembers,
       updateGroupRoles,
@@ -384,6 +390,7 @@ export function useGameState(): GameState {
       createAgency,
       recruitTrainee,
       refreshScoutingCandidates,
+      spendAgencyMoney,
       createGroup,
       addGroupMembers,
       updateGroupRoles,

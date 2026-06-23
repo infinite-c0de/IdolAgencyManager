@@ -24,19 +24,18 @@ import type { ComponentType } from 'react';
 type IconType = ComponentType<{ size?: number; color?: string }>;
 type IdolModel = import('../types').Idol;
 
-const PROFILE_STAT_BARS: Array<{ key: string; label: string; color: string; getValue: (idol: IdolModel) => number }> = [
-  { key: 'vocal',     label: 'Vocal',      color: statColors.vocal,    getValue: idol => idol.stats.vocal },
-  { key: 'dance',     label: 'Dance',      color: statColors.dance,    getValue: idol => idol.stats.dance },
-  { key: 'rap',       label: 'Rap',        color: statColors.rap,      getValue: idol => idol.stats.rap },
-  { key: 'visual',    label: 'Visual',     color: statColors.visual,   getValue: idol => idol.stats.visual },
-  { key: 'charisma',  label: 'Charisma',   color: statColors.charisma, getValue: idol => idol.stats.charisma },
-  { key: 'stamina',   label: 'Stamina',    color: statColors.stamina,  getValue: idol => idol.stats.stamina },
-  { key: 'variety',   label: 'Variety',    color: statColors.variety,  getValue: idol => idol.stats.variety },
-  { key: 'acting',    label: 'Acting',     color: statColors.acting,   getValue: idol => idol.stats.acting },
-  { key: 'popularity', label: 'Popularity', color: '#F472B6',          getValue: idol => idol.popularity },
-  { key: 'dominance',  label: 'Dominance',  color: '#A78BFA',          getValue: idol => idol.personalityProfile?.dominance ?? 55 },
+const STAGE_SKILL_BARS: Array<{ key: string; label: string; color: string; getValue: (idol: IdolModel) => number }> = [
+  { key: 'vocal', label: 'Vocal', color: statColors.vocal, getValue: idol => idol.stats.vocal },
+  { key: 'dance', label: 'Dance', color: statColors.dance, getValue: idol => idol.stats.dance },
+  { key: 'rap', label: 'Rap', color: statColors.rap, getValue: idol => idol.stats.rap },
+  { key: 'visual', label: 'Visual', color: statColors.visual, getValue: idol => idol.stats.visual },
+  { key: 'charisma', label: 'Charisma', color: statColors.charisma, getValue: idol => idol.stats.charisma },
 ];
-const INFO_METRIC_KEYS = new Set(['popularity', 'dominance']);
+
+const VERSATILITY_SKILL_BARS: Array<{ key: string; label: string; color: string; getValue: (idol: IdolModel) => number }> = [
+  { key: 'variety', label: 'Variety', color: statColors.variety, getValue: idol => idol.stats.variety },
+  { key: 'acting', label: 'Acting', color: statColors.acting, getValue: idol => idol.stats.acting },
+];
 
 function resolveImageAspectRatio(source?: number) {
   if (!source) {
@@ -54,11 +53,11 @@ function resolveImageAspectRatio(source?: number) {
 function formatTrainingMonths(months: number) {
   const safeMonths = Math.max(0, Math.round(months));
   if (safeMonths < 12) {
-    return `${safeMonths}months`;
+    return `${safeMonths}m`;
   }
   const years = Math.floor(safeMonths / 12);
   const remain = safeMonths % 12;
-  return remain === 0 ? `${years}years` : `${years}years\n${remain}months`;
+  return remain === 0 ? `${years}y` : `${years}y\n${remain}m`;
 }
 
 export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>) {
@@ -152,19 +151,11 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
               <Text style={styles.trainingLabel}>TRAINING</Text>
             </View>
           </View>
-
           <View style={styles.tagRow}>
             <Tag label={i.personalityProfile?.archetype ?? 'All-Rounder'} color={colors.violetBright} />
             <Tag label={i.personality} color={colors.mutedForeground} />
             {i.languages.map(lang => <Tag key={lang} label={lang} color={colors.tealBright} />)}
           </View>
-
-          <View style={styles.skillList}>
-            {PROFILE_STAT_BARS.filter(stat => INFO_METRIC_KEYS.has(stat.key)).map(stat => (
-              <ColoredSkillBar key={stat.key} label={stat.label} value={stat.getValue(i)} color={stat.color} />
-            ))}
-          </View>
-
           {/* Group info — tappable → Group Profile */}
           {idolGroup ? (
             <TouchableOpacity
@@ -200,12 +191,17 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
               <Text style={styles.groupInfoSoloLabel}>Solo Artist</Text>
             </View>
           )}
-
-          {/* Vitals */}
           <View style={styles.vitalRow}>
             <Vital Icon={Heart} label="Health" v={i.health} color={colors.hotSoft} />
             <Vital Icon={Activity} label="Morale" v={i.morale} color={colors.violetBright} />
             <Vital Icon={Zap} label="Energy" v={i.energy} color={colors.mint} />
+          </View>
+          {/* Profile Metrics */}
+          <View style={styles.metricsSection}>
+            <Text style={styles.metricsSectionLabel}>PROFILE METRICS</Text>
+            <MetricTile label="Popularity" value={i.popularity} color="#F472B6" />
+            <MetricTile label="Dominance" value={i.personalityProfile?.dominance ?? 55} color="#A78BFA" />
+            <MetricTile label="Stamina" value={i.stats.stamina} color={statColors.stamina} />
           </View>
         </Card>
       )}
@@ -213,11 +209,19 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
       {/* ── STATS TAB ── */}
       {tab === 'stats' && (
         <Card>
-          <SectionTitle>PERFORMANCE SKILLS</SectionTitle>
+          <SectionTitle>STAGE SKILLS</SectionTitle>
           <View style={styles.skillList}>
-            {PROFILE_STAT_BARS.filter(stat => !INFO_METRIC_KEYS.has(stat.key)).map(stat => (
+            {STAGE_SKILL_BARS.map(stat => (
               <ColoredSkillBar key={stat.key} label={stat.label} value={stat.getValue(i)} color={stat.color} />
             ))}
+          </View>
+          <View style={styles.skillsSection}>
+            <SectionTitle>VERSATILITY</SectionTitle>
+            <View style={styles.skillList}>
+              {VERSATILITY_SKILL_BARS.map(stat => (
+                <ColoredSkillBar key={stat.key} label={stat.label} value={stat.getValue(i)} color={stat.color} />
+              ))}
+            </View>
           </View>
         </Card>
       )}
@@ -231,14 +235,14 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
 }
 
 const TRAINING_ACCENT: Record<string, string> = {
-  vocal:    statColors.vocal,
-  dance:    statColors.dance,
-  rap:      statColors.rap,
-  visual:   statColors.visual,
-  acting:   statColors.acting,
+  vocal: statColors.vocal,
+  dance: statColors.dance,
+  rap: statColors.rap,
+  visual: statColors.visual,
+  acting: statColors.acting,
   language: '#93C5FD',
-  lang:     '#93C5FD',
-  rest:     '#6B7280',
+  lang: '#93C5FD',
+  rest: '#6B7280',
 };
 
 function getAccent(id: string, name: string): string {
@@ -396,6 +400,22 @@ function ColoredSkillBar({
           direction="to-r"
           style={[styles.coloredSkillFill, { width: `${value}%` }]}
         />
+      </View>
+    </View>
+  );
+}
+
+function MetricTile({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <View style={styles.metricTile}>
+      <Text style={styles.metricTileLabel}>{label}</Text>
+      <View style={styles.metricTileRight}>
+        <Text style={[styles.metricTileValue, { color }]}>
+          {value}<Text style={styles.tinyMuted}>/100</Text>
+        </Text>
+        <View style={styles.metricTileTrack}>
+          <View style={[styles.metricTileFill, { width: `${value}%` as any, backgroundColor: color + 'CC' }]} />
+        </View>
       </View>
     </View>
   );
@@ -573,7 +593,14 @@ const styles = StyleSheet.create({
   groupInfoSoloEmoji: { fontSize: 18 },
   groupInfoSoloLabel: { fontSize: 13, fontWeight: '700', color: colors.mutedForeground },
 
-  vitalRow: { marginTop: spacing.lg, flexDirection: 'row', gap: spacing.sm },
+  vitalRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
   vital: {
     flex: 1,
     borderRadius: radius.lg,
@@ -586,6 +613,47 @@ const styles = StyleSheet.create({
   vitalValue: { marginTop: 4, fontSize: 18, fontWeight: '700', color: colors.foreground },
 
   skillList: { marginTop: spacing.md, gap: 8 },
+  skillsSection: {
+    marginTop: spacing.lg,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+
+  metricsSection: {
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    gap: 10,
+  },
+  metricsSectionLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1,
+    color: colors.mutedForeground,
+    marginBottom: 2,
+  },
+  metricTile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  metricTileLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.mutedForeground,
+    width: 76,
+  },
+  metricTileRight: { flex: 1, gap: 4 },
+  metricTileValue: { fontSize: 13, fontWeight: '800', textAlign: 'right' },
+  metricTileTrack: {
+    height: 4,
+    borderRadius: radius.full,
+    backgroundColor: colors.whiteA10,
+    overflow: 'hidden',
+  },
+  metricTileFill: { height: '100%', borderRadius: radius.full },
   coloredSkillRow: { gap: 5 },
   coloredSkillHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   coloredSkillLabel: { fontSize: 12, color: colors.foreground },
@@ -597,33 +665,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   coloredSkillFill: { height: '100%', borderRadius: radius.full },
-
-  trainGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  trainBtn: {
-    flexGrow: 1,
-    flexBasis: '46%',
-    gap: 4,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.whiteA05,
-    padding: spacing.md,
-  },
-  trainLabel: { fontSize: 11, fontWeight: '600', color: colors.foreground },
-
-  achList: { gap: spacing.sm },
-  achItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.whiteA05,
-    padding: 10,
-  },
-  achIcon: { width: 32, height: 32, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  achTitle: { fontSize: 12, fontWeight: '600', color: colors.foreground },
 
   historyGrid: { gap: 4 },
   historyRow: { flexDirection: 'row', gap: 4, alignItems: 'center' },

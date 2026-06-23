@@ -1,10 +1,8 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
 import {
   CalendarDays,
-  ChevronRight,
   Crown,
   Dumbbell,
-  Gem,
   Globe2,
   Home,
   Music2,
@@ -102,12 +100,14 @@ export function TopBar() {
           <View style={styles.rowCenterSm}>
             <Wallet size={11} color={colors.mint} />
             <Text style={styles.statMint}> {weeklyNetLabel}/wk</Text>
-            <Gem size={11} color={colors.tealBright} style={styles.gemSpacer} />
-            <Text style={styles.statTeal}> {agency.gems}</Text>
           </View>
         </View>
       </View>
       <View style={styles.topSubRow}>
+        <View style={styles.rowCenterSm}>
+          <Crown size={11} color={colors.tealBright} />
+          <Text style={styles.statTeal}> REP {agency.reputation}</Text>
+        </View>
         <View style={styles.rowCenterSm}>
           <Users size={11} color={colors.violetBright} />
           <Text style={styles.statViolet}> {fanbaseLabel}</Text>
@@ -116,7 +116,6 @@ export function TopBar() {
           <Zap size={11} color={colors.mint} />
           <Text style={styles.statMint}> {agency.energy}/{agency.energyMax}</Text>
         </View>
-        <Text style={styles.muted}>Lv {agency.level}</Text>
         <Text style={styles.muted}>#{agency.ranking}</Text>
         <Text style={styles.muted}>Week {currentWeek}</Text>
       </View>
@@ -334,8 +333,6 @@ const styles = StyleSheet.create({
 
   topBar: {
     backgroundColor: 'rgba(16,19,29,0.92)',
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderStrong,
   },
   logo: {
     width: 40,
@@ -376,7 +373,6 @@ const styles = StyleSheet.create({
   statViolet: { color: colors.violetBright, fontSize: 11 },
   statMint: { color: colors.mint, fontSize: 11 },
   statTeal: { color: colors.tealBright, fontSize: 11 },
-  gemSpacer: { marginLeft: 8 },
   muted: { color: colors.mutedForeground, fontSize: 11 },
 
   scrollContent: {
@@ -422,7 +418,9 @@ const styles = StyleSheet.create({
   navLabel: { fontSize: 10, fontWeight: '500', color: colors.mutedForeground },
   navLabelActive: { color: colors.tealBright },
 
-  moreNavWrap: { borderBottomWidth: 1, borderBottomColor: colors.border },
+  moreNavWrap: {
+    borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: 'rgba(16,19,29,0.92)',
+  },
   moreRow: { gap: spacing.sm, paddingVertical: 6, paddingHorizontal: spacing.lg },
   morePill: {
     flexDirection: 'row',

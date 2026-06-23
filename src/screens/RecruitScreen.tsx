@@ -74,7 +74,7 @@ function getProfileFlag(value?: number | string) {
 }
 
 export function RecruitScreen() {
-  const { trainees, agency, recruitTrainee, refreshScoutingCandidates } = useGame();
+  const { trainees, agency, recruitTrainee, refreshScoutingCandidates, spendAgencyMoney } = useGame();
   const [confirm, setConfirm] = useState<Trainee | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState('All');
@@ -150,6 +150,35 @@ export function RecruitScreen() {
     setPage(current => (current + 1) % totalPages);
   };
 
+  const applyFilterCost = (cost: number, label: string) => {
+    if (cost <= 0) return true;
+    const result = spendAgencyMoney(cost);
+    if (result.ok) return true;
+    setError(`Not enough budget to apply ${label} filter. ${fmt(cost)} required.`);
+    return false;
+  };
+
+  const handleSkillFilterPress = (next: string) => {
+    if (next === activeFilter) return;
+    if (next !== 'All' && !applyFilterCost(FILTER_COST.skill, 'skill')) return;
+    setActiveFilter(next);
+    setExpandedId(null);
+  };
+
+  const handleGenderFilterPress = (next: 'All' | 'male' | 'female') => {
+    if (next === genderFilter) return;
+    if (next !== 'All' && !applyFilterCost(FILTER_COST.gender, 'gender')) return;
+    setGenderFilter(next);
+    setExpandedId(null);
+  };
+
+  const handleNationalityFilterPress = (next: string) => {
+    if (next === nationalityFilter) return;
+    if (next !== 'All' && !applyFilterCost(FILTER_COST.nationality, 'nationality')) return;
+    setNationalityFilter(next);
+    setExpandedId(null);
+  };
+
   const activeFilterCount = (activeFilter !== 'All' ? 1 : 0) + (genderFilter !== 'All' ? 1 : 0) + (nationalityFilter !== 'All' ? 1 : 0);
   const refreshCost =
     BASE_REFRESH_COST +
@@ -176,7 +205,7 @@ export function RecruitScreen() {
               return (
                 <TouchableOpacity
                   key={f}
-                  onPress={() => setActiveFilter(f)}
+                  onPress={() => handleSkillFilterPress(f)}
                   style={[styles.filterChip, active && { borderColor: (accent ?? colors.tealBright) + 'AA', backgroundColor: (accent ?? colors.tealBright) + '18' }, !hasMatches && styles.filterChipEmpty]}
                   activeOpacity={0.7}>
                   {accent && <View style={[styles.filterDot, { backgroundColor: accent, opacity: active ? 1 : hasMatches ? 0.35 : 0.15 }]} />}
@@ -199,7 +228,7 @@ export function RecruitScreen() {
               return (
                 <TouchableOpacity
                   key={g}
-                  onPress={() => setGenderFilter(g)}
+                  onPress={() => handleGenderFilterPress(g)}
                   style={[styles.genderBtn, active && { borderColor: color + '66', backgroundColor: color + '18' }]}
                   activeOpacity={0.7}>
                   <Text style={[styles.genderBtnText, active && { color, fontWeight: '700' }]}>{label}</Text>
@@ -220,7 +249,7 @@ export function RecruitScreen() {
               return (
                 <TouchableOpacity
                   key={n}
-                  onPress={() => setNationalityFilter(n)}
+                  onPress={() => handleNationalityFilterPress(n)}
                   style={[styles.filterChip, active && { borderColor: colors.tealActiveBorder, backgroundColor: colors.tealActiveBg }, !hasMatches && styles.filterChipEmpty]}
                   activeOpacity={0.7}>
                   <Text style={[styles.filterText, active && { color: colors.tealBright, fontWeight: '700' }, !hasMatches && styles.filterTextEmpty]}>{n}</Text>
@@ -245,25 +274,7 @@ export function RecruitScreen() {
               <Text style={styles.filterActiveLabel}>{activeFilterCount} filter{activeFilterCount > 1 ? 's' : ''} active</Text>
             )}
           </View>
-          <View style={styles.refreshSide}>
-            {/* Free prev/next page navigation */}
-            <View style={styles.pageNav}>
-              <TouchableOpacity
-                style={[styles.pageNavBtn, page === 0 && styles.pageNavBtnDisabled]}
-                onPress={() => setPage(p => Math.max(0, p - 1))}
-                disabled={page === 0}
-                activeOpacity={0.8}>
-                <Text style={styles.pageNavText}>‹</Text>
-              </TouchableOpacity>
-              <Text style={styles.pageNavLabel}>{allFilteredCandidates.length === 0 ? '0/0' : `${page + 1}/${totalPages}`}</Text>
-              <TouchableOpacity
-                style={[styles.pageNavBtn, page >= totalPages - 1 && styles.pageNavBtnDisabled]}
-                onPress={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-                disabled={page >= totalPages - 1}
-                activeOpacity={0.8}>
-                <Text style={styles.pageNavText}>›</Text>
-              </TouchableOpacity>
-            </View>
+          <View style={styles.refreshSide}>            
             {/* Paid refresh — clearly labeled */}
             <TouchableOpacity style={styles.refreshBtn} onPress={handleRefresh} activeOpacity={0.85}>
               <RefreshCw size={13} color={colors.slate900} />
@@ -646,25 +657,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: 6,
   },
-  pageNav: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.whiteA05,
-    overflow: 'hidden',
-  },
-  pageNavBtn: {
-    width: 30,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pageNavBtnDisabled: { opacity: 0.35 },
-  pageNavText: { fontSize: 16, fontWeight: '700', color: colors.tealBright },
-  pageNavLabel: { fontSize: 11, fontWeight: '700', color: colors.foreground, paddingHorizontal: 4 },
   costBreakdown: {
     flexDirection: 'row',
     gap: 6,

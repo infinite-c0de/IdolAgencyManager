@@ -41,9 +41,7 @@ export type AgencyLogo =
 export type Agency = {
   name: string;
   ceoName: string;
-  level: number;
   money: number;
-  gems: number;
   energy: number;
   energyMax: number;
   reputation: number;

@@ -26,7 +26,6 @@ export type WeeklyProgressionResult = {
   nextMonthlyIncome: number;
   nextReputation: number;
   nextRanking: number;
-  nextLevel: number;
   trainingCostAmount: number;
   revenuePoint: RevenuePoint;
 };
@@ -111,7 +110,7 @@ function nextIdolStatus(
 
 export function calculateWeeklyProgression({
   agency,
-  city,
+  city: _city,
   idols,
   groups,
   trainingPlans,
@@ -244,12 +243,6 @@ export function calculateWeeklyProgression({
   );
   const nextRanking = Math.max(1, agency.ranking - rankDelta);
 
-  // Agency level scales with reputation and number of debuted groups.
-  const nextLevel = Math.max(
-    agency.level,
-    1 + Math.floor(nextReputation / 20) + activeGroupCount,
-  );
-
   // Training costs across every idol's resolved plan.
   let trainingCostAmount = 0;
   for (const idol of idols) {
@@ -265,7 +258,6 @@ export function calculateWeeklyProgression({
     nextMonthlyIncome,
     nextReputation,
     nextRanking,
-    nextLevel,
     trainingCostAmount,
     revenuePoint: {
       m: `W${currentWeek + 1}`,
