@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { AppShell } from '../components/AppShell';
 import { ScoutCard } from '../components/scout/ScoutCard';
-import { SKILL_COLOR } from '../components/recruit/recruitConstants';
+import { SKILL_COLOR } from '../components/ui/idolConstants';
 import { BASE_REFRESH_COST, traineeArtPool } from '../data/gameData';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';

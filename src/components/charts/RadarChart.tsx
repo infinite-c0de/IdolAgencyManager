@@ -40,8 +40,10 @@ export function RadarChart({
     return <View />;
   }
 
-  // Extra padding on each side so axis labels never get clipped
-  const labelPad = 56;
+  // Extra padding on each side so axis labels never get clipped.
+  // 80 px is required for the widest expected label ("CHARISMA", 8 chars bold)
+  // on a left-side axis where textAnchor='end' extends the text further left.
+  const labelPad = 80;
   const svgW = size + labelPad * 2;
   const svgH = size + labelPad * 2;
   const cx = svgW / 2;

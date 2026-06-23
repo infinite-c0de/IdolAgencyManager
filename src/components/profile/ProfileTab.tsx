@@ -1,7 +1,7 @@
 import { ChevronRight, Users } from 'lucide-react-native';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { ARCHETYPE_COLOR, TRAIT_LABELS } from '../recruit/recruitConstants';
+import { ARCHETYPE_COLOR, TRAIT_LABELS } from '../ui/idolConstants';
 import { AgencyLogoMark } from '../ui/AgencyLogoMark';
 import { StatBar } from '../ui/StatBar';
 import { colors, radius, spacing } from '../../theme';
@@ -47,7 +47,7 @@ export function ProfileTab({ idol, idolGroup, onGroupPress }: Props) {
         <View style={styles.infoList}>
           <InfoRow label="FULL NAME"    value={idol.fullName} />
           <InfoRow label="NATIONALITY"  value={`${idol.flag} ${idol.nationality}`} />
-          <InfoRow label="AGE / DOB"    value={`${idol.age}yr  ·  ${idol.dob}`} />
+          <InfoRow label="AGE / DOB"    value={`${idol.age} yr  ·  ${idol.dob}`} />
           <InfoRow label="GENDER"       value={genderLabel} />
           <InfoRow label="LANGUAGES"    value={idol.languages.join(' · ')} />
           <InfoRow label="TRAINING"     value={formatTrainingMonths(idol.trainingMonths)} />

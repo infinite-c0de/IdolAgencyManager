@@ -1,109 +1,19 @@
 import type { Agency, City, Group, Idol } from '../../types';
 import { fmt } from '../../utils/format';
-import { calculateTotalFanbase, formatCompactCount } from '../economy';
+import { calculateTotalFanbase } from '../economy';
+import { fmtCount } from '../../utils/format';
+import type {
+  DynamicScheduleItem,
+  MarketOpportunity,
+  MarketPulse,
+  PromotionOption,
+  RivalFeedItem,
+  RivalIntel,
+} from './types';
 
-export type DynamicScheduleItem = {
-  id: string;
-  num: number;
-  title: string;
-  category: string;
-  date: string;
-  dayIndex: number;
-  progress: number;
-  accent: 'teal' | 'violet' | 'hot' | 'mint';
-  badge: 'pinned' | 'ready' | 'alert';
-};
+// ── Promotion templates (used by selectPromotionOptions + runPromotionAction) ──
 
-export type PromotionOption = {
-  id: string;
-  name: string;
-  cost: number;
-  energyCost: number;
-  fansGain: number;
-  reputationGain: number;
-  fatigueGain: number;
-  durationHours: number;
-  expectedRevenue: number;
-  efficiencyScore: number;
-  target: string;
-  lockedReason?: string;
-};
-
-export type RunPromotionPayload = {
-  promotionId: string;
-  groupId?: string;
-  week?: number;
-  dayIndex?: number;
-};
-
-export type PromotionScheduleEntry = {
-  id: string;
-  week: number;
-  dayIndex: number;
-  groupName: string;
-  promotionName: string;
-  net: number;
-  fans: number;
-};
-
-export type RunPromotionResult =
-  | {
-      ok: true;
-      promotionName: string;
-      groupId: string;
-      groupName: string;
-      updatedGroup: Group;
-      updatedIdols: Idol[];
-      totalCost: number;
-      revenueGained: number;
-      netDelta: number;
-      fansGained: number;
-      reputationGained: number;
-      fatigueApplied: number;
-      energySpent: number;
-      performanceFactor: number;
-    }
-  | {
-      ok: false;
-      reason:
-        | 'GROUP_NOT_FOUND'
-        | 'PROMOTION_NOT_FOUND'
-        | 'PROMOTION_LOCKED'
-        | 'INSUFFICIENT_FUNDS'
-        | 'INSUFFICIENT_ENERGY';
-    };
-
-export type MarketPulse = {
-  region: string;
-  fans: string;
-  revenue: string;
-  trend: string;
-  rank: string;
-};
-
-export type MarketOpportunity = {
-  region: string;
-  text: string;
-  tone: 'mint' | 'hot' | 'violet' | 'teal';
-};
-
-export type RivalIntel = {
-  id: string;
-  name: string;
-  reputation: number;
-  groups: number;
-  share: number;
-  threat: 'High' | 'Medium' | 'Low';
-  recent: string;
-};
-
-export type RivalFeedItem = {
-  t: string;
-  time: string;
-  tone: 'mint' | 'hot' | 'violet' | 'teal';
-};
-
-type PromotionTemplate = {
+export type PromotionTemplate = {
   id: string;
   name: string;
   baseCost: number;
@@ -118,7 +28,7 @@ type PromotionTemplate = {
   requiresDebut?: boolean;
 };
 
-const PROMOTION_TEMPLATES: PromotionTemplate[] = [
+export const PROMOTION_TEMPLATES: PromotionTemplate[] = [
   {
     id: 'social',
     name: 'Social Media Campaign',
@@ -174,25 +84,29 @@ const PROMOTION_TEMPLATES: PromotionTemplate[] = [
   },
 ];
 
+// ── Private helpers ──
+
 function avg(values: number[]) {
-  return Math.round(values.reduce((sum, value) => sum + value, 0) / Math.max(values.length, 1));
+  return Math.round(values.reduce((sum, v) => sum + v, 0) / Math.max(values.length, 1));
 }
 
 function signedPercent(value: number) {
   return `${value >= 0 ? '+' : ''}${value}%`;
 }
 
-function primaryGroup(groups: Group[]) {
+export function primaryGroup(groups: Group[]) {
   return groups[0] ?? null;
 }
 
 function activeGroupCount(groups: Group[]) {
-  return groups.filter(group => group.status === 'Active').length;
+  return groups.filter(g => g.status === 'Active').length;
 }
 
-function clamp(value: number, min: number, max: number) {
+export function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
+
+// ── Selectors ──
 
 export function selectDynamicSchedule(idols: Idol[], groups: Group[]): DynamicScheduleItem[] {
   const group = primaryGroup(groups);
@@ -252,7 +166,10 @@ export function selectDynamicSchedule(idols: Idol[], groups: Group[]): DynamicSc
   }
 
   const memberCount = group.memberIds.length;
-  const debutProgress = group.status === 'Active' ? 100 : Math.min(95, 40 + memberCount * 12 + Math.round(group.synergy / 3));
+  const debutProgress =
+    group.status === 'Active'
+      ? 100
+      : Math.min(95, 40 + memberCount * 12 + Math.round(group.synergy / 3));
 
   return [
     {
@@ -311,8 +228,6 @@ export function selectPromotionOptions(
   const lockedReason = unlocked ? undefined : 'Create a group before scheduling group promotions.';
 
   return PROMOTION_TEMPLATES.map(template => {
-    // Cost scales with the local market and group size only. Reputation makes
-    // promotions more *effective* (below), not more expensive.
     const cost = Math.round(template.baseCost * cityCostFactor * (1 + popularity / 260));
     const energyCost = Math.max(5, Math.round(template.intensity * 12));
     const fansGain = Math.max(
@@ -372,111 +287,31 @@ export function selectPromotionOptions(
   });
 }
 
-export function runPromotionAction(
+export function selectMarketPulse(
   cities: City[],
   agency: Agency,
   idols: Idol[],
   groups: Group[],
-  payload: RunPromotionPayload,
-): RunPromotionResult {
-  const targetGroup = payload.groupId
-    ? groups.find(group => group.id === payload.groupId) ?? null
-    : primaryGroup(groups);
-  if (!targetGroup) {
-    return { ok: false, reason: 'GROUP_NOT_FOUND' };
-  }
-
-  const options = selectPromotionOptions(cities, agency, idols, [targetGroup]);
-  const option = options.find(item => item.id === payload.promotionId);
-  if (!option) {
-    return { ok: false, reason: 'PROMOTION_NOT_FOUND' };
-  }
-  if (option.lockedReason) {
-    return { ok: false, reason: 'PROMOTION_LOCKED' };
-  }
-  if (agency.energy < option.energyCost) {
-    return { ok: false, reason: 'INSUFFICIENT_ENERGY' };
-  }
-  if (agency.money < option.cost) {
-    return { ok: false, reason: 'INSUFFICIENT_FUNDS' };
-  }
-
-  const popularityBoost = Math.max(1, Math.round(option.fansGain / 5_800));
-  const members = idols.filter(idol => targetGroup.memberIds.includes(idol.id));
-  const avgEnergy =
-    members.reduce((sum, member) => sum + member.energy, 0) / Math.max(members.length, 1);
-  const avgMorale =
-    members.reduce((sum, member) => sum + member.morale, 0) / Math.max(members.length, 1);
-  const readinessFactor = clamp((avgEnergy * 0.55 + avgMorale * 0.45) / 100, 0.55, 1.15);
-  const saturationFactor = clamp(
-    1 - targetGroup.popularity / 180 - (targetGroup.releases?.length ?? 0) * 0.03,
-    0.55,
-    1,
-  );
-  const performanceFactor = clamp(readinessFactor * saturationFactor, 0.45, 1.2);
-  const fansGained = Math.max(900, Math.round(option.fansGain * performanceFactor));
-  const reputationGained = Math.max(
-    1,
-    Math.round(option.reputationGain * (0.75 + readinessFactor * 0.25)),
-  );
-  const revenueGained = Math.round(option.expectedRevenue * (0.65 + performanceFactor * 0.5));
-  const memberPopularityBoost = Math.max(1, Math.round(fansGained / 8_400));
-  const memberMoraleDelta = Math.max(1, Math.round(option.fatigueGain * (0.45 + (1.1 - readinessFactor))));
-  const memberEnergyDelta = Math.max(1, Math.round(option.fatigueGain * (0.8 + (1.05 - readinessFactor))));
-  const groupPopularityBoost = Math.max(1, Math.round(fansGained / 7_200));
-
-  const updatedIdols = idols.map(idol =>
-    targetGroup.memberIds.includes(idol.id)
-      ? {
-          ...idol,
-          popularity: clamp(idol.popularity + memberPopularityBoost, 0, 100),
-          morale: clamp(idol.morale - memberMoraleDelta, 0, 100),
-          energy: clamp(idol.energy - memberEnergyDelta, 0, 100),
-          status: 'Promoting' as const,
-        }
-      : idol,
-  );
-
-  const updatedGroup: Group = {
-    ...targetGroup,
-    popularity: clamp(targetGroup.popularity + Math.max(popularityBoost, groupPopularityBoost), 0, 100),
-    monthlyRevenue: Math.max(0, Math.round(targetGroup.monthlyRevenue + revenueGained / 2)),
-  };
-
-  return {
-    ok: true,
-    promotionName: option.name,
-    groupId: targetGroup.id,
-    groupName: targetGroup.name,
-    updatedGroup,
-    updatedIdols,
-    totalCost: option.cost,
-    revenueGained,
-    netDelta: revenueGained - option.cost,
-    fansGained,
-    reputationGained,
-    fatigueApplied: option.fatigueGain,
-    energySpent: option.energyCost,
-    performanceFactor,
-  };
-}
-
-export function selectMarketPulse(cities: City[], agency: Agency, idols: Idol[], groups: Group[]): MarketPulse[] {
+): MarketPulse[] {
   const totalFanbase = calculateTotalFanbase(idols, groups);
   const homeCity = cities.find(city => city.name === agency.city) ?? cities[0];
-  const groupRevenue = groups.reduce((sum, group) => sum + group.monthlyRevenue, 0);
+  const groupRevenue = groups.reduce((sum, g) => sum + g.monthlyRevenue, 0);
   const baseRevenue = Math.max(agency.monthlyIncome, groupRevenue);
 
   const cityMarkets = cities.map((city, index) => {
     const homeBoost = city.id === homeCity.id ? 1.35 : 1;
     const fans = Math.round((totalFanbase * city.fan * homeBoost) / Math.max(cities.length, 1));
-    const revenue = Math.round(baseRevenue * city.revenue * (0.3 + fans / Math.max(totalFanbase || 1, 1)));
-    const trend = Math.round(city.domesticStreamingBonus * 100 + groups.length * 2 - city.competition / 20);
+    const revenue = Math.round(
+      baseRevenue * city.revenue * (0.3 + fans / Math.max(totalFanbase || 1, 1)),
+    );
+    const trend = Math.round(
+      city.domesticStreamingBonus * 100 + groups.length * 2 - city.competition / 20,
+    );
     const rank = Math.max(1, agency.ranking + index * 2 - activeGroupCount(groups) * 3);
 
     return {
       region: city.name,
-      fans: formatCompactCount(fans),
+      fans: fmtCount(fans),
       revenue: fmt(revenue),
       trend: signedPercent(trend),
       rank: `#${rank}`,
@@ -493,29 +328,52 @@ export function selectMarketPulse(cities: City[], agency: Agency, idols: Idol[],
     ...cityMarkets,
     {
       region: 'Global',
-      fans: formatCompactCount(Math.round(globalFans)),
+      fans: fmtCount(Math.round(globalFans)),
       revenue: fmt(Math.round(baseRevenue * Math.max(1, groups.length || 0.4))),
-      trend: signedPercent(Math.max(0, groups.length * 4 + avg(groups.map(group => group.synergy)) / 20)),
+      trend: signedPercent(
+        Math.max(0, groups.length * 4 + avg(groups.map(g => g.synergy)) / 20),
+      ),
       rank: `#${agency.ranking}`,
     },
   ];
 }
 
-export function selectMarketOpportunities(cities: City[], agency: Agency, idols: Idol[], groups: Group[]): MarketOpportunity[] {
+export function selectMarketOpportunities(
+  cities: City[],
+  agency: Agency,
+  idols: Idol[],
+  groups: Group[],
+): MarketOpportunity[] {
   const homeCity = cities.find(city => city.name === agency.city) ?? cities[0];
   const group = primaryGroup(groups);
 
   if (idols.length === 0) {
     return [
-      { region: homeCity.name, text: 'Open trainee scouting to start building local awareness.', tone: 'teal' },
-      { region: 'Global', text: 'No market traction yet. Recruiting is the first growth lever.', tone: 'violet' },
+      {
+        region: homeCity.name,
+        text: 'Open trainee scouting to start building local awareness.',
+        tone: 'teal',
+      },
+      {
+        region: 'Global',
+        text: 'No market traction yet. Recruiting is the first growth lever.',
+        tone: 'violet',
+      },
     ];
   }
 
   if (!group) {
     return [
-      { region: homeCity.name, text: 'You have recruited talent. Form a group to unlock promotion campaigns.', tone: 'mint' },
-      { region: homeCity.name, text: `Competition pressure is ${homeCity.competition}%, so role balance matters before debut.`, tone: 'hot' },
+      {
+        region: homeCity.name,
+        text: 'You have recruited talent. Form a group to unlock promotion campaigns.',
+        tone: 'mint',
+      },
+      {
+        region: homeCity.name,
+        text: `Competition pressure is ${homeCity.competition}%, so role balance matters before debut.`,
+        tone: 'hot',
+      },
     ];
   }
 
@@ -527,7 +385,10 @@ export function selectMarketOpportunities(cities: City[], agency: Agency, idols:
     },
     {
       region: 'Global',
-      text: group.status === 'Active' ? 'Active promotions can lift global rank this month.' : 'A debut release will unlock chart movement.',
+      text:
+        group.status === 'Active'
+          ? 'Active promotions can lift global rank this month.'
+          : 'A debut release will unlock chart movement.',
       tone: 'teal',
     },
     {
@@ -538,19 +399,31 @@ export function selectMarketOpportunities(cities: City[], agency: Agency, idols:
   ];
 }
 
-export function selectRivalIntel(agency: Agency, groups: Group[], idols: Idol[]): RivalIntel[] {
-  const playerPressure = Math.min(30, groups.length * 4 + Math.round(avg(idols.map(idol => idol.popularity)) / 8));
+export function selectRivalIntel(
+  agency: Agency,
+  groups: Group[],
+  idols: Idol[],
+): RivalIntel[] {
+  const playerPressure = Math.min(
+    30,
+    groups.length * 4 + Math.round(avg(idols.map(idol => idol.popularity)) / 8),
+  );
   const templates = [
-    { id: 'nova', name: 'NOVA MEDIA', baseRep: 92, baseGroups: 5, baseShare: 28 },
-    { id: 'prism', name: 'PRISM LABEL', baseRep: 86, baseGroups: 3, baseShare: 19 },
-    { id: 'zenith', name: 'ZENITH ENT.', baseRep: 78, baseGroups: 4, baseShare: 14 },
-    { id: 'halo', name: 'HALO STUDIOS', baseRep: 71, baseGroups: 2, baseShare: 9 },
+    { id: 'nova',   name: 'NOVA MEDIA',    baseRep: 92, baseGroups: 5, baseShare: 28 },
+    { id: 'prism',  name: 'PRISM LABEL',   baseRep: 86, baseGroups: 3, baseShare: 19 },
+    { id: 'zenith', name: 'ZENITH ENT.',   baseRep: 78, baseGroups: 4, baseShare: 14 },
+    { id: 'halo',   name: 'HALO STUDIOS',  baseRep: 71, baseGroups: 2, baseShare:  9 },
   ];
 
   return templates.map((rival, index) => {
     const reputation = Math.max(45, rival.baseRep - Math.round(playerPressure / (index + 2)));
     const share = Math.max(4, rival.baseShare - Math.round(playerPressure / (index + 3)));
-    const threat = reputation > agency.reputation + 25 ? 'High' : reputation > agency.reputation + 8 ? 'Medium' : 'Low';
+    const threat =
+      reputation > agency.reputation + 25
+        ? 'High'
+        : reputation > agency.reputation + 8
+          ? 'Medium'
+          : 'Low';
 
     return {
       id: rival.id,
@@ -567,22 +440,34 @@ export function selectRivalIntel(agency: Agency, groups: Group[], idols: Idol[])
   });
 }
 
-export function selectRivalFeed(agency: Agency, groups: Group[], idols: Idol[]): RivalFeedItem[] {
+export function selectRivalFeed(
+  agency: Agency,
+  groups: Group[],
+  idols: Idol[],
+): RivalFeedItem[] {
   const group = primaryGroup(groups);
 
   return [
     {
-      t: group ? `${agency.name} formed ${group.name}, forcing rivals to adjust scouting.` : `${agency.name} is still in talent acquisition phase.`,
+      t: group
+        ? `${agency.name} formed ${group.name}, forcing rivals to adjust scouting.`
+        : `${agency.name} is still in talent acquisition phase.`,
       time: 'This week',
       tone: group ? 'mint' : 'teal',
     },
     {
-      t: idols.length > 0 ? `${idols.length} signed idol${idols.length > 1 ? 's' : ''} now visible to rival scouts.` : 'Rivals are watching trainee markets for your first signing.',
+      t:
+        idols.length > 0
+          ? `${idols.length} signed idol${idols.length > 1 ? 's' : ''} now visible to rival scouts.`
+          : 'Rivals are watching trainee markets for your first signing.',
       time: '2d ago',
       tone: 'violet',
     },
     {
-      t: agency.reputation >= 60 ? 'Industry press expects your next promotion to affect market share.' : 'Low reputation keeps rival pressure manageable for now.',
+      t:
+        agency.reputation >= 60
+          ? 'Industry press expects your next promotion to affect market share.'
+          : 'Low reputation keeps rival pressure manageable for now.',
       time: '4d ago',
       tone: agency.reputation >= 60 ? 'hot' : 'teal',
     },

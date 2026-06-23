@@ -8,10 +8,10 @@ import { MetricGrid } from '../components/ui/MetricGrid';
 import { getCityByName } from '../features/cities';
 import {
   calculateTotalFanbase,
-  formatCompactCount,
   selectFinanceSummary,
   selectProfitLossSeries,
 } from '../features/economy';
+import { fmtCount } from '../utils/format';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 import { fmt } from '../utils/format';
@@ -108,7 +108,7 @@ export function FinanceScreen() {
           />
           <MetricCard
             label="Fanbase"
-            value={formatCompactCount(fanbase)}
+            value={fmtCount(fanbase)}
             valueColor={colors.violetBright}
             containerStyle={styles.kpiCard}
           />

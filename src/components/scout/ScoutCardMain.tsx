@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { ARCHETYPE_COLOR, SKILL_COLOR } from '../recruit/recruitConstants';
+import { ARCHETYPE_COLOR, SKILL_COLOR } from '../ui/idolConstants';
 import { colors, radius, spacing } from '../../theme';
 import { Trainee } from '../../types';
 import { fmt } from '../../utils/format';

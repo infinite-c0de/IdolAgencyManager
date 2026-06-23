@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Crown, Plus, Sparkles, Users } from 'lucide-react-native';
+import { Plus, Sparkles, Users } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import { AppShell, Avatar, Card } from '../components/AppShell';
+import { GroupCard } from '../components/groups/GroupCard';
 import { AgencyLogoMark } from '../components/ui/AgencyLogoMark';
 import { Gradient } from '../components/ui/Gradient';
 import { agencyLogoPresets } from '../features/agency';
@@ -90,96 +91,14 @@ export function GroupsScreen() {
         </Card>
       )}
 
-      {groups.map(g => {
-        const members = getGroupMembers(g, idols);
-        const readiness = buildGroupReadiness(members, g);
-
-        return (
-          <TouchableOpacity
-            key={g.id}
-            onPress={() => navigation.navigate('GroupProfile', { groupId: g.id })}
-            activeOpacity={0.92}>
-            <Card glow={g.status === 'Active' ? 'teal' : 'violet'}>
-              <View style={styles.headerRow}>
-                <View style={styles.headerLeft}>
-                  <View style={styles.groupIcon}>
-                    <AgencyLogoMark
-                      preset={g.logo?.kind === 'preset' ? g.logo.preset : 1}
-                      size={46}
-                    />
-                  </View>
-                  <View style={styles.flex1}>
-                    <Text style={styles.groupName} numberOfLines={1}>
-                      {g.name}
-                    </Text>
-                    <Text style={styles.tinyMuted}>
-                      Fandom · <Text style={styles.fanName}>{g.fanName}</Text> · {g.concept}
-                    </Text>
-                  </View>
-                </View>
-                <View
-                  style={[
-                    styles.statusBadge,
-                    g.status === 'Active' ? styles.statusTeal : styles.statusViolet,
-                  ]}>
-                  <Text style={[styles.statusBadgeText, g.status === 'Active' ? styles.tealText : styles.violetText]}>
-                    {g.status}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.miniRow}>
-                <Mini label="Popularity" v={`${g.popularity}%`} />
-                <Mini label="Members" v={`${members.length}`} />
-                <Mini label="Income" v={g.monthlyRevenue ? fmt(g.monthlyRevenue) : '—'} />
-              </View>
-
-              <View style={styles.bodyRow}>
-                <Text style={styles.subLabel}>MEMBERS & ROLES</Text>
-                <View style={styles.memberList}>
-                  {members.map(m => {
-                    const hasLeaderRole = m.role.includes('Leader');
-                    return (
-                      <View key={m.id} style={styles.memberItem}>
-                        <Avatar name={m.stageName} gradient={m.gradient} image={m.image} size={32} />
-                        <View style={styles.flex1}>
-                          <View style={styles.memberNameRow}>
-                            {hasLeaderRole && <Crown size={12} color={colors.amber} />}
-                            <Text style={styles.memberName}> {m.stageName}</Text>
-                          </View>
-                          <Text style={styles.tinyMuted}>{m.role}</Text>
-                        </View>
-                      </View>
-                    );
-                  })}
-                </View>
-              </View>
-
-              <View style={styles.readiness}>
-                <Text style={styles.subLabel}>DEBUT READINESS</Text>
-                <View style={styles.checkGrid}>
-                  {readiness.checks.map(c => (
-                    <View key={c.t} style={styles.checkItem}>
-                      <View style={[styles.checkDot, c.ok ? styles.checkOn : styles.checkOff]} />
-                      <Text style={c.ok ? styles.checkTextOn : styles.checkTextOff}>{c.t}</Text>
-                    </View>
-                  ))}
-                </View>
-                <Text style={styles.readyText}>
-                  {readiness.ready ? (
-                    <Text style={styles.mintText}>Ready to debut</Text>
-                  ) : (
-                    <Text style={styles.amberText}>Almost there</Text>
-                  )}
-                </Text>
-                <Text style={styles.readinessHint}>
-                  To debut: 3+ members, a Leader assigned, balanced performance stats, and a promotion plan in place.
-                </Text>
-              </View>
-            </Card>
-          </TouchableOpacity>
-        );
-      })}
+      {groups.map(g => (
+        <GroupCard
+          key={g.id}
+          group={g}
+          members={getGroupMembers(g, idols)}
+          onPress={() => navigation.navigate('GroupProfile', { groupId: g.id })}
+        />
+      ))}
 
       <NewGroupModal
         visible={open}
@@ -212,14 +131,6 @@ export function GroupsScreen() {
   );
 }
 
-function Mini({ label, v }: { label: string; v: string }) {
-  return (
-    <View style={styles.mini}>
-      <Text style={styles.tinyMuted}>{label}</Text>
-      <Text style={styles.miniValue}>{v}</Text>
-    </View>
-  );
-}
 
 function GroupCreatedCeremony({
   groupName,
@@ -626,58 +537,6 @@ const styles = StyleSheet.create({
   emptyTitle: { color: colors.foreground, fontSize: 18, fontWeight: '800' },
   emptyText: { color: colors.mutedForeground, fontSize: 12, textAlign: 'center', lineHeight: 18 },
 
-  headerRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.md },
-  headerLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  groupIcon: {
-    borderRadius: radius.xl,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(103,232,249,0.25)',
-  },
-  groupName: { color: colors.tealBright, fontSize: 22, fontWeight: '900' },
-  fanName: { color: colors.violetBright, fontWeight: '600' },
-  statusBadge: { borderRadius: radius.full, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 4 },
-  statusTeal: { borderColor: 'rgba(103,232,249,0.5)' },
-  statusViolet: { borderColor: 'rgba(232,121,249,0.5)' },
-  statusBadgeText: { fontSize: 10, fontWeight: '600' },
-
-  miniRow: { marginTop: spacing.md, flexDirection: 'row', gap: spacing.sm },
-  mini: { flex: 1, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.whiteA05, padding: 10 },
-  miniValue: { fontSize: 14, fontWeight: '700', color: colors.foreground },
-
-  bodyRow: { marginTop: spacing.md, gap: spacing.md },
-  subLabel: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, color: colors.mutedForeground, marginBottom: spacing.sm },
-  memberList: { gap: 6 },
-  memberItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.whiteA05,
-    padding: 6,
-  },
-  memberNameRow: { flexDirection: 'row', alignItems: 'center' },
-  memberName: { fontSize: 12, fontWeight: '600', color: colors.foreground },
-
-  readiness: {
-    marginTop: spacing.md,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.whiteA05,
-    padding: spacing.md,
-  },
-  checkGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  checkItem: { width: '50%', flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
-  checkDot: { width: 8, height: 8, borderRadius: radius.full },
-  checkOn: { backgroundColor: colors.mint },
-  checkOff: { backgroundColor: 'rgba(255,255,255,0.2)' },
-  checkTextOn: { fontSize: 11, color: colors.foreground },
-  checkTextOff: { fontSize: 11, color: colors.mutedForeground },
-  readyText: { textAlign: 'right', fontSize: 11 },
-  readinessHint: { marginTop: 6, fontSize: 10, lineHeight: 14, color: colors.mutedForeground },
 
   // Modal
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: spacing.lg }, modalCard: {

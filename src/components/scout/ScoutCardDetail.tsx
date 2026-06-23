@@ -1,7 +1,7 @@
 import { UserPlus } from 'lucide-react-native';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { ARCHETYPE_COLOR, TRAIT_LABELS } from '../recruit/recruitConstants';
+import { ARCHETYPE_COLOR, TRAIT_LABELS } from '../ui/idolConstants';
 import { StatBar } from '../ui/StatBar';
 import { colors, radius, spacing } from '../../theme';
 import { Trainee } from '../../types';

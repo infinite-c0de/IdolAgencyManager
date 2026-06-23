@@ -1,12 +1,11 @@
 import type { Agency, City, Group, Idol } from '../../types';
-import { fmt } from '../../utils/format';
+import { fmt, fmtCount } from '../../utils/format';
 import { getCityById } from '../cities';
 import {
   calculateCityProjection,
   calculateTotalFanbase,
   calculateWeeklyEconomy,
   defaultEconomyModifiers,
-  formatCompactCount,
 } from './service';
 import type {
   EconomyTransaction,
@@ -43,7 +42,7 @@ export function selectTopBarMetrics(
   return {
     totalFanbase,
     weeklyNet,
-    fanbaseLabel: formatCompactCount(totalFanbase),
+    fanbaseLabel: fmtCount(totalFanbase),
   };
 }
 

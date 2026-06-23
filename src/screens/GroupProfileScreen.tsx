@@ -1,18 +1,20 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ChevronLeft, Plus, Sparkles } from 'lucide-react-native';
+import { ChevronLeft, Sparkles } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
-import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { AppShell, Avatar, Card, SectionTitle } from '../components/AppShell';
-import { RadarChart } from '../components/charts';
-import { AgencyLogoMark } from '../components/ui/AgencyLogoMark';
-import { Gradient } from '../components/ui/Gradient';
+import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { AppShell, Avatar, Card } from '../components/AppShell';
+import { GroupLineupTab } from '../components/groupProfile/GroupLineupTab';
+import { GroupPerformanceTab } from '../components/groupProfile/GroupPerformanceTab';
+import { GroupProfileHero } from '../components/groupProfile/GroupProfileHero';
+import { GroupProfileTabBar } from '../components/groupProfile/GroupProfileTabBar';
+import type { GroupProfileTab } from '../components/groupProfile/GroupProfileTabBar';
+import { GroupReleasesTab } from '../components/groupProfile/GroupReleasesTab';
 import { buildGroupRadar, buildGroupReadiness, getGroupMembers } from '../features/groups';
 import type { RootStackParamList } from '../navigation/types';
 import { useGame } from '../state/GameContext';
-import { colors, radius, spacing, statColors } from '../theme';
+import { colors, radius, spacing } from '../theme';
 import type { GroupRole } from '../types';
-import { fmt, fmtCount } from '../utils/format';
 
 const MAX_GROUP_SIZE = 6;
 const ROLE_OPTIONS: GroupRole[] = ['Leader', 'Main Vocal', 'Main Dancer', 'Main Rapper', 'Visual', 'Center'];
@@ -20,7 +22,7 @@ const ROLE_OPTIONS: GroupRole[] = ['Leader', 'Main Vocal', 'Main Dancer', 'Main 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 function avg(values: number[]) {
-  return Math.round(values.reduce((sum, value) => sum + value, 0) / Math.max(values.length, 1));
+  return Math.round(values.reduce((s, v) => s + v, 0) / Math.max(values.length, 1));
 }
 
 function scoreRoleFit(idol: ReturnType<typeof getGroupMembers>[number], role: GroupRole) {
@@ -40,58 +42,37 @@ function scoreRoleFit(idol: ReturnType<typeof getGroupMembers>[number], role: Gr
 
 function getSynergyTier(score: number) {
   if (score >= 80) {
-    return {
-      label: 'Elite',
-      borderColor: 'rgba(52,211,153,0.6)',
-      backgroundColor: 'rgba(52,211,153,0.14)',
-      textColor: colors.mint,
-    };
+    return { label: 'Elite',    borderColor: 'rgba(52,211,153,0.6)',  backgroundColor: 'rgba(52,211,153,0.14)', textColor: colors.mint };
   }
-
   if (score >= 65) {
-    return {
-      label: 'Strong',
-      borderColor: colors.tealActiveBorder,
-      backgroundColor: colors.tealActiveBg,
-      textColor: colors.tealBright,
-    };
+    return { label: 'Strong',   borderColor: colors.tealActiveBorder, backgroundColor: colors.tealActiveBg,    textColor: colors.tealBright };
   }
-
   if (score >= 50) {
-    return {
-      label: 'Stable',
-      borderColor: 'rgba(252,211,77,0.6)',
-      backgroundColor: 'rgba(252,211,77,0.12)',
-      textColor: colors.amber,
-    };
+    return { label: 'Stable',   borderColor: 'rgba(252,211,77,0.6)',  backgroundColor: 'rgba(252,211,77,0.12)', textColor: colors.amber };
   }
-
-  return {
-    label: 'Critical',
-    borderColor: 'rgba(251,113,133,0.65)',
-    backgroundColor: 'rgba(251,113,133,0.14)',
-    textColor: colors.hot,
-  };
+  return   { label: 'Critical', borderColor: 'rgba(251,113,133,0.65)',backgroundColor: 'rgba(251,113,133,0.14)', textColor: colors.hot };
 }
 
 function isAssignedToKnownGroup(groupRef: string | undefined, groups: ReturnType<typeof useGame>['groups']) {
-  const normalizedRef = groupRef?.trim();
-  if (!normalizedRef) {
-    return false;
-  }
-  return groups.some(group => group.id === normalizedRef || group.name === normalizedRef);
+  const ref = groupRef?.trim();
+  if (!ref) return false;
+  return groups.some(g => g.id === ref || g.name === ref);
 }
 
 export function GroupProfileScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute();
   const { groups, idols, addGroupMembers, updateGroupRoles } = useGame();
+
+  const [tab, setTab] = useState<GroupProfileTab>('lineup');
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openRoleModal, setOpenRoleModal] = useState(false);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [draftRoles, setDraftRoles] = useState<Partial<Record<GroupRole, string>>>({});
+
   const groupId = (route.params as RootStackParamList['GroupProfile'] | undefined)?.groupId;
-  const group = groups.find(item => item.id === groupId) ?? groups[0];
+  const group = groups.find(g => g.id === groupId) ?? groups[0];
+
   const availableMembers = useMemo(
     () => idols.filter(idol => !isAssignedToKnownGroup(idol.group, groups)),
     [groups, idols],
@@ -111,77 +92,55 @@ export function GroupProfileScreen() {
   const radar = buildGroupRadar(members);
   const readiness = buildGroupReadiness(members, group);
   const synergyTier = getSynergyTier(group.synergy);
+
+  // Alerts
   const requiredRoleSet = ['Leader', 'Main Vocal', 'Main Dancer'] as const;
   const missingRequiredRoles = requiredRoleSet.filter(role => {
     const assignedId = group.roleAssignments?.[role];
-    return !assignedId || !members.some(member => member.id === assignedId);
+    return !assignedId || !members.some(m => m.id === assignedId);
   });
-  const highDominanceMembers = members.filter(member => (member.personalityProfile?.dominance ?? 55) >= 75).length;
-  const avgMorale = avg(members.map(member => member.morale));
-  const avgStamina = avg(members.map(member => member.stats.stamina));
+  const highDominanceMembers = members.filter(m => (m.personalityProfile?.dominance ?? 55) >= 75).length;
+  const avgMorale   = avg(members.map(m => m.morale));
+  const avgStamina  = avg(members.map(m => m.stats.stamina));
   const alerts: string[] = [];
-  if (missingRequiredRoles.length > 0) {
-    alerts.push(`Missing core roles: ${missingRequiredRoles.join(', ')}`);
-  }
-  if (highDominanceMembers > 1) {
-    alerts.push('Multiple high-dominance members may reduce chemistry.');
-  }
-  if (avgMorale < 60) {
-    alerts.push('Low average morale may slow synergy growth.');
-  }
-  if (avgStamina < 60) {
-    alerts.push('Stamina is low; schedule recovery to avoid regression.');
-  }
+  if (missingRequiredRoles.length > 0) alerts.push(`Missing core roles: ${missingRequiredRoles.join(', ')}`);
+  if (highDominanceMembers > 1)        alerts.push('Multiple high-dominance members may reduce chemistry.');
+  if (avgMorale < 60)                  alerts.push('Low average morale may slow synergy growth.');
+  if (avgStamina < 60)                 alerts.push('Stamina is low; schedule recovery to avoid regression.');
 
-  const closeAddModal = () => {
-    setSelectedMemberIds([]);
-    setOpenAddModal(false);
-  };
-  const openRoleEditor = () => {
-    setDraftRoles(group.roleAssignments ?? {});
-    setOpenRoleModal(true);
-  };
-  const closeRoleModal = () => {
-    setDraftRoles({});
-    setOpenRoleModal(false);
-  };
-
+  // Modal handlers
+  const closeAddModal = () => { setSelectedMemberIds([]); setOpenAddModal(false); };
+  const openRoleEditor = () => { setDraftRoles(group.roleAssignments ?? {}); setOpenRoleModal(true); };
+  const closeRoleModal = () => { setDraftRoles({}); setOpenRoleModal(false); };
   const toggleAddMember = (idolId: string) => {
-    setSelectedMemberIds(current =>
-      current.includes(idolId)
-        ? current.filter(id => id !== idolId)
-        : [...current, idolId],
+    setSelectedMemberIds(cur =>
+      cur.includes(idolId) ? cur.filter(id => id !== idolId) : [...cur, idolId],
     );
   };
-
   const handleAddMembers = () => {
     const result = addGroupMembers({ groupId: group.id, memberIds: selectedMemberIds });
     if (!result.ok) {
       const messages: Record<typeof result.reason, string> = {
-        GROUP_NOT_FOUND: 'Group not found.',
-        NO_MEMBERS_SELECTED: 'Select at least one idol to add.',
+        GROUP_NOT_FOUND:    'Group not found.',
+        NO_MEMBERS_SELECTED:'Select at least one idol to add.',
         MEMBER_UNAVAILABLE: 'One or more selected idols are already assigned.',
-        TOO_MANY_MEMBERS: `Groups are limited to ${MAX_GROUP_SIZE} members. Remove some selections.`,
+        TOO_MANY_MEMBERS:   `Groups are limited to ${MAX_GROUP_SIZE} members. Remove some selections.`,
       };
       Alert.alert('Cannot add members', messages[result.reason]);
       return;
     }
-
     Alert.alert('Members added', `${result.addedCount} member(s) added to ${result.groupName}.`);
     closeAddModal();
   };
   const assignRole = (role: GroupRole, idolId: string) => {
-    setDraftRoles(current => ({
-      ...current,
-      [role]: current[role] === idolId ? undefined : idolId,
-    }));
+    setDraftRoles(cur => ({ ...cur, [role]: cur[role] === idolId ? undefined : idolId }));
   };
   const saveRoles = () => {
     const result = updateGroupRoles({ groupId: group.id, roleAssignments: draftRoles });
     if (!result.ok) {
       const messages: Record<typeof result.reason, string> = {
-        GROUP_NOT_FOUND: 'Group not found.',
-        INVALID_ROLE_ASSIGNMENT: 'One or more role assignments are invalid for this group.',
+        GROUP_NOT_FOUND:        'Group not found.',
+        INVALID_ROLE_ASSIGNMENT:'One or more role assignments are invalid for this group.',
       };
       Alert.alert('Cannot update roles', messages[result.reason]);
       return;
@@ -190,194 +149,62 @@ export function GroupProfileScreen() {
     closeRoleModal();
   };
 
+  const backBtn = (
+    <TouchableOpacity style={styles.backBtn} onPress={() => navigation.navigate('Groups')} activeOpacity={0.8}>
+      <ChevronLeft size={14} color={colors.slate900} />
+      <Text style={styles.backText}>Groups</Text>
+    </TouchableOpacity>
+  );
+
   return (
-    <AppShell
-      title={group.name}
-      subtitle="Group Profile"
-      action={
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.navigate('Groups')} activeOpacity={0.8}>
-          <ChevronLeft size={14} color={colors.slate900} />
-          <Text style={styles.backText}>Groups</Text>
-        </TouchableOpacity>
-      }>
+    <AppShell title={group.name} subtitle="Group Profile" action={backBtn}>
 
-      {/* ── HERO ── */}
-      <View style={styles.heroCard}>
-        <Gradient colors={group.gradient} direction="to-br" style={styles.heroBg} />
+      {/* Hero */}
+      <GroupProfileHero group={group} members={members} synergyTier={synergyTier} />
 
-        {/* Identity row: logo + name + synergy badge */}
-        <View style={styles.heroIdentityRow}>
-          <View style={styles.heroLogoWrap}>
-            {group.logo?.kind === 'custom' ? (
-              <Image source={{ uri: group.logo.uri }} resizeMode="cover" style={styles.heroLogoImage} />
-            ) : (
-              <AgencyLogoMark preset={group.logo?.kind === 'preset' ? group.logo.preset : 1} size={64} />
-            )}
-          </View>
+      {/* Tab bar */}
+      <GroupProfileTabBar tab={tab} onChange={setTab} />
 
-          <View style={styles.heroTextCol}>
-            <Text style={styles.heroEyebrow}>GROUP PROFILE</Text>
-            <Text style={styles.heroGroupName} numberOfLines={1}>{group.name}</Text>
-            <View style={styles.heroPillRow}>
-              <View style={styles.heroPill}><Text style={styles.heroPillText}>{group.status}</Text></View>
-              <View style={styles.heroPill}><Text style={styles.heroPillText}>{group.concept}</Text></View>
-            </View>
-            <Text style={styles.heroFandom}>
-              ♡ <Text style={styles.heroFandomVal}>{group.fanName}</Text>
-            </Text>
-          </View>
+      {/* Tab content */}
+      <View style={styles.tabContent}>
 
-          <View style={[styles.synergyBadge, { borderColor: synergyTier.borderColor, backgroundColor: synergyTier.backgroundColor }]}>
-            <Text style={styles.synergySmallLabel}>SYNERGY</Text>
-            <Text style={[styles.synergyBig, { color: synergyTier.textColor }]}>{group.synergy}</Text>
-            <Text style={[styles.synergyTierBadge, { color: synergyTier.textColor }]}>{synergyTier.label}</Text>
-          </View>
-        </View>
-
-        {/* Stat strip */}
-        <View style={styles.heroStatStrip}>
-          <View style={styles.heroStat}>
-            <Text style={styles.heroStatVal}>{fmt(group.monthlyRevenue)}</Text>
-            <Text style={styles.heroStatLabel}>MONTHLY</Text>
-          </View>
-          <View style={styles.heroStatDivider} />
-          <View style={styles.heroStat}>
-            <Text style={styles.heroStatVal}>{group.memberIds.length}</Text>
-            <Text style={styles.heroStatLabel}>MEMBERS</Text>
-          </View>
-          <View style={styles.heroStatDivider} />
-          <View style={styles.heroStat}>
-            <Text style={styles.heroStatVal}>{fmtCount(group.popularity * 3200)}</Text>
-            <Text style={styles.heroStatLabel}>FANS</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* ── MEMBER FILMSTRIP ── */}
-      <View>
-        <View style={styles.sectionRow}>
-          <Text style={styles.sectionLabel}>LINEUP</Text>
-          <View style={styles.lineupActions}>
-            <TouchableOpacity style={styles.roleBtn} onPress={openRoleEditor} activeOpacity={0.8}>
-              <Text style={styles.roleBtnText}>Roles</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.addBtn} onPress={() => setOpenAddModal(true)} activeOpacity={0.8}>
-              <Plus size={11} color={colors.slate900} />
-              <Text style={styles.addBtnText}>Add</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-        {members.length > 0 ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filmScroll}>
-            {members.map(member => (
-              <TouchableOpacity
-                key={member.id}
-                style={styles.filmCell}
-                onPress={() => navigation.navigate('IdolProfile', { id: member.id })}
-                activeOpacity={0.85}>
-                {member.image ? (
-                  <Image source={member.image} resizeMode="cover" style={styles.filmPhoto} />
-                ) : (
-                  <View style={styles.filmFallback}>
-                    <Text style={styles.filmFallbackText}>{member.stageName.slice(0, 2).toUpperCase()}</Text>
-                  </View>
-                )}
-                <View style={styles.filmShade} />
-                <Text style={styles.filmName} numberOfLines={1}>{member.stageName}</Text>
-                <Text style={styles.filmRole} numberOfLines={1}>{member.role}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        ) : (
-          <View style={styles.emptyLineup}>
-            <Text style={styles.emptyText}>No members yet. Add idols to the group.</Text>
-          </View>
+        {tab === 'lineup' && (
+          <GroupLineupTab
+            members={members}
+            alerts={alerts}
+            readinessChecks={readiness.checks}
+            readinessReady={readiness.ready}
+            onMemberPress={id => navigation.navigate('IdolProfile', { id })}
+            onAddMember={() => setOpenAddModal(true)}
+            onManageRoles={openRoleEditor}
+          />
         )}
-      </View>
 
-      {/* ── PERFORMANCE ── radar + bars asymmetric */}
-      <Card>
-        <SectionTitle>PERFORMANCE</SectionTitle>
-        <View style={styles.perfRow}>
-          <RadarChart data={radar} size={170} showValueInLabels />
-        </View>
-      </Card>
-
-      {/* ── TEAM INSIGHTS ── */}
-      <Card>
-        <SectionTitle>TEAM INSIGHTS</SectionTitle>
-        <View style={styles.insightRow}>
-          <Mini label="AVG MORALE" value={`${avgMorale}`} />
-          <Mini label="AVG STAMINA" value={`${avgStamina}`} />
-          <Mini label="HIGH DOM" value={`${highDominanceMembers}`} />
-        </View>
-        {alerts.length > 0 ? (
-          <View style={styles.alertList}>
-            {alerts.map(alert => (
-              <View key={alert} style={styles.alertItem}>
-                <Text style={styles.alertText}>• {alert}</Text>
-              </View>
-            ))}
-          </View>
-        ) : (
-          <Text style={styles.insightHealthy}>No critical team-fit warnings this week.</Text>
+        {tab === 'performance' && (
+          <GroupPerformanceTab
+            radar={radar}
+            avgVocal={avg(members.map(m => m.stats.vocal))}
+            avgDance={avg(members.map(m => m.stats.dance))}
+            avgRap={avg(members.map(m => m.stats.rap))}
+            avgVisual={avg(members.map(m => m.stats.visual))}
+            avgCharisma={avg(members.map(m => m.stats.charisma))}
+            avgMorale={avgMorale}
+            avgStamina={avgStamina}
+          />
         )}
-      </Card>
 
-      {/* ── DEBUT READINESS ── visual badges */}
-      <Card>
-        <SectionTitle>DEBUT READINESS</SectionTitle>
-        <View style={styles.readinessGrid}>
-          {readiness.checks.map(check => (
-            <View key={check.t} style={[styles.readinessItem, check.ok ? styles.readinessOn : styles.readinessOff]}>
-              <View style={[styles.readinessDot, check.ok ? styles.dotOn : styles.dotOff]} />
-              <Text style={[styles.readinessText, check.ok ? styles.readinessTextOn : styles.readinessTextOff]} numberOfLines={2}>
-                {check.t}
-              </Text>
-            </View>
-          ))}
-        </View>
-      </Card>
+        {tab === 'releases' && (
+          <GroupReleasesTab releases={group.releases} />
+        )}
 
-      {/* ── RELEASES HISTORY ── */}
-      {(group.releases?.length ?? 0) > 0 && (
-        <Card>
-          <SectionTitle>DISCOGRAPHY</SectionTitle>
-          <View style={styles.releaseList}>
-            {[...(group.releases ?? [])].reverse().map((rel, idx) => (
-              <View key={rel.id} style={[styles.releaseRow, idx > 0 && styles.releaseRowBorder]}>
-                <View style={styles.releaseLeft}>
-                  <Text style={styles.releaseTitle} numberOfLines={1}>"{rel.title}"</Text>
-                  <Text style={styles.releaseMeta}>{rel.concept} · {rel.language} · Week {rel.weekReleased}</Text>
-                </View>
-                <View style={styles.releaseStats}>
-                  <View style={styles.releaseStat}>
-                    <Text style={styles.releaseStatVal}>#{rel.chartPosition}</Text>
-                    <Text style={styles.releaseStatLabel}>CHART</Text>
-                  </View>
-                  <View style={styles.releaseStat}>
-                    <Text style={[styles.releaseStatVal, { color: colors.mint }]}>+{fmtCount(rel.fansGained)}</Text>
-                    <Text style={styles.releaseStatLabel}>FANS</Text>
-                  </View>
-                  <View style={styles.releaseStat}>
-                    <Text style={[styles.releaseStatVal, { color: colors.tealBright }]}>{fmt(rel.revenueGained)}</Text>
-                    <Text style={styles.releaseStatLabel}>REVENUE</Text>
-                  </View>
-                </View>
-              </View>
-            ))}
-          </View>
-        </Card>
-      )}
+      </View>
 
       {/* ── ADD MEMBERS MODAL ── */}
       <Modal visible={openAddModal} transparent animationType="fade" onRequestClose={closeAddModal}>
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Add to {group.name}</Text>
-            <Text style={styles.modalSub}>
-              Select unassigned idols. Metrics update immediately.
-            </Text>
+            <Text style={styles.modalSub}>Select unassigned idols. Metrics update immediately.</Text>
             <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
               {availableMembers.length === 0 ? (
                 <Text style={styles.emptyText}>No unassigned idols available right now.</Text>
@@ -425,44 +252,59 @@ export function GroupProfileScreen() {
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Edit roles · {group.name}</Text>
-            <Text style={styles.modalSub}>Assign core roles to current members. Tap again to unassign.</Text>
+            <Text style={styles.modalSub}>Tap a cell to assign. Required (*) roles must be filled.</Text>
             <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
-              <View style={styles.roleEditWrap}>
-                {ROLE_OPTIONS.map(role => {
-                  const assignedId = draftRoles[role];
-                  const sortedMembers = [...members].sort(
-                    (a, b) => scoreRoleFit(b, role) - scoreRoleFit(a, role),
-                  );
-                  return (
-                    <View key={role} style={styles.roleEditRow}>
-                      <Text style={styles.roleEditTitle}>{role}</Text>
-                      <View style={styles.roleChipWrap}>
-                        {sortedMembers.map(member => {
+              {members.length === 0 ? (
+                <Text style={styles.emptyText}>Add members to the group first.</Text>
+              ) : (
+                <View style={styles.roleTable}>
+                  {/* Header row: ROLE label + member avatars */}
+                  <View style={styles.roleTableHeader}>
+                    <View style={styles.roleTableRoleCell}>
+                      <Text style={styles.roleTableHeadText}>ROLE</Text>
+                    </View>
+                    {members.map(m => (
+                      <View key={m.id} style={styles.roleTableMemberCell}>
+                        <Avatar name={m.stageName} gradient={m.gradient} image={m.image} size={22} />
+                        <Text style={styles.roleTableMemberName} numberOfLines={1}>{m.stageName}</Text>
+                      </View>
+                    ))}
+                  </View>
+                  {/* One row per role */}
+                  {ROLE_OPTIONS.map(role => {
+                    const isRequired = (['Leader', 'Main Vocal', 'Main Dancer'] as GroupRole[]).includes(role);
+                    const assignedId = draftRoles[role];
+                    return (
+                      <View key={role} style={styles.roleTableRow}>
+                        <View style={styles.roleTableRoleCell}>
+                          <Text style={[styles.roleTableRoleText, isRequired && styles.roleTableRoleRequired]}>
+                            {role}{isRequired ? ' *' : ''}
+                          </Text>
+                        </View>
+                        {members.map(member => {
                           const active = assignedId === member.id;
-                          const fitScore = scoreRoleFit(member, role);
+                          const score = scoreRoleFit(member, role);
                           return (
                             <TouchableOpacity
                               key={`${role}-${member.id}`}
-                              style={[styles.roleChip, active && styles.roleChipActive]}
+                              style={styles.roleTableMemberCell}
                               onPress={() => assignRole(role, member.id)}
                               activeOpacity={0.8}>
-                              <Avatar
-                                name={member.stageName}
-                                gradient={member.gradient}
-                                image={member.image}
-                                size={22}
-                              />
-                              <Text style={[styles.roleChipText, active && styles.roleChipTextActive]}>
-                                {member.stageName} ({fitScore})
-                              </Text>
+                              <View style={[styles.roleCheckBox, active && styles.roleCheckBoxActive]}>
+                                {active && <Text style={styles.roleCheckMark}>✓</Text>}
+                              </View>
+                              <Text style={[styles.roleScoreText, active && styles.roleScoreActive]}>{score}</Text>
                             </TouchableOpacity>
                           );
                         })}
                       </View>
-                    </View>
-                  );
-                })}
-              </View>
+                    );
+                  })}
+                </View>
+              )}
+              <Text style={styles.roleHelper}>
+                Required (*): Leader, Main Vocal, Main Dancer. Score = fit for that role (higher is better).
+              </Text>
             </ScrollView>
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.cancelBtn} onPress={closeRoleModal} activeOpacity={0.8}>
@@ -475,22 +317,15 @@ export function GroupProfileScreen() {
           </View>
         </View>
       </Modal>
-    </AppShell>
-  );
-}
 
-function Mini({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.kpiItem}>
-      <Text style={styles.kpiLabel}>{label}</Text>
-      <Text style={styles.kpiValue}>{value}</Text>
-    </View>
+    </AppShell>
   );
 }
 
 const styles = StyleSheet.create({
   flex1: { flex: 1, minWidth: 0 },
   subMuted: { fontSize: 11, color: colors.mutedForeground },
+  emptyText: { color: colors.mutedForeground, textAlign: 'center', fontSize: 12 },
 
   backBtn: {
     flexDirection: 'row',
@@ -503,205 +338,9 @@ const styles = StyleSheet.create({
   },
   backText: { fontSize: 11, fontWeight: '700', color: colors.slate900 },
 
-  sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
-  sectionLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 1.5, color: colors.mutedForeground },
-  lineupActions: { flexDirection: 'row', gap: spacing.xs },
-  roleBtn: {
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.whiteA05,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 5,
-  },
-  roleBtnText: { fontSize: 10, fontWeight: '700', color: colors.foreground },
+  tabContent: { marginTop: spacing.sm },
 
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    borderRadius: radius.lg,
-    backgroundColor: colors.teal,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 5,
-  },
-  addBtnText: { fontSize: 10, fontWeight: '700', color: colors.slate900 },
-
-  // ── Hero ──
-  heroCard: {
-    borderRadius: radius['2xl'],
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(103,232,249,0.2)',
-  },
-  heroBg: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    opacity: 0.2,
-  },
-  heroIdentityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  heroLogoWrap: {
-    borderRadius: radius.xl,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-  },
-  heroLogoImage: { width: 64, height: 64 },
-  heroTextCol: { flex: 1, gap: 4 },
-  heroEyebrow: {
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 2,
-    color: 'rgba(255,255,255,0.45)',
-  },
-  heroGroupName: { fontSize: 22, fontWeight: '900', color: colors.foreground, letterSpacing: -0.5 },
-  heroPillRow: { flexDirection: 'row', gap: 5, flexWrap: 'wrap' },
-  heroPill: {
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  heroPillText: { fontSize: 9, fontWeight: '700', color: 'rgba(255,255,255,0.7)', letterSpacing: 0.5 },
-  heroFandom: { fontSize: 10, color: colors.mutedForeground, marginTop: 1 },
-  heroFandomVal: { fontWeight: '700', color: colors.violetBright },
-  synergyBadge: {
-    alignItems: 'center',
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.sm,
-    minWidth: 58,
-    gap: 1,
-  },
-  synergySmallLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2, color: colors.mutedForeground },
-  synergyBig: { fontSize: 28, fontWeight: '900', lineHeight: 32 },
-  synergyTierBadge: { fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
-
-  heroStatStrip: {
-    flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)',
-    marginHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  heroStat: { flex: 1, alignItems: 'center', gap: 2 },
-  heroStatVal: { fontSize: 14, fontWeight: '900', color: colors.foreground },
-  heroStatLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 1.2, color: colors.mutedForeground },
-  heroStatDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.08)', marginVertical: 2 },
-
-  // ── Filmstrip ──
-  filmScroll: { flexDirection: 'row', gap: spacing.sm, paddingBottom: 2 },
-  filmCell: {
-    width: 82,
-    height: 120,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: '#080B12',
-    justifyContent: 'flex-end',
-  },
-  filmPhoto: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
-  filmFallback: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.tealActiveBg },
-  filmFallbackText: { fontSize: 20, fontWeight: '900', color: 'rgba(103,232,249,0.3)', letterSpacing: 2 },
-  filmShade: {
-    position: 'absolute',
-    bottom: 0, left: 0, right: 0,
-    height: 38,
-    backgroundColor: 'rgba(0,0,0,0.65)',
-  },
-  filmName: {
-    paddingHorizontal: 4,
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 0.4,
-    color: colors.foreground,
-    textAlign: 'center',
-    marginBottom: 2,
-  },
-  filmRole: {
-    paddingHorizontal: 4,
-    paddingBottom: 5,
-    fontSize: 10,    color: 'rgba(255,255,255,0.55)',
-    textAlign: 'center',
-  },
-
-  emptyLineup: { paddingVertical: spacing.xl, alignItems: 'center' },
-  emptyText: { color: colors.mutedForeground, textAlign: 'center', fontSize: 12 },
-
-  // ── Performance ──
-  perfRow: { alignItems: 'center' },
-
-  // ── Insights ──
-  insightRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
-  alertList: { marginTop: spacing.sm, gap: 6 },
-  alertItem: {
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: 'rgba(251,113,133,0.35)',
-    backgroundColor: 'rgba(251,113,133,0.08)',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 8,
-  },
-  alertText: { fontSize: 11, color: 'rgba(255,255,255,0.85)' },
-  insightHealthy: { marginTop: spacing.sm, fontSize: 11, color: colors.mint },
-  
-  // ── Readiness ──
-  readinessGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.sm },
-  readinessItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 7,
-    flex: 1,
-    minWidth: '46%',
-    maxWidth: '50%',
-  },
-  readinessOn: { borderColor: 'rgba(52,211,153,0.45)', backgroundColor: 'rgba(52,211,153,0.07)' },
-  readinessOff: { borderColor: 'rgba(255,255,255,0.07)', backgroundColor: colors.whiteA04 },
-  readinessDot: { width: 7, height: 7, borderRadius: radius.full, flexShrink: 0 },
-  dotOn: { backgroundColor: colors.mint },
-  dotOff: { backgroundColor: 'rgba(255,255,255,0.2)' },
-  readinessText: { fontSize: 10, fontWeight: '600', flexShrink: 1 },
-  readinessTextOn: { color: colors.foreground },
-  readinessTextOff: { color: colors.mutedForeground },
-
-  // ── Discography ──
-  releaseList: { gap: 0 },
-  releaseRow: { paddingVertical: spacing.md, gap: spacing.sm },
-  releaseRowBorder: { borderTopWidth: 1, borderTopColor: colors.border },
-  releaseLeft: { gap: 3 },
-  releaseTitle: { fontSize: 15, fontWeight: '800', color: colors.foreground },
-  releaseMeta: { fontSize: 10, color: colors.mutedForeground },
-  releaseStats: { flexDirection: 'row', gap: spacing.md },
-  releaseStat: { alignItems: 'center', gap: 2, minWidth: 52 },
-  releaseStatVal: { fontSize: 13, fontWeight: '900', color: colors.foreground },
-  releaseStatLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 1.2, color: colors.mutedForeground },
-
-  // ── KPI (kept for Mini component) ──
-  kpiItem: {
-    flex: 1,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.whiteA05,
-    padding: spacing.sm,
-  },
-  kpiLabel: { fontSize: 10, color: colors.mutedForeground },
-  kpiValue: { marginTop: 2, fontSize: 12, fontWeight: '700', color: colors.foreground },
-
-  // ── Modal ──
+  // Modal
   memberPickWrap: { gap: spacing.sm, marginTop: spacing.sm },
   memberPick: {
     flexDirection: 'row',
@@ -717,29 +356,73 @@ const styles = StyleSheet.create({
     borderColor: colors.tealActiveBorder,
     backgroundColor: colors.tealActiveBg,
   },
-  roleEditWrap: { gap: spacing.md, marginTop: spacing.sm },
-  roleEditRow: { gap: 6 },
-  roleEditTitle: { fontSize: 11, fontWeight: '800', color: colors.foreground, letterSpacing: 0.4 },
-  roleChipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  roleChip: {
+  memberName: { fontSize: 12, fontWeight: '700', color: colors.foreground },
+  roleTable: {
+    marginTop: spacing.sm,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  roleTableHeader: {
     flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  roleTableRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.04)',
+  },
+  roleTableRoleCell: {
+    width: 96,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    justifyContent: 'center',
+  },
+  roleTableMemberCell: {
+    flex: 1,
     alignItems: 'center',
-    gap: 6,
-    borderRadius: radius.full,
+    paddingVertical: spacing.sm,
+    gap: 3,
+  },
+  roleTableHeadText: {
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 1,
+    color: colors.mutedForeground,
+  },
+  roleTableMemberName: {
+    fontSize: 7,
+    fontWeight: '700',
+    color: colors.mutedForeground,
+    textAlign: 'center',
+  },
+  roleTableRoleText: { fontSize: 10, fontWeight: '600', color: colors.foreground },
+  roleTableRoleRequired: { color: colors.tealBright },
+  roleCheckBox: {
+    width: 20,
+    height: 20,
+    borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.whiteA05,
-    paddingHorizontal: 5,
-    paddingVertical: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  roleChipActive: {
-    borderColor: colors.tealActiveBorder,
-    backgroundColor: colors.tealActiveBg,
+  roleCheckBoxActive: { borderColor: colors.tealActiveBorder, backgroundColor: colors.tealActiveBg },
+  roleCheckMark: { fontSize: 11, fontWeight: '900', color: colors.tealBright },
+  roleScoreText: { fontSize: 9, fontWeight: '600', color: colors.mutedForeground },
+  roleScoreActive: { color: colors.tealBright },
+  roleHelper: { marginTop: spacing.sm, fontSize: 11, lineHeight: 16, color: colors.mutedForeground },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
   },
-  roleChipText: { fontSize: 10, color: colors.foreground },
-  roleChipTextActive: { color: colors.tealBright, fontWeight: '700' },
-  memberName: { fontSize: 12, fontWeight: '700', color: colors.foreground },
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
   modalCard: {
     width: '100%',
     maxWidth: 440,
@@ -751,7 +434,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   modalTitle: { fontSize: 18, fontWeight: '900', color: colors.tealBright },
-  modalSub: { fontSize: 11, color: colors.mutedForeground, marginTop: 4 },
+  modalSub:   { fontSize: 11, color: colors.mutedForeground, marginTop: 4 },
   modalScroll: { marginTop: spacing.md },
   modalActions: { marginTop: spacing.lg, flexDirection: 'row', gap: spacing.sm },
   cancelBtn: {

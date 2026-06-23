@@ -4,7 +4,7 @@ import { CalendarDays, Lock, Megaphone, Sparkles } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card, SectionTitle } from '../components/AppShell';
-import { formatCompactCount } from '../features/economy';
+import { fmtCount } from '../utils/format';
 import {
   selectDynamicSchedule,
   selectPromotionOptions,
@@ -324,7 +324,7 @@ export function ScheduleScreen() {
               <View style={styles.statGrid}>
                 <Stat k="Cost" v={fmt(p.cost)} />
                 <Stat k="Energy" v={`-${p.energyCost}`} c={colors.hotSoft} />
-                <Stat k="Fans" v={`+${formatCompactCount(p.fansGain)}`} c={colors.mint} />
+                <Stat k="Fans" v={`+${fmtCount(p.fansGain)}`} c={colors.mint} />
                 <Stat k="Reputation" v={`+${p.reputationGain}`} c={colors.tealBright} />
                 <Stat k="Fatigue" v={`+${p.fatigueGain}`} c={colors.hotSoft} />
                 <Stat k="Duration" v={toDurationLabel(p.durationHours)} />
@@ -391,7 +391,7 @@ export function ScheduleScreen() {
             <Text style={styles.modalTitle}>Promotion Complete</Text>
             <Text style={styles.promoResultTitle}>{promotionResult?.groupName} · {promotionResult?.name}</Text>
             <View style={styles.modalStats}>
-              <Stat k="Fans" v={`+${formatCompactCount(promotionResult?.fans ?? 0)}`} c={colors.mint} />
+              <Stat k="Fans" v={`+${fmtCount(promotionResult?.fans ?? 0)}`} c={colors.mint} />
               <Stat k="Revenue" v={fmt(promotionResult?.revenue ?? 0)} c={colors.tealBright} />
               <Stat k="Net" v={fmt(promotionResult?.net ?? 0)} c={colors.violetBright} />
               <Stat k="Reputation" v={`+${promotionResult?.reputation ?? 0}`} c={colors.mint} />

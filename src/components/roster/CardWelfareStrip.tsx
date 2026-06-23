@@ -22,9 +22,9 @@ export function CardWelfareStrip({ health, morale, energy }: Props) {
   return (
     <View style={styles.strip}>
       <StatCell label="HEALTH" value={health} color={healthColor} />
-      <View style={styles.divider} />
+      {/* <View style={styles.divider} /> */}
       <StatCell label="MORALE" value={morale} color={moraleColor} />
-      <View style={styles.divider} />
+      {/* <View style={styles.divider} /> */}
       <StatCell label="ENERGY" value={energy} color={energyColor} />
     </View>
   );
