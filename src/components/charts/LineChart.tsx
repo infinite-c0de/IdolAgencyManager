@@ -1,6 +1,6 @@
 import React from 'react';
 import Svg, { Line as SvgLine, Polyline, Text as SvgText } from 'react-native-svg';
-import { colors } from '../../theme';
+import { colors, statColors } from '../../theme';
 
 export type LineSeries = {
   key: string;
@@ -42,8 +42,8 @@ export function LineChart({ data, xKey, series, width, height = 180 }: Props) {
           key={i}
           x={padLeft - 4}
           y={y(t) + 3}
-          fill="rgba(255,255,255,0.4)"
-          fontSize={9}
+          fill={colors.mutedForeground}
+          fontSize={10}
           textAnchor="end">
           {Math.round(t)}
         </SvgText>
@@ -56,7 +56,7 @@ export function LineChart({ data, xKey, series, width, height = 180 }: Props) {
           y1={y(t)}
           x2={width - padRight}
           y2={y(t)}
-          stroke="rgba(255,255,255,0.06)"
+          stroke={colors.whiteA05}
           strokeWidth={1}
         />
       ))}
@@ -76,8 +76,8 @@ export function LineChart({ data, xKey, series, width, height = 180 }: Props) {
           key={`x${i}`}
           x={x(i)}
           y={height - 6}
-          fill="rgba(255,255,255,0.5)"
-          fontSize={9}
+          fill={colors.mutedForeground}
+          fontSize={10}
           textAnchor="middle">
           {String(d[xKey])}
         </SvgText>
@@ -88,6 +88,6 @@ export function LineChart({ data, xKey, series, width, height = 180 }: Props) {
 
 export const lineColors = {
   group: colors.teal,
-  solo: '#818CF8',
+  solo: statColors.stamina,
   merch: colors.violet,
 };

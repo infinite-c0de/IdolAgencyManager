@@ -357,9 +357,11 @@ export const trainingTypes = [
   { id: 'vocal', name: 'Vocal Coaching', effect: '+Vocal', cost: '−Energy' },
   { id: 'dance', name: 'Dance Practice', effect: '+Dance', cost: '−Energy' },
   { id: 'rap', name: 'Rap Training', effect: '+Rap', cost: '−Energy' },
+  { id: 'visual', name: 'Visual Styling', effect: '+Visual', cost: '−Energy' },
   { id: 'acting', name: 'Acting Class', effect: '+Acting', cost: '−Energy' },
-  { id: 'lang', name: 'Language Lab', effect: '+Language', cost: '−Energy' },
+  { id: 'lang', name: 'Language Lab', effect: '+Charisma', cost: '−Energy' },
   { id: 'media', name: 'Media Training', effect: '+Variety', cost: '−Energy' },
+  { id: 'stamina', name: 'Conditioning', effect: '+Stamina', cost: '−Energy' },
   { id: 'rest', name: 'Rest Day', effect: '+Morale', cost: '+Energy' },
 ];
 

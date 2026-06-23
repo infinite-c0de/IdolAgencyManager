@@ -13,7 +13,7 @@ import { AppShell } from '../components/AppShell';
 import { Gradient } from '../components/ui/Gradient';
 import { BASE_REFRESH_COST, traineeArtPool } from '../data/gameData';
 import { useGame } from '../state/GameContext';
-import { colors, radius, spacing } from '../theme';
+import { colors, radius, spacing, statColors } from '../theme';
 import { fmt, fmtCount } from '../utils/format';
 
 // All nationalities that can ever appear — derived from static art constraints once.
@@ -40,19 +40,19 @@ const FILTER_COST: Record<string, number> = {
 };
 
 const SKILL_COLOR: Record<string, string> = {
-  Vocal: '#E879F9',
-  Dance: '#67E8F9',
-  Rap: '#FCD34D',
-  Visual: '#FB7185',
-  Charisma: '#34D399',
+  Vocal:    statColors.vocal,
+  Dance:    statColors.dance,
+  Rap:      statColors.rap,
+  Visual:   statColors.visual,
+  Charisma: statColors.charisma,
 };
 
 const ARCHETYPE_COLOR: Record<string, string> = {
-  Center: '#FB7185',
-  Performer: '#67E8F9',
-  Strategist: '#FCD34D',
-  Anchor: '#34D399',
-  Mediator: '#E879F9',
+  Center:        statColors.visual,
+  Performer:     statColors.dance,
+  Strategist:    statColors.rap,
+  Anchor:        statColors.charisma,
+  Mediator:      statColors.vocal,
   'All-Rounder': '#9AA3B5',
 };
 
@@ -221,7 +221,7 @@ export function RecruitScreen() {
                 <TouchableOpacity
                   key={n}
                   onPress={() => setNationalityFilter(n)}
-                  style={[styles.filterChip, active && { borderColor: 'rgba(103,232,249,0.6)', backgroundColor: 'rgba(34,211,238,0.1)' }, !hasMatches && styles.filterChipEmpty]}
+                  style={[styles.filterChip, active && { borderColor: colors.tealActiveBorder, backgroundColor: colors.tealActiveBg }, !hasMatches && styles.filterChipEmpty]}
                   activeOpacity={0.7}>
                   <Text style={[styles.filterText, active && { color: colors.tealBright, fontWeight: '700' }, !hasMatches && styles.filterTextEmpty]}>{n}</Text>
                   {n !== 'All' && <Text style={[styles.filterCount, active && { color: colors.tealBright }]}>{count}</Text>}
@@ -342,7 +342,7 @@ export function RecruitScreen() {
                 <Sparkles size={14} color={colors.slate900} />
                 <Text style={styles.successBadgeText}>SIGNED</Text>
               </View>
-              <Text style={styles.successName}>{confirm?.stageName ?? confirm?.name}</Text>
+              <Text style={styles.successName}>{confirm?.name}</Text>
               <Text style={styles.successSub}>
                 {confirm?.nationality} · {confirm?.skill} · Age {confirm?.age}
               </Text>
@@ -721,7 +721,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(34,211,238,0.06)',
+    backgroundColor: colors.tealActiveBg,
   },
   artFallbackText: {
     fontSize: 32,
@@ -1038,8 +1038,8 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: 'rgba(103,232,249,0.5)',
-    backgroundColor: 'rgba(34,211,238,0.07)',
+    borderColor: colors.tealActiveBorder,
+    backgroundColor: colors.tealActiveBg,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
   },

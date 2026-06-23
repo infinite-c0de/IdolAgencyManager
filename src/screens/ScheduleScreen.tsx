@@ -23,7 +23,7 @@ const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const eventColor = {
   teal: colors.tealBright,
   violet: colors.violetBright,
-  hot: '#FDA4AF',
+  hot: colors.hotSoft,
   mint: colors.mint,
 };
 
@@ -114,6 +114,9 @@ export function ScheduleScreen() {
     if (!selectedGroup) {
       return 'Select a group to schedule this promotion.';
     }
+    if (agency.energy < promotion.energyCost) {
+      return `Not enough agency energy (${promotion.energyCost} needed). Advance a week to refresh.`;
+    }
     const groupTag = `(${selectedGroup.name})`;
     const sameWeekPromotion = transactions.some(transaction => {
       if (transaction.type !== 'expense') return false;
@@ -181,6 +184,8 @@ export function ScheduleScreen() {
     if (!result.ok) {
       if (result.reason === 'INSUFFICIENT_FUNDS') {
         setError('Not enough funds for this promotion.');
+      } else if (result.reason === 'INSUFFICIENT_ENERGY') {
+        setError('Not enough agency energy. Advance a week to refresh.');
       } else if (result.reason === 'PROMOTION_LOCKED') {
         setError('This promotion is still locked. Debut requirements are not met yet.');
       } else if (result.reason === 'GROUP_NOT_FOUND') {
@@ -318,9 +323,10 @@ export function ScheduleScreen() {
               <Text style={styles.tinyMuted}>Target · {selectedGroup?.name ?? p.target}</Text>
               <View style={styles.statGrid}>
                 <Stat k="Cost" v={fmt(p.cost)} />
+                <Stat k="Energy" v={`-${p.energyCost}`} c={colors.hotSoft} />
                 <Stat k="Fans" v={`+${formatCompactCount(p.fansGain)}`} c={colors.mint} />
                 <Stat k="Reputation" v={`+${p.reputationGain}`} c={colors.tealBright} />
-                <Stat k="Fatigue" v={`+${p.fatigueGain}`} c="#FDA4AF" />
+                <Stat k="Fatigue" v={`+${p.fatigueGain}`} c={colors.hotSoft} />
                 <Stat k="Duration" v={toDurationLabel(p.durationHours)} />
                 <Stat k="Est. Revenue" v={fmt(p.expectedRevenue)} c={colors.violetBright} />
                 <Stat k="Efficiency" v={`${p.efficiencyScore}`} />
@@ -431,7 +437,7 @@ const styles = StyleSheet.create({
   dayHead: { fontSize: 9, fontWeight: '700', textTransform: 'uppercase', color: colors.mutedForeground },
   dayCell: { height: 80, width: '100%', borderRadius: radius.md, borderWidth: 1, padding: 4 },
   cellIdle: { borderColor: colors.border, backgroundColor: colors.whiteA05 },
-  cellTeal: { borderColor: 'rgba(34,211,238,0.6)', backgroundColor: 'rgba(34,211,238,0.1)' },
+  cellTeal: { borderColor: colors.tealActiveBorder, backgroundColor: colors.tealActiveBg },
   cellViolet: { borderColor: 'rgba(217,70,239,0.6)', backgroundColor: 'rgba(217,70,239,0.1)' },
   eventText: { fontSize: 9, fontWeight: '700' },
   overflowText: { fontSize: 8, fontWeight: '600', color: colors.mutedForeground, marginTop: 2 },
@@ -455,7 +461,7 @@ const styles = StyleSheet.create({
   selectRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6, marginBottom: spacing.sm },
   selectChip: { borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 6, borderWidth: 1 },
   selectChipIdle: { borderColor: colors.border, backgroundColor: colors.whiteA05 },
-  selectChipActive: { borderColor: 'rgba(34,211,238,0.6)', backgroundColor: 'rgba(34,211,238,0.1)' },
+  selectChipActive: { borderColor: colors.tealActiveBorder, backgroundColor: colors.tealActiveBg },
   selectChipText: { fontSize: 11, fontWeight: '600', color: colors.mutedForeground },
   selectChipTextActive: { color: colors.tealBright },
   lockText: { marginTop: spacing.sm, fontSize: 10, color: colors.mutedForeground },

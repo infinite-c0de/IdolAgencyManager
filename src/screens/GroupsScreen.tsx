@@ -717,7 +717,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  roleCheckBoxActive: { borderColor: 'rgba(34,211,238,0.7)', backgroundColor: 'rgba(34,211,238,0.15)' },
+  roleCheckBoxActive: { borderColor: colors.tealActiveBorder, backgroundColor: colors.tealActiveBg },
   roleCheckMark: { fontSize: 11, fontWeight: '900', color: colors.tealBright },
   roleScoreText: { fontSize: 9, fontWeight: '600', color: colors.mutedForeground },
   roleScoreActive: { color: colors.tealBright },
@@ -766,7 +766,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   memberChipText: { fontSize: 11, color: colors.foreground },
-  selectedChip: { borderColor: 'rgba(103,232,249,0.7)', backgroundColor: 'rgba(34,211,238,0.16)' },
+  selectedChip: { borderColor: colors.tealActiveBorder, backgroundColor: colors.tealActiveBg },
   selectedChipText: { color: colors.tealBright, fontWeight: '700' },
   roleChip: {
     borderRadius: radius.full,
@@ -858,7 +858,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   ceremonyMemberPhoto: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
-  ceremonyMemberFallback: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(34,211,238,0.06)' },
+  ceremonyMemberFallback: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.tealActiveBg },
   ceremonyMemberInitials: { fontSize: 14, fontWeight: '900', color: 'rgba(103,232,249,0.4)', letterSpacing: 2 },
   ceremonyMemberShade: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 36, backgroundColor: 'rgba(0,0,0,0.6)' },
   ceremonyMemberName: {

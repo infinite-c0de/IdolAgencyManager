@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
-import { colors, radius } from '../../theme';
+import { colors, radius, spacing } from '../../theme';
 
 type MetricCardProps = {
   label: string;
@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.whiteA05,
-    padding: 10,
+    padding: spacing.sm,
   },
   label: { fontSize: 10, color: colors.mutedForeground },
   value: { fontSize: 14, fontWeight: '700', color: colors.foreground },

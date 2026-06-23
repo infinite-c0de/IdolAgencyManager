@@ -33,7 +33,7 @@ import {
 } from '../features/simulation';
 import type { Agency, Group, Idol, Trainee } from '../types';
 import { useAgencyActions } from './useAgencyActions';
-import { cloneInitialTrainees } from './gameStateHelpers';
+import { cloneInitialTrainees, rotateScoutingPool } from './gameStateHelpers';
 import { useGroupActions } from './useGroupActions';
 import { useSaveLifecycle } from './useSaveLifecycle';
 
@@ -156,6 +156,10 @@ export function useGameState(): GameState {
 
   const advanceWeek = () => {
     const city = getCityByName(cities, agency.city);
+    // Single economy model: gross income (last month's income / 4), tax and
+    // operations come from economy/service; training cost comes from the
+    // progression tick. The ledger below logs exactly these amounts so the
+    // wallet and Finance history always reconcile.
     const economy = applyWeeklyEconomyTick(agency, city, defaultEconomyModifiers, []);
     const progression = calculateWeeklyProgression({
       agency,
@@ -166,36 +170,43 @@ export function useGameState(): GameState {
       currentWeek,
     });
 
+    const { grossWeekly, taxWeekly, operationsWeekly } = economy.weekly;
+
     setAgency(() => ({
       ...economy.agency,
+      money: economy.agency.money - progression.trainingCostAmount,
       monthlyIncome: progression.nextMonthlyIncome,
       reputation: progression.nextReputation,
       ranking: progression.nextRanking,
-      money: economy.agency.money - progression.trainingCostAmount,
+      level: progression.nextLevel,
+      // Action energy regenerates each week so promotions are rate-limited.
+      energy: agency.energyMax,
     }));
 
     setIdols(progression.nextIdols);
     setGroups(progression.nextGroups);
+    setTrainees(current => rotateScoutingPool(current));
+    setScoutingLastGrowthAt(new Date().toISOString());
 
-    const expenseAmount = Math.round(economy.weekly.taxWeekly + economy.weekly.operationsWeekly);
     setTransactions(current => {
       const baseId = current[current.length - 1]?.id ?? 0;
       const dateLabel = `Week ${currentWeek + 1}`;
-      const weeklyIncome: FinanceTransaction = {
-        id: baseId + 1,
-        label: 'Weekly Income',
-        type: 'income',
-        amount: progression.weeklyIncomeAmount,
-        date: dateLabel,
-      };
-      const weeklyOperations: FinanceTransaction = {
-        id: baseId + 2,
-        label: 'Weekly Operations',
-        type: 'expense',
-        amount: -Math.max(expenseAmount, progression.weeklyExpenseAmount),
-        date: dateLabel,
-      };
-      const entries: FinanceTransaction[] = [weeklyIncome, weeklyOperations];
+      const entries: FinanceTransaction[] = [
+        {
+          id: baseId + 1,
+          label: 'Weekly Income',
+          type: 'income',
+          amount: grossWeekly,
+          date: dateLabel,
+        },
+        {
+          id: baseId + 2,
+          label: 'Weekly Operations',
+          type: 'expense',
+          amount: -(taxWeekly + operationsWeekly),
+          date: dateLabel,
+        },
+      ];
       if (progression.trainingCostAmount > 0) {
         entries.push({
           id: baseId + 3,
@@ -229,6 +240,7 @@ export function useGameState(): GameState {
       ...current,
       money: current.money + result.moneyDelta,
       reputation: Math.min(100, current.reputation + result.reputationDelta),
+      gems: current.gems + result.gemsDelta,
     }));
     setTransactions(current => {
       const baseId = current[current.length - 1]?.id ?? 0;
@@ -281,6 +293,7 @@ export function useGameState(): GameState {
       ...current,
       money: current.money + result.netDelta,
       reputation: Math.min(100, current.reputation + result.reputationGained),
+      energy: Math.max(0, current.energy - result.energySpent),
     }));
     setTransactions(current => {
       const baseId = current[current.length - 1]?.id ?? 0;

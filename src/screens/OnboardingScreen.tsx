@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
   cityGrid: { marginTop: spacing.md, gap: spacing.sm },
   cityCard: { borderRadius: radius['2xl'], borderWidth: 1, padding: spacing.md },
   cityIdle: { borderColor: colors.border, backgroundColor: colors.whiteA05 },
-  cityActive: { borderColor: 'rgba(34,211,238,0.6)', backgroundColor: 'rgba(34,211,238,0.06)' },
+  cityActive: { borderColor: colors.tealActiveBorder, backgroundColor: colors.tealActiveBg },
   cityNameRow: { flexDirection: 'row', alignItems: 'center', flex: 1, minWidth: 0, gap: 6 },
   cityFlag: { fontSize: 18 },
   cityName: { fontSize: 18, fontWeight: '700', color: colors.foreground, flexShrink: 1 },
@@ -308,8 +308,8 @@ const styles = StyleSheet.create({
   },
   logoPresetIdle: { borderColor: colors.border, backgroundColor: colors.whiteA05 },
   logoPresetActive: {
-    borderColor: 'rgba(34,211,238,0.6)',
-    backgroundColor: 'rgba(34,211,238,0.06)',
+    borderColor: colors.tealActiveBorder,
+    backgroundColor: colors.tealActiveBg,
   },
   importLogoButton: {
     borderRadius: radius.lg,

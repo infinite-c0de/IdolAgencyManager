@@ -21,7 +21,7 @@ const COST_COLORS: Record<string, string> = {
   Promotion: colors.violetBright,
   Recruitment: colors.mint,
   Release: colors.amber,
-  Operations: '#FDA4AF',
+  Operations: colors.hotSoft,
   Other: colors.mutedForeground,
 };
 
@@ -97,7 +97,7 @@ export function FinanceScreen() {
           <MetricCard
             label="Expenses"
             value={fmt(expense)}
-            valueColor="#FDA4AF"
+            valueColor={colors.hotSoft}
             containerStyle={styles.kpiCard}
           />
           <MetricCard
@@ -154,7 +154,7 @@ export function FinanceScreen() {
                   {t.type === 'income' ? (
                     <ArrowUpRight size={16} color={colors.mint} />
                   ) : (
-                    <ArrowDownRight size={16} color="#FDA4AF" />
+                    <ArrowDownRight size={16} color={colors.hotSoft} />
                   )}
                 </View>
                 <View style={styles.flex1}>
@@ -163,7 +163,7 @@ export function FinanceScreen() {
                   </Text>
                   <Text style={styles.tinyMuted}>{t.date}</Text>
                 </View>
-                <Text style={[styles.txnAmount, { color: t.amount > 0 ? colors.mint : '#FDA4AF' }]}>
+                <Text style={[styles.txnAmount, { color: t.amount > 0 ? colors.mint : colors.hotSoft }]}>
                   {t.amount > 0 ? '+' : ''}
                   {fmt(t.amount)}
                 </Text>

@@ -156,7 +156,7 @@ export function useAgencyActions({
 
     return {
       ok: true,
-      cost: BASE_REFRESH_COST,
+      cost,
       visibleCount: refreshedVisibleCount,
       filterMatches: refreshedFilterMatches,
     };

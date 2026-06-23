@@ -18,6 +18,7 @@ export type PromotionOption = {
   id: string;
   name: string;
   cost: number;
+  energyCost: number;
   fansGain: number;
   reputationGain: number;
   fatigueGain: number;
@@ -59,9 +60,18 @@ export type RunPromotionResult =
       fansGained: number;
       reputationGained: number;
       fatigueApplied: number;
+      energySpent: number;
       performanceFactor: number;
     }
-  | { ok: false; reason: 'GROUP_NOT_FOUND' | 'PROMOTION_NOT_FOUND' | 'PROMOTION_LOCKED' | 'INSUFFICIENT_FUNDS' };
+  | {
+      ok: false;
+      reason:
+        | 'GROUP_NOT_FOUND'
+        | 'PROMOTION_NOT_FOUND'
+        | 'PROMOTION_LOCKED'
+        | 'INSUFFICIENT_FUNDS'
+        | 'INSUFFICIENT_ENERGY';
+    };
 
 export type MarketPulse = {
   region: string;
@@ -301,9 +311,10 @@ export function selectPromotionOptions(
   const lockedReason = unlocked ? undefined : 'Create a group before scheduling group promotions.';
 
   return PROMOTION_TEMPLATES.map(template => {
-    const cost = Math.round(
-      template.baseCost * cityCostFactor * repFactor * (1 + popularity / 260),
-    );
+    // Cost scales with the local market and group size only. Reputation makes
+    // promotions more *effective* (below), not more expensive.
+    const cost = Math.round(template.baseCost * cityCostFactor * (1 + popularity / 260));
+    const energyCost = Math.max(5, Math.round(template.intensity * 12));
     const fansGain = Math.max(
       1000,
       Math.round(
@@ -312,7 +323,8 @@ export function selectPromotionOptions(
           synergy * template.synergyWeight * 80 +
           memberCount * template.memberWeight * 900) *
           streamingBoost *
-          competitionPenalty,
+          competitionPenalty *
+          repFactor,
       ),
     );
     const reputationGain = Math.max(
@@ -344,6 +356,7 @@ export function selectPromotionOptions(
       id: template.id,
       name: template.name,
       cost,
+      energyCost,
       fansGain,
       reputationGain,
       fatigueGain,
@@ -380,6 +393,9 @@ export function runPromotionAction(
   }
   if (option.lockedReason) {
     return { ok: false, reason: 'PROMOTION_LOCKED' };
+  }
+  if (agency.energy < option.energyCost) {
+    return { ok: false, reason: 'INSUFFICIENT_ENERGY' };
   }
   if (agency.money < option.cost) {
     return { ok: false, reason: 'INSUFFICIENT_FUNDS' };
@@ -440,6 +456,7 @@ export function runPromotionAction(
     fansGained,
     reputationGained,
     fatigueApplied: option.fatigueGain,
+    energySpent: option.energyCost,
     performanceFactor,
   };
 }

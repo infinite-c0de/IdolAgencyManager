@@ -67,6 +67,30 @@ export function createInitialTrainingPlans() {
   return { SOLO_DEFAULT: {} as Record<string, string> };
 }
 
+/**
+ * Rotates which scouting candidates are visible, favouring the least-recently
+ * shown trainees. Called each week so the finite pool refreshes over time
+ * (the "scoutingLastGrowthAt" cadence) without spending money.
+ */
+export function rotateScoutingPool(trainees: Trainee[], count = 10): Trainee[] {
+  if (trainees.length === 0) {
+    return trainees;
+  }
+  const target = Math.min(count, trainees.length);
+  const ranked = trainees
+    .map((trainee, index) => ({ trainee, index }))
+    .sort((a, b) => {
+      const diff = (a.trainee.shownCount ?? 0) - (b.trainee.shownCount ?? 0);
+      return diff !== 0 ? diff : Math.random() - 0.5;
+    });
+  const selected = new Set(ranked.slice(0, target).map(item => item.index));
+  return trainees.map((trainee, index) =>
+    selected.has(index)
+      ? { ...trainee, isScoutingVisible: true, shownCount: (trainee.shownCount ?? 0) + 1 }
+      : { ...trainee, isScoutingVisible: false },
+  );
+}
+
 export function cloneInitialTrainees(): Trainee[] {
   return generateScoutingPoolFromArtPool(traineeArtPool).map(trainee => ({
     ...trainee,

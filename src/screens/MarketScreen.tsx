@@ -12,7 +12,7 @@ import { colors, radius, spacing } from '../theme';
 
 const toneColor: Record<string, string> = {
   mint: colors.mint,
-  hot: '#FDA4AF',
+  hot: colors.hotSoft,
   violet: colors.violetBright,
   teal: colors.tealBright,
 };
@@ -38,7 +38,7 @@ export function MarketScreen() {
         <Text style={styles.desc}>{homeCity.desc}</Text>
         <MetricGrid style={styles.modRow}>
           <MetricCard label="Fan Growth" value={`x${homeCity.fan}`} valueColor={colors.mint} />
-          <MetricCard label="Costs" value={`x${homeCity.cost}`} valueColor="#FDA4AF" />
+          <MetricCard label="Costs" value={`x${homeCity.cost}`} valueColor={colors.hotSoft} />
           <MetricCard label="Revenue" value={`x${homeCity.revenue}`} valueColor={colors.tealBright} />
           <MetricCard label="Competition" value={`${homeCity.competition}%`} valueColor={colors.violetBright} />
         </MetricGrid>
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
   tabRow: { gap: spacing.sm },
   tab: { borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 6, borderWidth: 1 },
   tabIdle: { borderColor: colors.border, backgroundColor: colors.whiteA05 },
-  tabActive: { borderColor: 'rgba(34,211,238,0.6)', backgroundColor: 'rgba(34,211,238,0.06)' },
+  tabActive: { borderColor: colors.tealActiveBorder, backgroundColor: colors.tealActiveBg },
   tabText: { fontSize: 11, fontWeight: '600', color: colors.mutedForeground },
   tabTextActive: { color: colors.tealBright },
 

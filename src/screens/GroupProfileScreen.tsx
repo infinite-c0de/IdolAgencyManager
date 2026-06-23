@@ -10,7 +10,7 @@ import { Gradient } from '../components/ui/Gradient';
 import { buildGroupRadar, buildGroupReadiness, getGroupMembers } from '../features/groups';
 import type { RootStackParamList } from '../navigation/types';
 import { useGame } from '../state/GameContext';
-import { colors, radius, spacing } from '../theme';
+import { colors, radius, spacing, statColors } from '../theme';
 import type { GroupRole } from '../types';
 import { fmt, fmtCount } from '../utils/format';
 
@@ -51,8 +51,8 @@ function getSynergyTier(score: number) {
   if (score >= 65) {
     return {
       label: 'Strong',
-      borderColor: 'rgba(103,232,249,0.6)',
-      backgroundColor: 'rgba(34,211,238,0.12)',
+      borderColor: colors.tealActiveBorder,
+      backgroundColor: colors.tealActiveBg,
       textColor: colors.tealBright,
     };
   }
@@ -581,9 +581,9 @@ const styles = StyleSheet.create({
     minWidth: 58,
     gap: 1,
   },
-  synergySmallLabel: { fontSize: 8, fontWeight: '800', letterSpacing: 1.2, color: colors.mutedForeground },
+  synergySmallLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2, color: colors.mutedForeground },
   synergyBig: { fontSize: 28, fontWeight: '900', lineHeight: 32 },
-  synergyTierBadge: { fontSize: 8, fontWeight: '800', letterSpacing: 0.5 },
+  synergyTierBadge: { fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
 
   heroStatStrip: {
     flexDirection: 'row',
@@ -594,7 +594,7 @@ const styles = StyleSheet.create({
   },
   heroStat: { flex: 1, alignItems: 'center', gap: 2 },
   heroStatVal: { fontSize: 14, fontWeight: '900', color: colors.foreground },
-  heroStatLabel: { fontSize: 8, fontWeight: '700', letterSpacing: 1.2, color: colors.mutedForeground },
+  heroStatLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 1.2, color: colors.mutedForeground },
   heroStatDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.08)', marginVertical: 2 },
 
   // ── Filmstrip ──
@@ -610,7 +610,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   filmPhoto: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
-  filmFallback: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(34,211,238,0.05)' },
+  filmFallback: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.tealActiveBg },
   filmFallbackText: { fontSize: 20, fontWeight: '900', color: 'rgba(103,232,249,0.3)', letterSpacing: 2 },
   filmShade: {
     position: 'absolute',
@@ -630,8 +630,7 @@ const styles = StyleSheet.create({
   filmRole: {
     paddingHorizontal: 4,
     paddingBottom: 5,
-    fontSize: 8,
-    color: 'rgba(255,255,255,0.55)',
+    fontSize: 10,    color: 'rgba(255,255,255,0.55)',
     textAlign: 'center',
   },
 
@@ -688,7 +687,7 @@ const styles = StyleSheet.create({
   releaseStats: { flexDirection: 'row', gap: spacing.md },
   releaseStat: { alignItems: 'center', gap: 2, minWidth: 52 },
   releaseStatVal: { fontSize: 13, fontWeight: '900', color: colors.foreground },
-  releaseStatLabel: { fontSize: 8, fontWeight: '700', letterSpacing: 1.2, color: colors.mutedForeground },
+  releaseStatLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 1.2, color: colors.mutedForeground },
 
   // ── KPI (kept for Mini component) ──
   kpiItem: {
@@ -715,8 +714,8 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
   },
   memberPickActive: {
-    borderColor: 'rgba(34,211,238,0.6)',
-    backgroundColor: 'rgba(34,211,238,0.1)',
+    borderColor: colors.tealActiveBorder,
+    backgroundColor: colors.tealActiveBg,
   },
   roleEditWrap: { gap: spacing.md, marginTop: spacing.sm },
   roleEditRow: { gap: 6 },
@@ -734,8 +733,8 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   roleChipActive: {
-    borderColor: 'rgba(103,232,249,0.7)',
-    backgroundColor: 'rgba(34,211,238,0.16)',
+    borderColor: colors.tealActiveBorder,
+    backgroundColor: colors.tealActiveBg,
   },
   roleChipText: { fontSize: 10, color: colors.foreground },
   roleChipTextActive: { color: colors.tealBright, fontWeight: '700' },

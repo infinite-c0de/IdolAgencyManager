@@ -9,16 +9,16 @@ import { Gradient } from '../components/ui/Gradient';
 import { filterIdols, IDOL_STATUSES, type IdolFilterStatus } from '../features/idols';
 import type { RootStackParamList } from '../navigation/types';
 import { useGame } from '../state/GameContext';
-import { colors, radius, spacing, statusColor } from '../theme';
+import { colors, radius, spacing, statColors, statusColor } from '../theme';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const TOP_STATS: Array<{ key: keyof ReturnType<typeof useGame>['idols'][number]['stats']; label: string; color: string }> = [
-  { key: 'vocal', label: 'VOC', color: '#E879F9' },
-  { key: 'dance', label: 'DNC', color: '#67E8F9' },
-  { key: 'rap', label: 'RAP', color: '#FCD34D' },
-  { key: 'visual', label: 'VIS', color: '#FB7185' },
-  { key: 'charisma', label: 'CHA', color: '#34D399' },
+  { key: 'vocal',    label: 'VOC', color: statColors.vocal },
+  { key: 'dance',    label: 'DNC', color: statColors.dance },
+  { key: 'rap',      label: 'RAP', color: statColors.rap },
+  { key: 'visual',   label: 'VIS', color: statColors.visual },
+  { key: 'charisma', label: 'CHA', color: statColors.charisma },
 ];
 function resolveImageAspectRatio(source?: number) {
   if (!source) return 0.72;
@@ -138,8 +138,7 @@ export function IdolsScreen() {
                 </View>
 
                 {/* Stat mini-bars below art */}
-                <View style={styles.statStrip}>
-                  {TOP_STATS.map(stat => {
+                <View style={styles.statStrip}>                  {TOP_STATS.map(stat => {
                     const val = i.stats[stat.key];
                     return (
                       <View key={stat.key} style={styles.statCol}>
@@ -160,13 +159,6 @@ export function IdolsScreen() {
                     <Text style={styles.popLabel}>POP</Text>
                   </View>
                 </View>
-
-                {/* Group tag */}
-                {i.group && (
-                  <View style={styles.groupTag}>
-                    <Text style={styles.groupTagText} numberOfLines={1}>{i.group}</Text>
-                  </View>
-                )}
               </View>
             </TouchableOpacity>
           );
@@ -218,12 +210,12 @@ const styles = StyleSheet.create({
   filterScroll: { flexDirection: 'row', gap: 6, marginTop: spacing.sm, paddingBottom: 2 },
   filterChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 5, borderWidth: 1 },
   chipIdle: { borderColor: colors.border, backgroundColor: colors.whiteA05 },
-  chipActive: { borderColor: 'rgba(34,211,238,0.55)', backgroundColor: 'rgba(34,211,238,0.07)' },
+  chipActive: { borderColor: colors.tealActiveBorder, backgroundColor: colors.tealActiveBg },
   statusDot: { width: 6, height: 6, borderRadius: radius.full },
   filterChipText: { fontSize: 11, fontWeight: '600', color: colors.mutedForeground },
   filterChipTextActive: { color: colors.tealBright },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 0 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   cardWrap: { width: '50%', padding: spacing.xs },
   card: {
     borderRadius: radius.xl,
@@ -233,7 +225,7 @@ const styles = StyleSheet.create({
   cardBorder: { borderWidth: 1, borderColor: colors.border },
   cardGlow: {
     borderWidth: 1,
-    borderColor: 'rgba(34,211,238,0.5)',
+    borderColor: colors.tealActiveBorder,
     shadowColor: colors.teal,
     shadowOpacity: 0.35,
     shadowRadius: 10,
@@ -243,7 +235,7 @@ const styles = StyleSheet.create({
 
   artFrame: { width: '100%', position: 'relative', backgroundColor: '#080B12' },
   artPhoto: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
-  artFallback: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(34,211,238,0.05)' },
+  artFallback: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.tealActiveBg },
   artFallbackText: { fontSize: 24, fontWeight: '900', color: 'rgba(103,232,249,0.3)', letterSpacing: 3 },
 
   topLeft: { position: 'absolute', top: spacing.xs, left: spacing.xs, zIndex: 3 },
@@ -258,7 +250,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   statusPillDot: { width: 5, height: 5, borderRadius: radius.full },
-  statusPillText: { fontSize: 8, fontWeight: '700', letterSpacing: 0.5 },
+  statusPillText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
   artFlag: { position: 'absolute', top: spacing.xs, right: spacing.xs, fontSize: 14, zIndex: 3 },
   artBottom: {
     position: 'absolute',
@@ -282,14 +274,14 @@ const styles = StyleSheet.create({
     maxWidth: '55%',
   },
   artGroupName: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '800',
     color: 'rgba(255,255,255,0.85)',
     letterSpacing: 0.4,
     flexShrink: 1,
   },
   artName: { fontSize: 12, fontWeight: '800', color: colors.foreground },
-  artRole: { fontSize: 9, color: 'rgba(255,255,255,0.6)', marginTop: 1 },
+  artRole: { fontSize: 10, color: 'rgba(255,255,255,0.6)', marginTop: 1 },
 
   statStrip: {
     flexDirection: 'row',
@@ -309,19 +301,12 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   statBarFill: { width: '100%', borderRadius: radius.sm },
-  statVal: { fontSize: 9, fontWeight: '900', lineHeight: 10 },
-  statLabel: { fontSize: 7, fontWeight: '700', letterSpacing: 0.3 },
+  statVal: { fontSize: 10, fontWeight: '900', lineHeight: 11 },
+  statLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
   popCol: { flex: 1, alignItems: 'center', gap: 2 },
   popNum: { fontSize: 16, fontWeight: '900', color: colors.tealBright, lineHeight: 18 },
-  popLabel: { fontSize: 7, fontWeight: '800', letterSpacing: 0.4, color: colors.mutedForeground },
+  popLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 0.4, color: colors.mutedForeground },
 
-  groupTag: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  groupTagText: { fontSize: 9, fontWeight: '700', color: colors.violetBright, letterSpacing: 0.5 },
 
   emptyState: { width: '100%', alignItems: 'center', paddingVertical: 40, gap: spacing.sm },
   emptyTitle: { fontSize: 16, fontWeight: '800', color: colors.foreground },

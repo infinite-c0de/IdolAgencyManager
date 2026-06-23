@@ -140,8 +140,35 @@ function calculateRoleSynergy(
   return clampScore(avgRoleFit - missingCorePenalty);
 }
 
-function recalculateGroupMetrics(group: Group, members: Idol[]) {
-  const popularity = avg(members.map(member => member.popularity));
+/**
+ * Single source of truth for a group's monthly revenue. Used both when a group
+ * is created/edited and during the weekly simulation tick so the value stays
+ * consistent week to week.
+ */
+export function estimateGroupMonthlyRevenue(
+  popularity: number,
+  synergy: number,
+  memberCount: number,
+  status: Group['status'],
+): number {
+  const statusFactor = status === 'Active' ? 1 : status === 'Disbanded' ? 0 : 0.5;
+  return Math.max(
+    0,
+    Math.round(
+      (popularity * 1_400_000 + synergy * 900_000) * Math.max(1, memberCount) * statusFactor,
+    ),
+  );
+}
+
+/**
+ * Single source of truth for synergy: blends live performance, personality
+ * compatibility and role fit. Reused by the weekly tick so role assignments and
+ * personality keep mattering over time instead of decaying toward morale.
+ */
+export function computeGroupSynergy(group: Pick<Group, 'roleAssignments'>, members: Idol[]): number {
+  if (members.length === 0) {
+    return 0;
+  }
   const performanceSynergy = Math.round(
     (avg(members.map(member => member.morale)) +
       avg(members.map(member => member.stats.charisma)) +
@@ -150,10 +177,18 @@ function recalculateGroupMetrics(group: Group, members: Idol[]) {
   );
   const personalitySynergy = calculatePersonalitySynergy(members);
   const roleSynergy = calculateRoleSynergy(members, group.roleAssignments ?? {});
-  const synergy = clampScore(
-    performanceSynergy * 0.45 + personalitySynergy * 0.35 + roleSynergy * 0.2,
+  return clampScore(performanceSynergy * 0.45 + personalitySynergy * 0.35 + roleSynergy * 0.2);
+}
+
+function recalculateGroupMetrics(group: Group, members: Idol[]) {
+  const popularity = avg(members.map(member => member.popularity));
+  const synergy = computeGroupSynergy(group, members);
+  const monthlyRevenue = estimateGroupMonthlyRevenue(
+    popularity,
+    synergy,
+    members.length,
+    group.status,
   );
-  const monthlyRevenue = Math.round((popularity * 1_400_000 + synergy * 900_000) * members.length);
 
   return { popularity, synergy, monthlyRevenue };
 }
@@ -204,18 +239,13 @@ export function createGroupFromIdols(
   }
 
   const popularity = avg(selectedMembers.map(member => member.popularity));
-  const performanceSynergy = Math.round(
-    (avg(selectedMembers.map(member => member.morale)) +
-      avg(selectedMembers.map(member => member.stats.charisma)) +
-      avg(selectedMembers.map(member => member.stats.stamina))) /
-      3,
+  const synergy = computeGroupSynergy({ roleAssignments }, selectedMembers);
+  const monthlyRevenue = estimateGroupMonthlyRevenue(
+    popularity,
+    synergy,
+    selectedMembers.length,
+    'Pre-debut',
   );
-  const personalitySynergy = calculatePersonalitySynergy(selectedMembers);
-  const roleSynergy = calculateRoleSynergy(selectedMembers, roleAssignments);
-  const synergy = clampScore(
-    performanceSynergy * 0.45 + personalitySynergy * 0.35 + roleSynergy * 0.2,
-  );
-  const monthlyRevenue = Math.round((popularity * 1_400_000 + synergy * 900_000) * selectedMembers.length);
   const idBase = slugify(name) || 'group';
   const id = `${idBase}-${Date.now()}`;
   const gradient = GROUP_GRADIENTS[existingGroups.length % GROUP_GRADIENTS.length];
@@ -238,7 +268,8 @@ export function createGroupFromIdols(
       ? {
           ...idol,
           group: name,
-          status: 'Active' as const,
+          // Pre-debut group: members stay trainees until the group debuts.
+          status: 'Trainee' as const,
           role: Object.entries(roleAssignments)
             .filter(([, memberId]) => memberId === idol.id)
             .map(([role]) => role)
@@ -289,7 +320,9 @@ export function addMembersToExistingGroup(
     return {
       ...idol,
       group: group.name,
-      status: 'Active' as const,
+      // Inherit the group's debut state: active groups onboard active idols,
+      // pre-debut groups keep new members as trainees.
+      status: group.status === 'Active' ? ('Active' as const) : ('Trainee' as const),
       role: displayRole,
     };
   });
@@ -411,10 +444,12 @@ export function projectRelease(
   const baseScore = (avgPopularity * 0.4 + avgStat * 0.4 + synergyFactor * 20) * qualityMultiplier * budgetFactor;
 
   const chartPosition = Math.max(1, Math.round(100 - baseScore * 0.85));
-  const totalSales = Math.round(baseScore * 4200 * (group.status === 'Pre-debut' ? 1.2 : 1.0));
+  // totalSales is "units sold"; baseScore already folds in quality + budget.
+  const totalSales = Math.round(baseScore * 3000 * (group.status === 'Pre-debut' ? 1.2 : 1.0));
   const fansGained = Math.round(baseScore * 680 * qualityMultiplier);
   const reputationGained = Math.round(Math.min(12, baseScore / 8 + quality));
-  const revenueGained = Math.round(totalSales * 3_800 * qualityMultiplier);
+  // ₩900 net per unit sold (quality is already baked into totalSales).
+  const revenueGained = Math.round(totalSales * 900);
 
   return { chartPosition, totalSales, fansGained, reputationGained, revenueGained };
 }
@@ -453,11 +488,19 @@ export function releaseDebut(
     revenueGained: projection.revenueGained,
   };
 
+  const debutPopularity = Math.min(100, group.popularity + popularityBoost);
   const updatedGroup: Group = {
     ...group,
     status: 'Active',
-    popularity: Math.min(100, group.popularity + popularityBoost),
-    monthlyRevenue: Math.round(group.monthlyRevenue + projection.revenueGained / 4),
+    popularity: debutPopularity,
+    // Recurring revenue is recomputed from the new active status/popularity.
+    // The release sale revenue is paid once via moneyDelta (no double counting).
+    monthlyRevenue: estimateGroupMonthlyRevenue(
+      debutPopularity,
+      group.synergy,
+      group.memberIds.length,
+      'Active',
+    ),
     releases: [...(group.releases ?? []), release],
   };
   const updatedIdols = idols.map(idol =>
@@ -466,7 +509,8 @@ export function releaseDebut(
           ...idol,
           popularity: clampScore(idol.popularity + memberPopularityBoost),
           morale: clampScore(idol.morale + memberMoraleBoost),
-          status: 'Promoting' as const,
+          // Debuting promotes trainees to active idols.
+          status: 'Active' as const,
         }
       : idol,
   );
@@ -478,6 +522,8 @@ export function releaseDebut(
     projection,
     moneyDelta: -totalSpent + projection.revenueGained,
     reputationDelta: projection.reputationGained,
+    // Premium currency reward scales with release quality.
+    gemsDelta: payload.quality * 3,
     productionCost,
     promotionCost,
     totalSpent,

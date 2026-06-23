@@ -4,6 +4,7 @@ import {
   ChevronRight,
   Crown,
   Dumbbell,
+  Gem,
   Globe2,
   Home,
   Music2,
@@ -12,6 +13,7 @@ import {
   Swords,
   Users,
   Wallet,
+  Zap,
 } from 'lucide-react-native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { ReactNode } from 'react';
@@ -100,6 +102,8 @@ export function TopBar() {
           <View style={styles.rowCenterSm}>
             <Wallet size={11} color={colors.mint} />
             <Text style={styles.statMint}> {weeklyNetLabel}/wk</Text>
+            <Gem size={11} color={colors.tealBright} style={styles.gemSpacer} />
+            <Text style={styles.statTeal}> {agency.gems}</Text>
           </View>
         </View>
       </View>
@@ -108,7 +112,12 @@ export function TopBar() {
           <Users size={11} color={colors.violetBright} />
           <Text style={styles.statViolet}> {fanbaseLabel}</Text>
         </View>
-        <Text style={styles.muted}>Global #{agency.ranking}</Text>
+        <View style={styles.rowCenterSm}>
+          <Zap size={11} color={colors.mint} />
+          <Text style={styles.statMint}> {agency.energy}/{agency.energyMax}</Text>
+        </View>
+        <Text style={styles.muted}>Lv {agency.level}</Text>
+        <Text style={styles.muted}>#{agency.ranking}</Text>
         <Text style={styles.muted}>Week {currentWeek}</Text>
       </View>
     </View>
@@ -335,7 +344,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(34,211,238,0.6)',
+    borderColor: colors.tealActiveBorder,
     overflow: 'hidden',
   },
   customLogoImage: { width: '100%', height: '100%' },
@@ -366,6 +375,8 @@ const styles = StyleSheet.create({
   statMoney: { color: colors.tealBright, fontSize: 15, fontWeight: '900' },
   statViolet: { color: colors.violetBright, fontSize: 11 },
   statMint: { color: colors.mint, fontSize: 11 },
+  statTeal: { color: colors.tealBright, fontSize: 11 },
+  gemSpacer: { marginLeft: 8 },
   muted: { color: colors.mutedForeground, fontSize: 11 },
 
   scrollContent: {
@@ -405,8 +416,8 @@ const styles = StyleSheet.create({
   },
   navItemActive: {
     borderWidth: 1,
-    borderColor: 'rgba(34,211,238,0.6)',
-    backgroundColor: 'rgba(34,211,238,0.06)',
+    borderColor: colors.tealActiveBorder,
+    backgroundColor: colors.tealActiveBg,
   },
   navLabel: { fontSize: 10, fontWeight: '500', color: colors.mutedForeground },
   navLabelActive: { color: colors.tealBright },
@@ -423,7 +434,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   morePillIdle: { borderColor: colors.border, backgroundColor: colors.whiteA05 },
-  morePillActive: { borderColor: 'rgba(34,211,238,0.6)', backgroundColor: 'rgba(34,211,238,0.06)' },
+  morePillActive: { borderColor: colors.tealActiveBorder, backgroundColor: colors.tealActiveBg },
   morePillText: { fontSize: 11, fontWeight: '600', color: colors.mutedForeground },
   morePillTextActive: { color: colors.tealBright },
 
@@ -435,7 +446,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
   },
   pageTitle: {
-    color: colors.tealBright,
+    color: colors.foreground,
     fontSize: 24,
     fontWeight: '900',
     letterSpacing: -0.5,
@@ -450,8 +461,8 @@ const styles = StyleSheet.create({
   cardBorder: { borderWidth: 1, borderColor: colors.border },
   glowTeal: {
     borderWidth: 1,
-    borderColor: 'rgba(34,211,238,0.6)',
-    backgroundColor: 'rgba(34,211,238,0.06)',
+    borderColor: colors.tealActiveBorder,
+    backgroundColor: colors.tealActiveBg,
   },
   glowViolet: {
     borderWidth: 1,

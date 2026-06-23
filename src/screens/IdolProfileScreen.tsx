@@ -15,7 +15,7 @@ import { AgencyLogoMark } from '../components/ui/AgencyLogoMark';
 import { Gradient } from '../components/ui/Gradient';
 import type { RootStackParamList, RootStackScreenProps } from '../navigation/types';
 import { useGame } from '../state/GameContext';
-import { colors, radius, spacing } from '../theme';
+import { colors, radius, spacing, statColors } from '../theme';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -25,16 +25,16 @@ type IconType = ComponentType<{ size?: number; color?: string }>;
 type IdolModel = import('../types').Idol;
 
 const PROFILE_STAT_BARS: Array<{ key: string; label: string; color: string; getValue: (idol: IdolModel) => number }> = [
-  { key: 'vocal', label: 'Vocal', color: '#E879F9', getValue: idol => idol.stats.vocal },
-  { key: 'dance', label: 'Dance', color: '#67E8F9', getValue: idol => idol.stats.dance },
-  { key: 'rap', label: 'Rap', color: '#FCD34D', getValue: idol => idol.stats.rap },
-  { key: 'visual', label: 'Visual', color: '#FB7185', getValue: idol => idol.stats.visual },
-  { key: 'charisma', label: 'Charisma', color: '#34D399', getValue: idol => idol.stats.charisma },
-  { key: 'stamina', label: 'Stamina', color: '#818CF8', getValue: idol => idol.stats.stamina },
-  { key: 'variety', label: 'Variety', color: '#F59E0B', getValue: idol => idol.stats.variety },
-  { key: 'acting', label: 'Acting', color: '#A3E635', getValue: idol => idol.stats.acting },
-  { key: 'popularity', label: 'Popularity', color: '#F472B6', getValue: idol => idol.popularity },
-  { key: 'dominance', label: 'Dominance', color: '#A78BFA', getValue: idol => idol.personalityProfile?.dominance ?? 55 },
+  { key: 'vocal',     label: 'Vocal',      color: statColors.vocal,    getValue: idol => idol.stats.vocal },
+  { key: 'dance',     label: 'Dance',      color: statColors.dance,    getValue: idol => idol.stats.dance },
+  { key: 'rap',       label: 'Rap',        color: statColors.rap,      getValue: idol => idol.stats.rap },
+  { key: 'visual',    label: 'Visual',     color: statColors.visual,   getValue: idol => idol.stats.visual },
+  { key: 'charisma',  label: 'Charisma',   color: statColors.charisma, getValue: idol => idol.stats.charisma },
+  { key: 'stamina',   label: 'Stamina',    color: statColors.stamina,  getValue: idol => idol.stats.stamina },
+  { key: 'variety',   label: 'Variety',    color: statColors.variety,  getValue: idol => idol.stats.variety },
+  { key: 'acting',    label: 'Acting',     color: statColors.acting,   getValue: idol => idol.stats.acting },
+  { key: 'popularity', label: 'Popularity', color: '#F472B6',          getValue: idol => idol.popularity },
+  { key: 'dominance',  label: 'Dominance',  color: '#A78BFA',          getValue: idol => idol.personalityProfile?.dominance ?? 55 },
 ];
 const INFO_METRIC_KEYS = new Set(['popularity', 'dominance']);
 
@@ -203,7 +203,7 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
 
           {/* Vitals */}
           <View style={styles.vitalRow}>
-            <Vital Icon={Heart} label="Health" v={i.health} color="#FDA4AF" />
+            <Vital Icon={Heart} label="Health" v={i.health} color={colors.hotSoft} />
             <Vital Icon={Activity} label="Morale" v={i.morale} color={colors.violetBright} />
             <Vital Icon={Zap} label="Energy" v={i.energy} color={colors.mint} />
           </View>
@@ -231,14 +231,14 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
 }
 
 const TRAINING_ACCENT: Record<string, string> = {
-  vocal: '#E879F9',
-  dance: '#67E8F9',
-  rap: '#FCD34D',
-  visual: '#FB7185',
-  acting: '#34D399',
+  vocal:    statColors.vocal,
+  dance:    statColors.dance,
+  rap:      statColors.rap,
+  visual:   statColors.visual,
+  acting:   statColors.acting,
   language: '#93C5FD',
-  lang: '#93C5FD',
-  rest: '#6B7280',
+  lang:     '#93C5FD',
+  rest:     '#6B7280',
 };
 
 function getAccent(id: string, name: string): string {
@@ -435,7 +435,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tabBtnActive: {
-    backgroundColor: 'rgba(34,211,238,0.12)',
+    backgroundColor: colors.tealActiveBg,
     borderBottomWidth: 2,
     borderBottomColor: colors.tealBright,
   },
@@ -511,8 +511,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: 'rgba(34,211,238,0.35)',
-    backgroundColor: 'rgba(34,211,238,0.06)',
+    borderColor: colors.tealActiveBorder,
+    backgroundColor: colors.tealActiveBg,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     minWidth: 52,

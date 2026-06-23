@@ -83,7 +83,7 @@ export function RadarChart({
               key={idx}
               points={pts}
               fill="none"
-              stroke="rgba(255,255,255,0.12)"
+              stroke={colors.whiteA10}
               strokeWidth={1}
             />
           );
@@ -98,7 +98,7 @@ export function RadarChart({
               y1={cy}
               x2={p.x}
               y2={p.y}
-              stroke="rgba(255,255,255,0.12)"
+              stroke={colors.whiteA10}
               strokeWidth={1}
             />
           );
@@ -122,8 +122,8 @@ export function RadarChart({
               <SvgText
                 x={p.x + xOffset}
                 y={p.y}
-                fill="rgba(255,255,255,0.7)"
-                fontSize={9}
+                fill={colors.mutedForeground}
+                fontSize={10}
                 fontWeight="600"
                 textAnchor={textAnchor}>
                 {d.skill}

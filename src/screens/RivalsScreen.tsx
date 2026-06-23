@@ -9,7 +9,7 @@ import { colors, radius, spacing } from '../theme';
 type IconType = ComponentType<{ size?: number; color?: string }>;
 
 const feedColor: Record<string, string> = {
-  hot: '#FDA4AF',
+  hot: colors.hotSoft,
   mint: colors.mint,
   teal: colors.tealBright,
   violet: colors.violetBright,
@@ -29,7 +29,7 @@ export function RivalsScreen() {
             ? styles.threatMed
             : styles.threatLow;
         const toneText =
-          r.threat === 'High' ? '#FDA4AF' : r.threat === 'Medium' ? colors.amber : colors.mint;
+          r.threat === 'High' ? colors.hotSoft : r.threat === 'Medium' ? colors.amber : colors.mint;
         return (
           <Card key={r.id}>
             <View style={styles.headerRow}>

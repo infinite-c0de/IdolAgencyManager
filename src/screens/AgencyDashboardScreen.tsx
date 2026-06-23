@@ -125,11 +125,11 @@ export function AgencyDashboardScreen() {
           accent={colors.mint}
         />
         <KpiTile
-          icon={<Heart size={14} color="#FDA4AF" />}
+          icon={<Heart size={14} color={colors.hotSoft} />}
           label="Reputation"
           value={`${agency.reputation}`}
           sub="/100"
-          accent="#FDA4AF"
+          accent={colors.hotSoft}
         />
         <KpiTile
           icon={<UserPlus size={14} color={colors.tealBright} />}
@@ -495,8 +495,8 @@ const styles = StyleSheet.create({
     gap: 4,
     borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: 'rgba(34,211,238,0.3)',
-    backgroundColor: 'rgba(34,211,238,0.05)',
+    borderColor: colors.tealActiveBorder,
+    backgroundColor: colors.tealActiveBg,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     minWidth: 80,
@@ -542,7 +542,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#080B12',
   },
   filmPhoto: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
-  filmFallback: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(34,211,238,0.05)' },
+  filmFallback: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.tealActiveBg },
   filmFallbackText: { fontSize: 18, fontWeight: '900', color: 'rgba(103,232,249,0.3)', letterSpacing: 2 },
   filmOverlay: {
     position: 'absolute',
@@ -598,9 +598,9 @@ const styles = StyleSheet.create({
   groupSub: { fontSize: 10, color: colors.mutedForeground, marginTop: 1 },
   groupStatusPill: {
     borderRadius: radius.full,
-    backgroundColor: 'rgba(34,211,238,0.1)',
+    backgroundColor: colors.tealActiveBg,
     borderWidth: 1,
-    borderColor: 'rgba(34,211,238,0.3)',
+    borderColor: colors.tealActiveBorder,
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
   },
@@ -617,8 +617,8 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   perfTabActive: {
-    borderColor: 'rgba(34,211,238,0.55)',
-    backgroundColor: 'rgba(34,211,238,0.08)',
+    borderColor: colors.tealActiveBorder,
+    backgroundColor: colors.tealActiveBg,
   },
   perfTabText: { fontSize: 12, fontWeight: '600', color: colors.mutedForeground },
   perfTabTextActive: { color: colors.tealBright },
@@ -637,11 +637,11 @@ const styles = StyleSheet.create({
   },
   vBarFill: { width: '100%', borderRadius: radius.full },
   vBarNum: { fontSize: 10, fontWeight: '700', color: colors.foreground },
-  vBarLabel: { fontSize: 7, fontWeight: '800', letterSpacing: 0.5, color: colors.mutedForeground, textTransform: 'uppercase' },
+  vBarLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 0.5, color: colors.mutedForeground, textTransform: 'uppercase' },
 
   memberAvatars: { flexDirection: 'row', gap: spacing.md },
   avatarItem: { alignItems: 'center', gap: 4 },
-  avatarName: { fontSize: 8, fontWeight: '700', letterSpacing: 0.8, color: colors.foreground, textTransform: 'uppercase', maxWidth: 44, textAlign: 'center' },
+  avatarName: { fontSize: 10, fontWeight: '700', letterSpacing: 0.8, color: colors.foreground, textTransform: 'uppercase', maxWidth: 44, textAlign: 'center' },
   emptyHint: { fontSize: 11, color: colors.mutedForeground, textAlign: 'center', paddingVertical: spacing.md },
 
   // Schedule
@@ -653,7 +653,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderWidth: 1,
   },
-  accentTeal: { borderColor: 'rgba(34,211,238,0.5)' },
+  accentTeal: { borderColor: colors.tealActiveBorder },
   accentViolet: { borderColor: 'rgba(217,70,239,0.5)' },
   accentHot: { borderColor: 'rgba(251,113,133,0.45)' },
   scheduleBadge: { position: 'absolute', right: spacing.sm, top: spacing.sm, zIndex: 2 },

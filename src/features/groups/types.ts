@@ -101,6 +101,7 @@ export type ReleaseDebutBuildResult =
       projection: ReleaseDebutProjection;
       moneyDelta: number;
       reputationDelta: number;
+      gemsDelta: number;
       productionCost: number;
       promotionCost: number;
       totalSpent: number;

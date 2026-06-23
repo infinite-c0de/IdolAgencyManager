@@ -73,7 +73,7 @@ export function SettingsScreen() {
             </TouchableOpacity>
             <TouchableOpacity style={styles.dangerRow} onPress={confirmReset} activeOpacity={0.7}>
               <Text style={styles.dangerText}>Reset all save slots</Text>
-              <Trash2 size={16} color="#FDA4AF" />
+              <Trash2 size={16} color={colors.hotSoft} />
             </TouchableOpacity>
           </Card>
         </ScrollView>
@@ -177,6 +177,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 10,
   },
-  dangerText: { fontSize: 14, color: '#FDA4AF' },
+  dangerText: { fontSize: 14, color: colors.hotSoft },
 
 });

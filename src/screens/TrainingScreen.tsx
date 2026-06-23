@@ -2,20 +2,22 @@ import { FastForward } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card } from '../components/AppShell';
+import { SESSION_COST } from '../features/simulation';
 import { useGame } from '../state/GameContext';
-import { colors, radius, spacing } from '../theme';
+import { colors, radius, spacing, statColors } from '../theme';
 import { fmt } from '../utils/format';
 
 const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
 const TRAINING_ACCENT: Record<string, string> = {
-  vocal: '#E879F9',
-  dance: '#67E8F9',
-  rap: '#FCD34D',
-  visual: '#FB7185',
-  acting: '#34D399',
+  vocal:    statColors.vocal,
+  dance:    statColors.dance,
+  rap:      statColors.rap,
+  visual:   statColors.visual,
+  acting:   statColors.acting,
   language: '#93C5FD',
-  rest: '#6B7280',
+  stamina:  statColors.stamina,
+  rest:     '#6B7280',
 };
 
 function getTrainingAccent(id: string, name: string): string {
@@ -26,6 +28,7 @@ function getTrainingAccent(id: string, name: string): string {
   if (lower.includes('visual')) return TRAINING_ACCENT.visual;
   if (lower.includes('acting')) return TRAINING_ACCENT.acting;
   if (lower.includes('lang')) return TRAINING_ACCENT.language;
+  if (lower.includes('stamina') || lower.includes('conditioning')) return TRAINING_ACCENT.stamina;
   if (lower.includes('rest')) return TRAINING_ACCENT.rest;
   return colors.tealBright;
 }
@@ -102,7 +105,6 @@ export function TrainingScreen() {
   };
 
   // Compute total weekly training cost across all plans × idols
-  const SESSION_COST: Record<string, number> = { vocal: 800_000, dance: 800_000, rap: 800_000, acting: 600_000, lang: 600_000, media: 600_000, rest: 200_000 };
   const weeklyCost = useMemo(() => {
     let total = 0;
     const groupIdByName = new Map(groups.map(g => [g.name, g.id]));
@@ -292,15 +294,15 @@ const styles = StyleSheet.create({
   advanceWrap: {
     borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: 'rgba(34,211,238,0.3)',
-    backgroundColor: 'rgba(34,211,238,0.04)',
+    borderColor: colors.tealActiveBorder,
+    backgroundColor: colors.tealActiveBg,
     padding: spacing.md,
     gap: spacing.sm,
     alignItems: 'center',
   },
   advanceWrapWarn: { borderColor: 'rgba(248,113,113,0.3)', backgroundColor: 'rgba(248,113,113,0.04)' },
   costPreview: { fontSize: 11, fontWeight: '700', color: colors.mint, letterSpacing: 0.5 },
-  costPreviewWarn: { color: '#FDA4AF' },
+  costPreviewWarn: { color: colors.hotSoft },
   nextWeekBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -326,7 +328,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 5,
   },
-  chipActive: { borderColor: 'rgba(34,211,238,0.55)', backgroundColor: 'rgba(34,211,238,0.07)' },
+  chipActive: { borderColor: colors.tealActiveBorder, backgroundColor: colors.tealActiveBg },
   chipText: { fontSize: 11, fontWeight: '600', color: colors.mutedForeground },
   chipTextActive: { color: colors.tealBright },
 
@@ -345,8 +347,8 @@ const styles = StyleSheet.create({
     gap: 6,
     borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: 'rgba(34,211,238,0.3)',
-    backgroundColor: 'rgba(34,211,238,0.05)',
+    borderColor: colors.tealActiveBorder,
+    backgroundColor: colors.tealActiveBg,
     paddingVertical: 4,
     paddingHorizontal: 8,
   },
@@ -392,7 +394,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
   },
   selectedTypeEffect: { fontSize: 11, color: colors.mint },
-  selectedTypeCost: { fontSize: 11, color: '#FDA4AF' },
+  selectedTypeCost: { fontSize: 11, color: colors.hotSoft },
 
   weekHeader: {
     flexDirection: 'row',
@@ -440,7 +442,7 @@ const styles = StyleSheet.create({
     bottom: 96,
     borderRadius: radius['2xl'],
     borderWidth: 1,
-    borderColor: 'rgba(34,211,238,0.5)',
+    borderColor: colors.tealActiveBorder,
     backgroundColor: 'rgba(18,21,32,0.98)',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,

@@ -94,7 +94,7 @@ export function MainMenuScreen() {
             </TouchableOpacity>
             <View style={styles.tertiaryDivider} />
             <TouchableOpacity style={styles.tertiaryBtn} onPress={() => BackHandler.exitApp()} activeOpacity={0.8}>
-              <LogOut size={14} color="#FDA4AF" />
+              <LogOut size={14} color={colors.hotSoft} />
               <Text style={styles.tertiaryDanger}>Exit</Text>
             </TouchableOpacity>
           </View>
@@ -138,7 +138,7 @@ export function MainMenuScreen() {
                       </Text>
                       {slot.hasSave ? (
                         <TouchableOpacity style={styles.deleteSaveBtn} onPress={() => confirmDeleteSave(slot)} activeOpacity={0.8}>
-                          <Trash2 size={14} color="#FDA4AF" />
+                          <Trash2 size={14} color={colors.hotSoft} />
                           <Text style={styles.deleteSaveText}>Delete</Text>
                         </TouchableOpacity>
                       ) : null}
@@ -219,8 +219,8 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: radius['2xl'],
     borderWidth: 1,
-    borderColor: 'rgba(34,211,238,0.4)',
-    backgroundColor: 'rgba(34,211,238,0.07)',
+    borderColor: colors.tealActiveBorder,
+    backgroundColor: colors.tealActiveBg,
   },
   secondaryBtnText: { fontSize: 15, fontWeight: '800', color: colors.tealBright },
   tertiaryRow: {
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   },
   tertiaryDivider: { width: 1, height: 20, backgroundColor: colors.border },
   tertiaryText: { fontSize: 13, fontWeight: '700', color: colors.mutedForeground },
-  tertiaryDanger: { fontSize: 13, fontWeight: '700', color: '#FDA4AF' },
+  tertiaryDanger: { fontSize: 13, fontWeight: '700', color: colors.hotSoft },
 
   footer: { textAlign: 'center', fontSize: 10, color: 'rgba(255,255,255,0.2)' },
 
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
   closeText: { fontSize: 11, fontWeight: '600', color: colors.foreground },
   slotList: { marginTop: spacing.lg, gap: spacing.sm },
   slotCard: { borderRadius: radius.xl, borderWidth: 1, padding: spacing.md },
-  slotFilled: { borderColor: 'rgba(34,211,238,0.5)', backgroundColor: 'rgba(34,211,238,0.07)' },
+  slotFilled: { borderColor: colors.tealActiveBorder, backgroundColor: colors.tealActiveBg },
   slotEmpty: { borderColor: colors.border, backgroundColor: 'rgba(255,255,255,0.03)' },
   slotTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   slotLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 1.2, textTransform: 'uppercase', color: colors.mutedForeground },
@@ -283,5 +283,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  deleteSaveText: { fontSize: 10, fontWeight: '600', color: '#FDA4AF' },
+  deleteSaveText: { fontSize: 10, fontWeight: '600', color: colors.hotSoft },
 });

@@ -261,7 +261,7 @@ export function ReleaseScreen() {
         {/* Live projection strip */}
         {projection && (
           <View style={styles.estRow}>
-            <Est k="Total Cost" v={fmt(totalCost)} c={canAfford ? undefined : '#FDA4AF'} />
+            <Est k="Total Cost" v={fmt(totalCost)} c={canAfford ? undefined : colors.hotSoft} />
             <Est k="Chart" v={`#${projection.chartPosition}`} c={colors.violetBright} />
             <Est k="Fans +" v={`+${fmtCount(projection.fansGained)}`} c={colors.mint} />
             <Est k="Revenue" v={fmt(projection.revenueGained)} c={colors.tealBright} />
@@ -376,9 +376,9 @@ const styles = StyleSheet.create({
   col: { gap: spacing.sm },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   tinyMuted: { fontSize: 11, color: colors.mutedForeground },
-  warnText: { fontSize: 10, color: '#FDA4AF', marginTop: 2 },
+  warnText: { fontSize: 10, color: colors.hotSoft, marginTop: 2 },
   releaseCountText: { fontSize: 10, color: colors.teal, marginTop: 2 },
-  fundWarn: { fontSize: 11, color: '#FDA4AF', marginTop: spacing.sm, textAlign: 'center' },
+  fundWarn: { fontSize: 11, color: colors.hotSoft, marginTop: spacing.sm, textAlign: 'center' },
 
   emptyBox: { borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.whiteA05, padding: spacing.md, gap: 4 },
   emptyTitle: { color: colors.foreground, fontSize: 14, fontWeight: '800' },
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   stepBody: { marginTop: spacing.lg, minHeight: 160 },
   optionCard: { borderRadius: radius.lg, borderWidth: 1, padding: spacing.md, gap: 4 },
   optIdle: { borderColor: colors.border, backgroundColor: colors.whiteA05 },
-  optActive: { borderColor: 'rgba(34,211,238,0.6)', backgroundColor: 'rgba(34,211,238,0.06)' },
+  optActive: { borderColor: colors.tealActiveBorder, backgroundColor: colors.tealActiveBg },
   optRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   optTitle: { fontSize: 17, fontWeight: '800', color: colors.foreground },
   statusPill: { borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1 },
@@ -406,13 +406,13 @@ const styles = StyleSheet.create({
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: { borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 6, borderWidth: 1 },
   chipIdle: { borderColor: colors.border, backgroundColor: colors.whiteA05 },
-  chipActive: { borderColor: 'rgba(34,211,238,0.6)', backgroundColor: 'rgba(34,211,238,0.06)' },
+  chipActive: { borderColor: colors.tealActiveBorder, backgroundColor: colors.tealActiveBg },
   chipText: { fontSize: 12, fontWeight: '600', color: colors.foreground },
   chipTextActive: { color: colors.tealBright },
 
   segment: { marginTop: spacing.sm, flexDirection: 'row', borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
   segItem: { flex: 1, alignItems: 'center', paddingVertical: spacing.sm, backgroundColor: colors.whiteA05 },
-  segActive: { backgroundColor: 'rgba(34,211,238,0.12)' },
+  segActive: { backgroundColor: colors.tealActiveBg },
   segText: { fontSize: 9, fontWeight: '600', color: colors.mutedForeground },
   segTextActive: { color: colors.tealBright },
   hint: { marginTop: 6, fontSize: 10, color: colors.mutedForeground },
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
 
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.68)', justifyContent: 'center', padding: spacing.lg },
   modalScrollContent: { flexGrow: 1, justifyContent: 'center' },
-  modalCard: { borderRadius: radius['2xl'], borderWidth: 1, borderColor: 'rgba(34,211,238,0.5)', backgroundColor: 'rgba(14,18,30,0.98)', padding: spacing.xl },
+  modalCard: { borderRadius: radius['2xl'], borderWidth: 1, borderColor: colors.tealActiveBorder, backgroundColor: 'rgba(14,18,30,0.98)', padding: spacing.xl },
   modalHead: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   modalTitle: { fontSize: 20, fontWeight: '900', color: colors.tealBright },
   debutBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', marginTop: spacing.sm, borderRadius: radius.full, backgroundColor: colors.teal, paddingHorizontal: spacing.sm, paddingVertical: 4 },
