@@ -17,12 +17,10 @@ import {
   Zap,
 } from 'lucide-react-native';
 import React, { ComponentType, ReactNode, useState } from 'react';
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { AppShell, Card, SectionTitle, SkillBar, StatusDot } from '../components/AppShell';
-import { RadarChart } from '../components/charts';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { AppShell, Card, SectionTitle, StatusDot } from '../components/AppShell';
 import { AgencyLogoMark } from '../components/ui/AgencyLogoMark';
 import { Gradient } from '../components/ui/Gradient';
-import { fmtCount } from '../utils/format';
 import type { RootStackParamList, RootStackScreenProps } from '../navigation/types';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
@@ -30,6 +28,21 @@ import { colors, radius, spacing } from '../theme';
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 type IconType = ComponentType<{ size?: number; color?: string }>;
+type IdolModel = import('../types').Idol;
+
+const PROFILE_STAT_BARS: Array<{ key: string; label: string; color: string; getValue: (idol: IdolModel) => number }> = [
+  { key: 'vocal', label: 'Vocal', color: '#E879F9', getValue: idol => idol.stats.vocal },
+  { key: 'dance', label: 'Dance', color: '#67E8F9', getValue: idol => idol.stats.dance },
+  { key: 'rap', label: 'Rap', color: '#FCD34D', getValue: idol => idol.stats.rap },
+  { key: 'visual', label: 'Visual', color: '#FB7185', getValue: idol => idol.stats.visual },
+  { key: 'charisma', label: 'Charisma', color: '#34D399', getValue: idol => idol.stats.charisma },
+  { key: 'stamina', label: 'Stamina', color: '#818CF8', getValue: idol => idol.stats.stamina },
+  { key: 'variety', label: 'Variety', color: '#F59E0B', getValue: idol => idol.stats.variety },
+  { key: 'acting', label: 'Acting', color: '#A3E635', getValue: idol => idol.stats.acting },
+  { key: 'popularity', label: 'Popularity', color: '#F472B6', getValue: idol => idol.popularity },
+  { key: 'dominance', label: 'Dominance', color: '#A78BFA', getValue: idol => idol.personalityProfile?.dominance ?? 55 },
+];
+const INFO_METRIC_KEYS = new Set(['popularity', 'dominance']);
 
 function resolveImageAspectRatio(source?: number) {
   if (!source) {
@@ -42,6 +55,16 @@ function resolveImageAspectRatio(source?: number) {
   }
 
   return asset.width / asset.height;
+}
+
+function formatTrainingMonths(months: number) {
+  const safeMonths = Math.max(0, Math.round(months));
+  if (safeMonths < 12) {
+    return `${safeMonths}m`;
+  }
+  const years = Math.floor(safeMonths / 12);
+  const remain = safeMonths % 12;
+  return remain === 0 ? `${years}y` : `${years}y ${remain}m`;
 }
 
 export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>) {
@@ -61,13 +84,6 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
     );
   }
 
-  const radar = [
-    { skill: 'VOCAL', v: i.stats.vocal },
-    { skill: 'DANCE', v: i.stats.dance },
-    { skill: 'RAP', v: i.stats.rap },
-    { skill: 'VISUAL', v: i.stats.visual },
-    { skill: 'CHARISMA', v: i.stats.charisma },
-  ];
   const trainings: { Icon: IconType; label: string }[] = [
     { Icon: Mic, label: 'Vocal Coaching' },
     { Icon: Music, label: 'Dance Practice' },
@@ -93,7 +109,10 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
   );
 
   return (
-    <AppShell title={i.stageName} subtitle={`${i.role} · ${i.group ?? 'Solo'}`} action={backAction}>
+    <AppShell
+      title={i.stageName}
+      subtitle={`${i.status} · ${i.role}${i.group ? ` · ${i.group}` : ' · Solo Artist'}`}
+      action={backAction}>
       {/* Hero portrait */}
       <Card glow="teal" style={styles.heroCard}>
         <HeroArt image={i.image} stageName={i.stageName}>
@@ -123,7 +142,7 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
             onPress={() => setTab(t)}
             activeOpacity={0.8}>
             <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
-              {t === 'info' ? 'INFO' : t === 'stats' ? 'STATS' : 'SCHEDULE'}
+              {t === 'info' ? 'INFO' : t === 'stats' ? 'SKILLS' : 'SCHEDULE'}
             </Text>
           </TouchableOpacity>
         ))}
@@ -152,8 +171,8 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
               <Text style={styles.dobLine}>{i.dob}  ·  {i.age} yrs</Text>
             </View>
             <View style={styles.trainingBadge}>
-              <Text style={styles.trainingNum}>{i.trainingYears}</Text>
-              <Text style={styles.trainingLabel}>YRS{'\n'}TRAINING</Text>
+              <Text style={styles.trainingNum}>{formatTrainingMonths(i.trainingMonths)}</Text>
+              <Text style={styles.trainingLabel}>MONTHS{'\n'}TRAINING</Text>
             </View>
           </View>
 
@@ -163,21 +182,11 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
             {i.languages.map(lang => <Tag key={lang} label={lang} color={colors.tealBright} />)}
           </View>
 
-          {i.personalityProfile && (
-            <View style={styles.dominanceSection}>
-              <View style={styles.dominanceLabel}>
-                <Text style={styles.domKey}>DOMINANCE</Text>
-                <Text style={styles.domVal}>{i.personalityProfile.dominance}</Text>
-              </View>
-              <View style={styles.domTrack}>
-                <Gradient
-                  colors={[colors.violetBright + '88', colors.violetBright]}
-                  direction="to-r"
-                  style={[styles.domFill, { width: `${i.personalityProfile.dominance}%` }]}
-                />
-              </View>
-            </View>
-          )}
+          <View style={styles.skillList}>
+            {PROFILE_STAT_BARS.filter(stat => INFO_METRIC_KEYS.has(stat.key)).map(stat => (
+              <ColoredSkillBar key={stat.key} label={stat.label} value={stat.getValue(i)} color={stat.color} />
+            ))}
+          </View>
 
           {/* Group info — tappable → Group Profile */}
           {idolGroup ? (
@@ -215,20 +224,11 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
             </View>
           )}
 
-          {/* Vitals + Fanbase */}
+          {/* Vitals */}
           <View style={styles.vitalRow}>
             <Vital Icon={Heart} label="Health" v={i.health} color="#FDA4AF" />
             <Vital Icon={Activity} label="Morale" v={i.morale} color={colors.violetBright} />
             <Vital Icon={Zap} label="Energy" v={i.energy} color={colors.mint} />
-            <View style={styles.vital}>
-              <View style={styles.vitalHead}>
-                <Heart size={12} color="#F9A8D4" />
-                <Text style={styles.tinyMuted}> Fans</Text>
-              </View>
-              <Text style={[styles.vitalValue, { color: '#F9A8D4' }]}>
-                {fmtCount(i.popularity * 3200)}
-              </Text>
-            </View>
           </View>
         </Card>
       )}
@@ -237,18 +237,10 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
       {tab === 'stats' && (
         <Card>
           <SectionTitle>PERFORMANCE SKILLS</SectionTitle>
-          <View style={styles.radarBox}>
-            <RadarChart data={radar} size={190} fillStops={[colors.teal, colors.teal]} />
-          </View>
           <View style={styles.skillList}>
-            <SkillBar label="Vocal" value={i.stats.vocal} />
-            <SkillBar label="Dance" value={i.stats.dance} color="violet" />
-            <SkillBar label="Rap" value={i.stats.rap} color="mint" />
-            <SkillBar label="Visual" value={i.stats.visual} />
-            <SkillBar label="Charisma" value={i.stats.charisma} color="violet" />
-            <SkillBar label="Stamina" value={i.stats.stamina} color="mint" />
-            <SkillBar label="Variety" value={i.stats.variety} />
-            <SkillBar label="Acting" value={i.stats.acting} color="violet" />
+            {PROFILE_STAT_BARS.filter(stat => !INFO_METRIC_KEYS.has(stat.key)).map(stat => (
+              <ColoredSkillBar key={stat.key} label={stat.label} value={stat.getValue(i)} color={stat.color} />
+            ))}
           </View>
         </Card>
       )}
@@ -320,15 +312,6 @@ function Tag({ label, color }: { label: string; color: string }) {
   );
 }
 
-function Row({ k, v }: { k: string; v: ReactNode }) {
-  return (
-    <View style={styles.infoRow}>
-      <Text style={styles.infoKey}>{k}</Text>
-      <Text style={styles.infoVal}>{v}</Text>
-    </View>
-  );
-}
-
 function Vital({ Icon, label, v, color }: { Icon: IconType; label: string; v: number; color: string }) {
   return (
     <View style={styles.vital}>
@@ -340,6 +323,35 @@ function Vital({ Icon, label, v, color }: { Icon: IconType; label: string; v: nu
         {v}
         <Text style={styles.tinyMuted}>/100</Text>
       </Text>
+    </View>
+  );
+}
+
+function ColoredSkillBar({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: number;
+  color: string;
+}) {
+  return (
+    <View style={styles.coloredSkillRow}>
+      <View style={styles.coloredSkillHead}>
+        <Text style={styles.coloredSkillLabel}>{label}</Text>
+        <Text style={[styles.coloredSkillValue, { color }]}>
+          {value}
+          <Text style={styles.tinyMuted}>/100</Text>
+        </Text>
+      </View>
+      <View style={styles.coloredSkillTrack}>
+        <Gradient
+          colors={[color + '88', color + 'EE']}
+          direction="to-r"
+          style={[styles.coloredSkillFill, { width: `${value}%` }]}
+        />
+      </View>
     </View>
   );
 }
@@ -472,13 +484,6 @@ const styles = StyleSheet.create({
   },
   tagText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.4 },
 
-  dominanceSection: { marginTop: spacing.md, gap: 5 },
-  dominanceLabel: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  domKey: { fontSize: 10, fontWeight: '700', letterSpacing: 1, color: colors.mutedForeground },
-  domVal: { fontSize: 13, fontWeight: '900', color: colors.violetBright },
-  domTrack: { height: 5, borderRadius: radius.full, backgroundColor: colors.whiteA10, overflow: 'hidden' },
-  domFill: { height: '100%', borderRadius: radius.full },
-
   infoList: { gap: spacing.sm },
   infoRow: {
     flexDirection: 'row',
@@ -535,8 +540,18 @@ const styles = StyleSheet.create({
   vitalHead: { flexDirection: 'row', alignItems: 'center' },
   vitalValue: { marginTop: 4, fontSize: 18, fontWeight: '700', color: colors.foreground },
 
-  radarBox: { alignItems: 'center', marginBottom: spacing.md },
-  skillList: { gap: 10 },
+  skillList: { marginTop: spacing.md, gap: 8 },
+  coloredSkillRow: { gap: 5 },
+  coloredSkillHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  coloredSkillLabel: { fontSize: 12, color: colors.foreground },
+  coloredSkillValue: { fontSize: 13, fontWeight: '800' },
+  coloredSkillTrack: {
+    height: 6,
+    borderRadius: radius.full,
+    backgroundColor: colors.whiteA10,
+    overflow: 'hidden',
+  },
+  coloredSkillFill: { height: '100%', borderRadius: radius.full },
 
   trainGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   trainBtn: {

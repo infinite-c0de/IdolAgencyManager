@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { cities } from '../data/gameData';
+import { BASE_REFRESH_COST, cities } from '../data/gameData';
 import {
   buildCreatedAgency,
   canRecruitTrainee,
@@ -13,6 +13,7 @@ import type {
   CreateAgencyPayload,
   RecruitResult,
   RefreshScoutingResult,
+  ScoutingFilters,
   UseAgencyActionsParams,
 } from '../features/agency';
 import { getCityById } from '../features/cities';
@@ -28,7 +29,6 @@ export function useAgencyActions({
   setTrainees,
   setIsAgencyCreated,
 }: UseAgencyActionsParams) {
-  const SCOUTING_REFRESH_COST = 12_000_000;
   const VISIBLE_CANDIDATE_COUNT = 10;
   const MAX_ROSTER_SIZE = 30;
   const recentlyShownTraineeIdsRef = useRef<string[]>([]);
@@ -91,8 +91,8 @@ export function useAgencyActions({
     return { ok: true, idolName: trainee.name };
   };
 
-  const refreshScoutingCandidates = (activeFilter: string, overrideCost?: number): RefreshScoutingResult => {
-    const cost = overrideCost ?? SCOUTING_REFRESH_COST;
+  const refreshScoutingCandidates = (filters: ScoutingFilters, overrideCost?: number): RefreshScoutingResult => {
+    const cost = overrideCost ?? BASE_REFRESH_COST;
     if (trainees.length === 0) {
       return { ok: false, reason: 'NO_CANDIDATES' };
     }
@@ -108,17 +108,31 @@ export function useAgencyActions({
       if (current.length === 0) return current;
 
       const targetCount = Math.min(VISIBLE_CANDIDATE_COUNT, current.length);
+      const matchesFilter = (trainee: (typeof current)[number]) => {
+        if (filters.skill !== 'All' && trainee.skill !== filters.skill) return false;
+        if (filters.gender !== 'All' && trainee.gender !== filters.gender) return false;
+        if (filters.nationality !== 'All' && trainee.nationality !== filters.nationality) return false;
+        return true;
+      };
+      const sortByShownCount = (
+        a: { trainee: (typeof current)[number]; index: number },
+        b: { trainee: (typeof current)[number]; index: number },
+      ) => {
+        const diff = (a.trainee.shownCount ?? 0) - (b.trainee.shownCount ?? 0);
+        return diff !== 0 ? diff : Math.random() - 0.5;
+      };
 
-      // Sort by shownCount ascending — least shown first, shuffle within same count for variety
-      const sorted = current
+      const hidden = current
         .map((trainee, index) => ({ trainee, index }))
-        .filter(({ index }) => !current[index].isScoutingVisible)
-        .sort((a, b) => {
-          const diff = (a.trainee.shownCount ?? 0) - (b.trainee.shownCount ?? 0);
-          return diff !== 0 ? diff : Math.random() - 0.5;
-        });
+        .filter(({ trainee }) => !trainee.isScoutingVisible);
 
-      const selected = new Set(sorted.slice(0, targetCount).map(({ index }) => index));
+      // Prioritize full-filter matches from the whole hidden pool first.
+      const prioritized = [
+        ...hidden.filter(({ trainee }) => matchesFilter(trainee)).sort(sortByShownCount),
+        ...hidden.filter(({ trainee }) => !matchesFilter(trainee)).sort(sortByShownCount),
+      ];
+
+      const selected = new Set(prioritized.slice(0, targetCount).map(({ index }) => index));
 
       const next = current.map((trainee, index) => {
         if (selected.has(index)) {
@@ -132,10 +146,7 @@ export function useAgencyActions({
       });
 
       refreshedVisibleCount = selected.size;
-      refreshedFilterMatches =
-        activeFilter === 'All'
-          ? selected.size
-          : [...selected].filter(index => next[index].skill === activeFilter).length;
+      refreshedFilterMatches = [...selected].filter(index => matchesFilter(next[index])).length;
 
       recentlyShownTraineeIdsRef.current = [];
       return next;
@@ -145,7 +156,7 @@ export function useAgencyActions({
 
     return {
       ok: true,
-      cost: SCOUTING_REFRESH_COST,
+      cost: BASE_REFRESH_COST,
       visibleCount: refreshedVisibleCount,
       filterMatches: refreshedFilterMatches,
     };

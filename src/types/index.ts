@@ -96,7 +96,7 @@ export type Idol = {
   languages: string[];
   personality: string;
   personalityProfile?: PersonalityProfile;
-  trainingYears: number;
+  trainingMonths: number;
   role: string;
   group?: string;
   status: Status;

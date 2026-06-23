@@ -11,9 +11,11 @@ import { buildGroupRadar, buildGroupReadiness, getGroupMembers } from '../featur
 import type { RootStackParamList } from '../navigation/types';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
+import type { GroupRole } from '../types';
 import { fmt, fmtCount } from '../utils/format';
 
 const MAX_GROUP_SIZE = 6;
+const ROLE_OPTIONS: GroupRole[] = ['Leader', 'Main Vocal', 'Main Dancer', 'Main Rapper', 'Visual', 'Center'];
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -21,24 +23,19 @@ function avg(values: number[]) {
   return Math.round(values.reduce((sum, value) => sum + value, 0) / Math.max(values.length, 1));
 }
 
-function buildPerformanceStats(members: ReturnType<typeof getGroupMembers>) {
-  if (members.length === 0) {
-    return [
-      { label: 'Vocal', v: 0 },
-      { label: 'Dance', v: 0 },
-      { label: 'Rap', v: 0 },
-      { label: 'Visual', v: 0 },
-      { label: 'Charisma', v: 0 },
-    ];
+function scoreRoleFit(idol: ReturnType<typeof getGroupMembers>[number], role: GroupRole) {
+  if (role === 'Leader') {
+    return Math.round(
+      idol.stats.charisma * 0.35 +
+      idol.stats.stamina * 0.2 +
+      (idol.personalityProfile?.traits.responsibility ?? 60) * 0.45,
+    );
   }
-
-  return [
-    { label: 'Vocal', v: avg(members.map(member => member.stats.vocal)) },
-    { label: 'Dance', v: avg(members.map(member => member.stats.dance)) },
-    { label: 'Rap', v: avg(members.map(member => member.stats.rap)) },
-    { label: 'Visual', v: avg(members.map(member => member.stats.visual)) },
-    { label: 'Charisma', v: avg(members.map(member => member.stats.charisma)) },
-  ];
+  if (role === 'Main Vocal') return idol.stats.vocal;
+  if (role === 'Main Dancer') return idol.stats.dance;
+  if (role === 'Main Rapper') return idol.stats.rap;
+  if (role === 'Visual') return idol.stats.visual;
+  return Math.round(idol.stats.charisma * 0.6 + idol.stats.visual * 0.4);
 }
 
 function getSynergyTier(score: number) {
@@ -88,11 +85,17 @@ function isAssignedToKnownGroup(groupRef: string | undefined, groups: ReturnType
 export function GroupProfileScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute();
-  const { groups, idols, addGroupMembers } = useGame();
+  const { groups, idols, addGroupMembers, updateGroupRoles } = useGame();
   const [openAddModal, setOpenAddModal] = useState(false);
+  const [openRoleModal, setOpenRoleModal] = useState(false);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+  const [draftRoles, setDraftRoles] = useState<Partial<Record<GroupRole, string>>>({});
   const groupId = (route.params as RootStackParamList['GroupProfile'] | undefined)?.groupId;
   const group = groups.find(item => item.id === groupId) ?? groups[0];
+  const availableMembers = useMemo(
+    () => idols.filter(idol => !isAssignedToKnownGroup(idol.group, groups)),
+    [groups, idols],
+  );
 
   if (!group) {
     return (
@@ -105,18 +108,42 @@ export function GroupProfileScreen() {
   }
 
   const members = getGroupMembers(group, idols);
-  const availableMembers = useMemo(
-    () => idols.filter(idol => !isAssignedToKnownGroup(idol.group, groups)),
-    [groups, idols],
-  );
   const radar = buildGroupRadar(members);
   const readiness = buildGroupReadiness(members, group);
-  const stats = buildPerformanceStats(members);
   const synergyTier = getSynergyTier(group.synergy);
+  const requiredRoleSet = ['Leader', 'Main Vocal', 'Main Dancer'] as const;
+  const missingRequiredRoles = requiredRoleSet.filter(role => {
+    const assignedId = group.roleAssignments?.[role];
+    return !assignedId || !members.some(member => member.id === assignedId);
+  });
+  const highDominanceMembers = members.filter(member => (member.personalityProfile?.dominance ?? 55) >= 75).length;
+  const avgMorale = avg(members.map(member => member.morale));
+  const avgStamina = avg(members.map(member => member.stats.stamina));
+  const alerts: string[] = [];
+  if (missingRequiredRoles.length > 0) {
+    alerts.push(`Missing core roles: ${missingRequiredRoles.join(', ')}`);
+  }
+  if (highDominanceMembers > 1) {
+    alerts.push('Multiple high-dominance members may reduce chemistry.');
+  }
+  if (avgMorale < 60) {
+    alerts.push('Low average morale may slow synergy growth.');
+  }
+  if (avgStamina < 60) {
+    alerts.push('Stamina is low; schedule recovery to avoid regression.');
+  }
 
   const closeAddModal = () => {
     setSelectedMemberIds([]);
     setOpenAddModal(false);
+  };
+  const openRoleEditor = () => {
+    setDraftRoles(group.roleAssignments ?? {});
+    setOpenRoleModal(true);
+  };
+  const closeRoleModal = () => {
+    setDraftRoles({});
+    setOpenRoleModal(false);
   };
 
   const toggleAddMember = (idolId: string) => {
@@ -142,6 +169,25 @@ export function GroupProfileScreen() {
 
     Alert.alert('Members added', `${result.addedCount} member(s) added to ${result.groupName}.`);
     closeAddModal();
+  };
+  const assignRole = (role: GroupRole, idolId: string) => {
+    setDraftRoles(current => ({
+      ...current,
+      [role]: current[role] === idolId ? undefined : idolId,
+    }));
+  };
+  const saveRoles = () => {
+    const result = updateGroupRoles({ groupId: group.id, roleAssignments: draftRoles });
+    if (!result.ok) {
+      const messages: Record<typeof result.reason, string> = {
+        GROUP_NOT_FOUND: 'Group not found.',
+        INVALID_ROLE_ASSIGNMENT: 'One or more role assignments are invalid for this group.',
+      };
+      Alert.alert('Cannot update roles', messages[result.reason]);
+      return;
+    }
+    Alert.alert('Roles updated', `Role assignments saved for ${result.groupName}.`);
+    closeRoleModal();
   };
 
   return (
@@ -182,7 +228,7 @@ export function GroupProfileScreen() {
           </View>
 
           <View style={[styles.synergyBadge, { borderColor: synergyTier.borderColor, backgroundColor: synergyTier.backgroundColor }]}>
-            <Text style={styles.synergySmallLabel}>SYNC</Text>
+            <Text style={styles.synergySmallLabel}>SYNERGY</Text>
             <Text style={[styles.synergyBig, { color: synergyTier.textColor }]}>{group.synergy}</Text>
             <Text style={[styles.synergyTierBadge, { color: synergyTier.textColor }]}>{synergyTier.label}</Text>
           </View>
@@ -211,10 +257,15 @@ export function GroupProfileScreen() {
       <View>
         <View style={styles.sectionRow}>
           <Text style={styles.sectionLabel}>LINEUP</Text>
-          <TouchableOpacity style={styles.addBtn} onPress={() => setOpenAddModal(true)} activeOpacity={0.8}>
-            <Plus size={11} color={colors.slate900} />
-            <Text style={styles.addBtnText}>Add</Text>
-          </TouchableOpacity>
+          <View style={styles.lineupActions}>
+            <TouchableOpacity style={styles.roleBtn} onPress={openRoleEditor} activeOpacity={0.8}>
+              <Text style={styles.roleBtnText}>Roles</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.addBtn} onPress={() => setOpenAddModal(true)} activeOpacity={0.8}>
+              <Plus size={11} color={colors.slate900} />
+              <Text style={styles.addBtnText}>Add</Text>
+            </TouchableOpacity>
+          </View>
         </View>
         {members.length > 0 ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filmScroll}>
@@ -248,25 +299,29 @@ export function GroupProfileScreen() {
       <Card>
         <SectionTitle>PERFORMANCE</SectionTitle>
         <View style={styles.perfRow}>
-          <View style={styles.radarWrap}>
-            <RadarChart data={radar} size={120} fillStops={[colors.teal, colors.violet]} />
-          </View>
-          <View style={styles.vBars}>
-            {stats.map(stat => (
-              <View key={stat.label} style={styles.vBarCol}>
-                <View style={styles.vBarTrack}>
-                  <Gradient
-                    colors={[colors.violet, colors.tealBright]}
-                    direction="to-t"
-                    style={[styles.vBarFill, { height: `${stat.v}%` }]}
-                  />
-                </View>
-                <Text style={styles.vBarValue}>{stat.v}</Text>
-                <Text style={styles.vBarLabel}>{stat.label.slice(0, 3).toUpperCase()}</Text>
+          <RadarChart data={radar} size={170} showValueInLabels />
+        </View>
+      </Card>
+
+      {/* ── TEAM INSIGHTS ── */}
+      <Card>
+        <SectionTitle>TEAM INSIGHTS</SectionTitle>
+        <View style={styles.insightRow}>
+          <Mini label="AVG MORALE" value={`${avgMorale}`} />
+          <Mini label="AVG STAMINA" value={`${avgStamina}`} />
+          <Mini label="HIGH DOM" value={`${highDominanceMembers}`} />
+        </View>
+        {alerts.length > 0 ? (
+          <View style={styles.alertList}>
+            {alerts.map(alert => (
+              <View key={alert} style={styles.alertItem}>
+                <Text style={styles.alertText}>• {alert}</Text>
               </View>
             ))}
           </View>
-        </View>
+        ) : (
+          <Text style={styles.insightHealthy}>No critical team-fit warnings this week.</Text>
+        )}
       </Card>
 
       {/* ── DEBUT READINESS ── visual badges */}
@@ -364,6 +419,62 @@ export function GroupProfileScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* ── EDIT ROLES MODAL ── */}
+      <Modal visible={openRoleModal} transparent animationType="fade" onRequestClose={closeRoleModal}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Edit roles · {group.name}</Text>
+            <Text style={styles.modalSub}>Assign core roles to current members. Tap again to unassign.</Text>
+            <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+              <View style={styles.roleEditWrap}>
+                {ROLE_OPTIONS.map(role => {
+                  const assignedId = draftRoles[role];
+                  const sortedMembers = [...members].sort(
+                    (a, b) => scoreRoleFit(b, role) - scoreRoleFit(a, role),
+                  );
+                  return (
+                    <View key={role} style={styles.roleEditRow}>
+                      <Text style={styles.roleEditTitle}>{role}</Text>
+                      <View style={styles.roleChipWrap}>
+                        {sortedMembers.map(member => {
+                          const active = assignedId === member.id;
+                          const fitScore = scoreRoleFit(member, role);
+                          return (
+                            <TouchableOpacity
+                              key={`${role}-${member.id}`}
+                              style={[styles.roleChip, active && styles.roleChipActive]}
+                              onPress={() => assignRole(role, member.id)}
+                              activeOpacity={0.8}>
+                              <Avatar
+                                name={member.stageName}
+                                gradient={member.gradient}
+                                image={member.image}
+                                size={22}
+                              />
+                              <Text style={[styles.roleChipText, active && styles.roleChipTextActive]}>
+                                {member.stageName} ({fitScore})
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            </ScrollView>
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={closeRoleModal} activeOpacity={0.8}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.confirmBtn} onPress={saveRoles} activeOpacity={0.8}>
+                <Text style={styles.confirmText}>Save Roles</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </AppShell>
   );
 }
@@ -394,6 +505,16 @@ const styles = StyleSheet.create({
 
   sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
   sectionLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 1.5, color: colors.mutedForeground },
+  lineupActions: { flexDirection: 'row', gap: spacing.xs },
+  roleBtn: {
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.whiteA05,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 5,
+  },
+  roleBtnText: { fontSize: 10, fontWeight: '700', color: colors.foreground },
 
   addBtn: {
     flexDirection: 'row',
@@ -518,22 +639,22 @@ const styles = StyleSheet.create({
   emptyText: { color: colors.mutedForeground, textAlign: 'center', fontSize: 12 },
 
   // ── Performance ──
-  perfRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  radarWrap: { flex: 1, alignItems: 'center' },
-  vBars: { flexDirection: 'row', gap: 10, alignItems: 'flex-end' },
-  vBarCol: { alignItems: 'center', gap: 3 },
-  vBarTrack: {
-    height: 60,
-    width: 12,
-    borderRadius: radius.full,
-    backgroundColor: colors.whiteA10,
-    overflow: 'hidden',
-    justifyContent: 'flex-end',
-  },
-  vBarFill: { width: '100%', borderRadius: radius.full },
-  vBarValue: { fontSize: 10, fontWeight: '700', color: colors.foreground },
-  vBarLabel: { fontSize: 7, fontWeight: '800', letterSpacing: 0.5, color: colors.mutedForeground, textTransform: 'uppercase' },
+  perfRow: { alignItems: 'center' },
 
+  // ── Insights ──
+  insightRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
+  alertList: { marginTop: spacing.sm, gap: 6 },
+  alertItem: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(251,113,133,0.35)',
+    backgroundColor: 'rgba(251,113,133,0.08)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 8,
+  },
+  alertText: { fontSize: 11, color: 'rgba(255,255,255,0.85)' },
+  insightHealthy: { marginTop: spacing.sm, fontSize: 11, color: colors.mint },
+  
   // ── Readiness ──
   readinessGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.sm },
   readinessItem: {
@@ -597,6 +718,27 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(34,211,238,0.6)',
     backgroundColor: 'rgba(34,211,238,0.1)',
   },
+  roleEditWrap: { gap: spacing.md, marginTop: spacing.sm },
+  roleEditRow: { gap: 6 },
+  roleEditTitle: { fontSize: 11, fontWeight: '800', color: colors.foreground, letterSpacing: 0.4 },
+  roleChipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  roleChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.whiteA05,
+    paddingHorizontal: 5,
+    paddingVertical: 4,
+  },
+  roleChipActive: {
+    borderColor: 'rgba(103,232,249,0.7)',
+    backgroundColor: 'rgba(34,211,238,0.16)',
+  },
+  roleChipText: { fontSize: 10, color: colors.foreground },
+  roleChipTextActive: { color: colors.tealBright, fontWeight: '700' },
   memberName: { fontSize: 12, fontWeight: '700', color: colors.foreground },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
   modalCard: {

@@ -57,6 +57,8 @@ export function calculateWeeklyProgression({
   currentWeek,
 }: WeeklyProgressionInput): WeeklyProgressionResult {
   const groupIdByName = new Map(groups.map(group => [group.name, group.id]));
+  const nextWeek = currentWeek + 1;
+  const monthTick = nextWeek % 4 === 0 ? 1 : 0;
   const nextIdols = idols.map(idol => {
     const groupPlanKey = idol.group ? groupIdByName.get(idol.group) ?? idol.group : undefined;
     const plan =
@@ -98,6 +100,7 @@ export function calculateWeeklyProgression({
       energy: clamp(idol.energy + energyDelta),
       morale: clamp(idol.morale + moraleDelta),
       health: clamp(idol.health + healthDelta),
+      trainingMonths: Math.max(0, Math.round((idol.trainingMonths ?? 0) + monthTick)),
     };
   });
 

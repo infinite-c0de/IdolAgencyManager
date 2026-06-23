@@ -18,6 +18,7 @@ type Props = {
   size?: number;
   max?: number;
   fillStops?: [string, string];
+  showValueInLabels?: boolean;
 };
 
 function pointAt(cx: number, cy: number, r: number, angleRad: number) {
@@ -33,6 +34,7 @@ export function RadarChart({
   size = 200,
   max = 100,
   fillStops = [colors.teal, colors.violet],
+  showValueInLabels = false,
 }: Props) {
   if (!data.length) {
     return <View />;
@@ -47,6 +49,7 @@ export function RadarChart({
   const radius = size / 2 - 8;
   const n = data.length;
   const angle = (i: number) => (-Math.PI / 2) + (i * 2 * Math.PI) / n;
+  const valueLabelOffsetY = 14; // visual top spacing under skill label
 
   const rings = [0.25, 0.5, 0.75, 1];
 
@@ -110,21 +113,33 @@ export function RadarChart({
 
         {data.map((d, i) => {
           const a = angle(i);
-          const p = pointAt(cx, cy, radius + 16, a);
+          const p = pointAt(cx, cy, radius + 18, a);
           const cos = Math.cos(a);
           const textAnchor = cos > 0.35 ? 'start' : cos < -0.35 ? 'end' : 'middle';
           const xOffset = cos > 0.35 ? 2 : cos < -0.35 ? -2 : 0;
           return (
-            <SvgText
-              key={d.skill}
-              x={p.x + xOffset}
-              y={p.y + 3}
-              fill="rgba(255,255,255,0.7)"
-              fontSize={9}
-              fontWeight="600"
-              textAnchor={textAnchor}>
-              {d.skill}
-            </SvgText>
+            <React.Fragment key={d.skill}>
+              <SvgText
+                x={p.x + xOffset}
+                y={p.y}
+                fill="rgba(255,255,255,0.7)"
+                fontSize={9}
+                fontWeight="600"
+                textAnchor={textAnchor}>
+                {d.skill}
+              </SvgText>
+              {showValueInLabels && (
+                <SvgText
+                  x={p.x + xOffset}
+                  y={p.y + valueLabelOffsetY}
+                  fill="rgba(255,255,255,0.9)"
+                  fontSize={14}
+                  fontWeight="700"
+                  textAnchor={textAnchor}>
+                  {d.v}
+                </SvgText>
+              )}
+            </React.Fragment>
           );
         })}
 

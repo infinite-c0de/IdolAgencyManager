@@ -134,7 +134,7 @@ function normalizeIdol(raw: unknown): Idol | null {
     personalityProfile: isRecord(raw.personalityProfile)
       ? normalizePersonalityProfile(raw.personalityProfile as never, str(raw.personality, 'Focused'))
       : undefined,
-    trainingYears:      num(raw.trainingYears, 0),
+    trainingMonths:     num(raw.trainingMonths, Math.max(0, Math.round(num(raw.trainingYears, 0) * 12))),
     role:               str(raw.role, 'Vocalist'),
     group:              typeof raw.group === 'string' ? raw.group : undefined,
     status:             normalizeStatus(raw.status),

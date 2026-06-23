@@ -363,6 +363,8 @@ export const trainingTypes = [
   { id: 'rest', name: 'Rest Day', effect: '+Morale', cost: '+Energy' },
 ];
 
+export const BASE_REFRESH_COST = 10_000_000;
+
 export const conceptOptions = ['Girl Crush', 'Fresh', 'Elegant', 'Hip-Hop', 'Ballad', 'Experimental', 'Global Pop'];
 export const languageOptions = ['Korean', 'Japanese', 'Chinese', 'Vietnamese', 'English'];
 

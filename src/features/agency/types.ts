@@ -16,6 +16,12 @@ export type RefreshScoutingResult =
   | { ok: true; cost: number; visibleCount: number; filterMatches: number }
   | { ok: false; reason: 'INSUFFICIENT_FUNDS' | 'NO_CANDIDATES' };
 
+export type ScoutingFilters = {
+  skill: string;
+  gender: 'All' | 'male' | 'female';
+  nationality: string;
+};
+
 export type UseAgencyActionsParams = {  agency: Agency;
   idols: Idol[];
   trainees: Trainee[];

@@ -1,7 +1,6 @@
 import { Heart, RefreshCw, Sparkles, UserPlus, X } from 'lucide-react-native';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Animated,
   Image,
   Modal,
   ScrollView,
@@ -12,7 +11,7 @@ import {
 } from 'react-native';
 import { AppShell } from '../components/AppShell';
 import { Gradient } from '../components/ui/Gradient';
-import { traineeArtPool } from '../data/gameData';
+import { BASE_REFRESH_COST, traineeArtPool } from '../data/gameData';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 import { fmt, fmtCount } from '../utils/format';
@@ -32,14 +31,13 @@ const ALL_NATIONALITIES = [
   ).sort(),
 ];
 
-const BASE_REFRESH_COST = 12_000_000;
+const filters = ['All', 'Vocal', 'Dance', 'Rap', 'Visual', 'Charisma'];
+const PAGE_SIZE = 10;
 const FILTER_COST: Record<string, number> = {
   skill: 2_000_000,
   gender: 3_000_000,
   nationality: 5_000_000,
 };
-
-const filters = ['All', 'Vocal', 'Dance', 'Rap', 'Visual', 'Charisma'];
 
 const SKILL_COLOR: Record<string, string> = {
   Vocal: '#E879F9',
@@ -67,6 +65,14 @@ function resolveImageAspectRatio(source?: number) {
 
 type Trainee = ReturnType<typeof useGame>['trainees'][number];
 
+function getProfileFlag(value?: number | string) {
+  const numeric = Number(value);
+  if (Number.isFinite(numeric) && numeric > 0) {
+    return Math.floor(numeric);
+  }
+  return Number.MAX_SAFE_INTEGER;
+}
+
 export function RecruitScreen() {
   const { trainees, agency, recruitTrainee, refreshScoutingCandidates } = useGame();
   const [confirm, setConfirm] = useState<Trainee | null>(null);
@@ -75,16 +81,30 @@ export function RecruitScreen() {
   const [genderFilter, setGenderFilter] = useState<'All' | 'male' | 'female'>('All');
   const [nationalityFilter, setNationalityFilter] = useState('All');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
 
-  const visibleCandidates = trainees.filter(t => t.isScoutingVisible !== false);
-
-  const nationalities = ALL_NATIONALITIES;
-  const list = visibleCandidates.filter(t => {
+  const matchesFilters = (t: Trainee) => {
     if (activeFilter !== 'All' && t.skill !== activeFilter) return false;
     if (genderFilter !== 'All' && t.gender !== genderFilter) return false;
     if (nationalityFilter !== 'All' && t.nationality !== nationalityFilter) return false;
     return true;
-  });
+  };
+  const orderedCandidates = useMemo(
+    () => [...trainees].sort((a, b) => getProfileFlag(a.artKey) - getProfileFlag(b.artKey)),
+    [trainees],
+  );
+  const allFilteredCandidates = orderedCandidates.filter(matchesFilters);
+  const nationalities = ALL_NATIONALITIES;
+  const totalPages = Math.max(1, Math.ceil(allFilteredCandidates.length / PAGE_SIZE));
+  const list = allFilteredCandidates.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+
+  useEffect(() => {
+    setPage(0);
+  }, [activeFilter, genderFilter, nationalityFilter]);
+
+  useEffect(() => {
+    setPage(current => Math.min(current, Math.max(0, totalPages - 1)));
+  }, [totalPages]);
 
   const handleRecruit = (traineeId: string) => {
     const result = recruitTrainee(traineeId);
@@ -110,32 +130,36 @@ export function RecruitScreen() {
   };
 
   const handleRefresh = () => {
-    const result = refreshScoutingCandidates(activeFilter, refreshCost);
-    if (result.ok) {
-      if (activeFilter !== 'All' && result.filterMatches === 0) {
-        setError('Candidates refreshed — no matches for this filter right now.');
+    if (allFilteredCandidates.length === 0) {
+      setError('No matching profiles for the selected filters.');
+      return;
+    }
+    const result = refreshScoutingCandidates(
+      { skill: activeFilter, gender: genderFilter, nationality: nationalityFilter },
+      refreshCost,
+    );
+    if (!result.ok) {
+      if (result.reason === 'INSUFFICIENT_FUNDS') {
+        setError(`Not enough budget to refresh. ${refreshCostLabel} required.`);
+        return;
       }
+      setError('No more candidates to show right now.');
       return;
     }
-    if (result.reason === 'INSUFFICIENT_FUNDS') {
-      setError(`Not enough budget to refresh. ${refreshCostLabel} required for current filters.`);
-      return;
-    }
-    setError('No more candidates to show right now.');
+    setExpandedId(null);
+    setPage(current => (current + 1) % totalPages);
   };
 
   const activeFilterCount = (activeFilter !== 'All' ? 1 : 0) + (genderFilter !== 'All' ? 1 : 0) + (nationalityFilter !== 'All' ? 1 : 0);
-
   const refreshCost =
     BASE_REFRESH_COST +
     (activeFilter !== 'All' ? FILTER_COST.skill : 0) +
     (genderFilter !== 'All' ? FILTER_COST.gender : 0) +
     (nationalityFilter !== 'All' ? FILTER_COST.nationality : 0);
-
-  const refreshCostLabel = `₩${(refreshCost / 1_000_000).toFixed(0)}M`;
+  const refreshCostLabel = `₩${(refreshCost / 1_000_000).toFixed(1)}M`;
 
   return (
-    <AppShell title="Scout" subtitle={`${list.length} of ${visibleCandidates.length} candidates`}>
+    <AppShell title="Scout" subtitle={`${allFilteredCandidates.length} total matches`}>
 
       {/* ── FILTER PANEL ── */}
       <View style={styles.filterPanel}>
@@ -147,7 +171,7 @@ export function RecruitScreen() {
             {filters.map(f => {
               const active = activeFilter === f;
               const accent = SKILL_COLOR[f];
-              const count = f === 'All' ? visibleCandidates.length : visibleCandidates.filter(t => t.skill === f).length;
+              const count = f === 'All' ? orderedCandidates.length : orderedCandidates.filter(t => t.skill === f).length;
               const hasMatches = count > 0;
               return (
                 <TouchableOpacity
@@ -191,7 +215,7 @@ export function RecruitScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
             {nationalities.map(n => {
               const active = nationalityFilter === n;
-              const count = n === 'All' ? visibleCandidates.length : visibleCandidates.filter(t => t.nationality === n).length;
+              const count = n === 'All' ? orderedCandidates.length : orderedCandidates.filter(t => t.nationality === n).length;
               const hasMatches = count > 0;
               return (
                 <TouchableOpacity
@@ -214,22 +238,17 @@ export function RecruitScreen() {
               <Text style={styles.matchNum}>{list.length}</Text>
               <Text style={styles.matchLabel}> match{list.length !== 1 ? 'es' : ''}</Text>
             </View>
+            <Text style={styles.filterActiveLabel}>
+              Page {allFilteredCandidates.length === 0 ? 0 : page + 1} / {allFilteredCandidates.length === 0 ? 0 : totalPages}
+            </Text>
             {activeFilterCount > 0 && (
               <Text style={styles.filterActiveLabel}>{activeFilterCount} filter{activeFilterCount > 1 ? 's' : ''} active</Text>
             )}
           </View>
           <View style={styles.refreshSide}>
-            {activeFilterCount > 0 && (
-              <View style={styles.costBreakdown}>
-                <Text style={styles.costBreakdownText}>₩12M base</Text>
-                {activeFilter !== 'All' && <Text style={styles.costBreakdownText}>+₩2M skill</Text>}
-                {genderFilter !== 'All' && <Text style={styles.costBreakdownText}>+₩3M gender</Text>}
-                {nationalityFilter !== 'All' && <Text style={styles.costBreakdownText}>+₩5M nation</Text>}
-              </View>
-            )}
             <TouchableOpacity style={styles.refreshBtn} onPress={handleRefresh} activeOpacity={0.85}>
               <RefreshCw size={13} color={colors.slate900} />
-              <Text style={styles.refreshBtnText}>Refresh  {refreshCostLabel}</Text>
+              <Text style={styles.refreshBtnText}>Refresh {refreshCostLabel}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -241,6 +260,7 @@ export function RecruitScreen() {
           <CandidateCard
             key={t.id}
             trainee={t}
+            profileFlag={getProfileFlag(t.artKey)}
             expanded={expandedId === t.id}
             onToggle={() => setExpandedId(expandedId === t.id ? null : t.id)}
             onRecruit={() => handleRecruit(t.id)}
@@ -249,7 +269,7 @@ export function RecruitScreen() {
         ))}
         {list.length === 0 && (
           <View style={styles.emptyState}>
-            {visibleCandidates.length > 0 ? (
+            {allFilteredCandidates.length > 0 ? (
               <>
                 <Text style={styles.emptyTitle}>No matches</Text>
                 <Text style={styles.emptyBody}>
@@ -258,7 +278,7 @@ export function RecruitScreen() {
                   {nationalityFilter !== 'All' && `Nation: ${nationalityFilter}`}
                 </Text>
                 <Text style={styles.emptyBody}>
-                  No candidates in the current pool match these filters. Clear a filter or refresh.
+                  Matching profiles exist. Click Refresh to move to the next result page.
                 </Text>
                 <TouchableOpacity
                   style={styles.emptyRefreshBtn}
@@ -270,13 +290,16 @@ export function RecruitScreen() {
               </>
             ) : (
               <>
-                <Text style={styles.emptyTitle}>No candidates visible</Text>
+                <Text style={styles.emptyTitle}>No matching profiles</Text>
                 <Text style={styles.emptyBody}>
-                  Use Refresh to cycle new faces into the scouting pool.
+                  No profiles in the full scout pool match the current filters.
                 </Text>
-                <TouchableOpacity style={styles.emptyRefreshBtn} onPress={handleRefresh} activeOpacity={0.8}>
-                  <RefreshCw size={13} color={colors.tealBright} />
-                  <Text style={styles.emptyRefreshText}>Refresh Candidates</Text>
+                <TouchableOpacity
+                  style={styles.emptyRefreshBtn}
+                  onPress={() => { setActiveFilter('All'); setGenderFilter('All'); setNationalityFilter('All'); }}
+                  activeOpacity={0.8}>
+                  <X size={13} color={colors.tealBright} />
+                  <Text style={styles.emptyRefreshText}>Clear All Filters</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -351,12 +374,14 @@ export function RecruitScreen() {
 
 function CandidateCard({
   trainee: t,
+  profileFlag,
   expanded,
   onToggle,
   onRecruit,
   canAfford,
 }: {
   trainee: Trainee;
+  profileFlag: number;
   expanded: boolean;
   onToggle: () => void;
   onRecruit: () => void;
@@ -393,7 +418,6 @@ function CandidateCard({
             <Text style={[styles.skillBadgeText, { color: skillColor }]}>{t.skill}</Text>
           </View>
         </View>
-        <Text style={styles.artFlag}>{t.flag}</Text>
 
         {/* Bottom overlay — name + potential + fans */}
         <View style={styles.artBottom}>

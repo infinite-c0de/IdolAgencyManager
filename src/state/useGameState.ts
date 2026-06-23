@@ -9,7 +9,7 @@ import {
   languageOptions,
   trainingTypes,
 } from '../data/gameData';
-import type { CreateAgencyPayload, RecruitResult, RefreshScoutingResult } from '../features/agency';
+import type { CreateAgencyPayload, RecruitResult, RefreshScoutingResult, ScoutingFilters } from '../features/agency';
 import { getCityByName } from '../features/cities';
 import { applyWeeklyEconomyTick, defaultEconomyModifiers } from '../features/economy';
 import type {
@@ -19,6 +19,8 @@ import type {
   CreateGroupResult,
   ReleaseDebutPayload,
   ReleaseDebutResult,
+  UpdateGroupRolesPayload,
+  UpdateGroupRolesResult,
 } from '../features/groups';
 import { releaseDebut as releaseDebutService } from '../features/groups';
 import type { FinanceTransaction, RevenueHistoryPoint, SaveSlotSummary, TrainingPlans } from '../features/saves';
@@ -51,9 +53,10 @@ export type GameState = {
   saveSlots: SaveSlot[];
   createAgency: (payload: CreateAgencyPayload) => boolean;
   recruitTrainee: (traineeId: string) => RecruitResult;
-  refreshScoutingCandidates: (activeFilter: string, overrideCost?: number) => RefreshScoutingResult;
+  refreshScoutingCandidates: (filters: ScoutingFilters, overrideCost?: number) => RefreshScoutingResult;
   createGroup: (payload: CreateGroupPayload) => CreateGroupResult;
   addGroupMembers: (payload: AddGroupMembersPayload) => AddGroupMembersResult;
+  updateGroupRoles: (payload: UpdateGroupRolesPayload) => UpdateGroupRolesResult;
   setTrainingPlan: (targetId: string, plan: Record<string, string>) => void;
   advanceWeek: () => void;
   releaseDebut: (payload: ReleaseDebutPayload) => ReleaseDebutResult;
@@ -124,7 +127,7 @@ export function useGameState(): GameState {
     setIsAgencyCreated,
   });
 
-  const { createGroup, addGroupMembers } = useGroupActions({
+  const { createGroup, addGroupMembers, updateGroupRoles } = useGroupActions({
     idols,
     groups,
     setIdols,
@@ -249,6 +252,7 @@ export function useGameState(): GameState {
       refreshScoutingCandidates,
       createGroup,
       addGroupMembers,
+      updateGroupRoles,
       setTrainingPlan,
       advanceWeek,
       releaseDebut,
@@ -276,6 +280,7 @@ export function useGameState(): GameState {
       refreshScoutingCandidates,
       createGroup,
       addGroupMembers,
+      updateGroupRoles,
       setTrainingPlan,
       advanceWeek,
       releaseDebut,

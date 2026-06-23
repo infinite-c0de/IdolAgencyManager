@@ -271,7 +271,7 @@ export function AgencyDashboardScreen() {
 
         <View style={styles.perfRow}>
           <View style={styles.radarBox}>
-            <RadarChart data={radarData} size={110} />
+            <RadarChart data={radarData} size={100} />
           </View>
           <View style={styles.vBars}>
             {stats.map(s => (

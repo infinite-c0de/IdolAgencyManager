@@ -483,7 +483,7 @@ export function traineeToIdol(trainee: Trainee): Idol {
     languages: trainee.languages,
     personality: trainee.personality,
     personalityProfile: normalizePersonalityProfile(trainee.personalityProfile, trainee.personality),
-    trainingYears: 0,
+    trainingMonths: 0,
     role: `${trainee.skill} Trainee`,
     status: 'Trainee',
     popularity: Math.round(40 + trainee.potential * 0.35),

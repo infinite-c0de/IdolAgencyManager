@@ -5,6 +5,8 @@ import type {
   AddGroupMembersPayload,
   CreateGroupBuildResult,
   CreateGroupPayload,
+  UpdateGroupRolesBuildResult,
+  UpdateGroupRolesPayload,
 } from './types';
 import type { GroupMember, GroupRadarPoint, GroupReadiness } from './types';
 
@@ -302,6 +304,58 @@ export function addMembersToExistingGroup(
     updatedIdols,
     addedCount: requestedIds.length,
   };
+}
+
+export function updateGroupRoles(
+  payload: UpdateGroupRolesPayload,
+  idols: Idol[],
+  groups: Group[],
+): UpdateGroupRolesBuildResult {
+  const group = groups.find(item => item.id === payload.groupId);
+  if (!group) {
+    return { ok: false, reason: 'GROUP_NOT_FOUND' };
+  }
+
+  const cleanedAssignments = cleanAssignments(payload.roleAssignments);
+  const hasInvalidRoleAssignee = Object.values(cleanedAssignments).some(
+    idolId => idolId && !group.memberIds.includes(idolId),
+  );
+  if (hasInvalidRoleAssignee) {
+    return { ok: false, reason: 'INVALID_ROLE_ASSIGNMENT' };
+  }
+
+  const rolesByMember = new Map<string, GroupRole[]>();
+  (Object.entries(cleanedAssignments) as Array<[GroupRole, string]>).forEach(([role, idolId]) => {
+    const current = rolesByMember.get(idolId) ?? [];
+    current.push(role);
+    rolesByMember.set(idolId, current);
+  });
+
+  const updatedIdols = idols.map(idol => {
+    if (!group.memberIds.includes(idol.id)) return idol;
+    const assignedRoles = rolesByMember.get(idol.id) ?? [];
+    return {
+      ...idol,
+      role: assignedRoles.join(' / ') || 'Member',
+    };
+  });
+
+  const updatedMembers = group.memberIds
+    .map(id => updatedIdols.find(idol => idol.id === id))
+    .filter((idol): idol is Idol => Boolean(idol));
+  const updatedGroupBase: Group = {
+    ...group,
+    roleAssignments: cleanedAssignments,
+  };
+  const metrics = recalculateGroupMetrics(updatedGroupBase, updatedMembers);
+  const updatedGroup: Group = {
+    ...updatedGroupBase,
+    popularity: metrics.popularity,
+    synergy: metrics.synergy,
+    monthlyRevenue: metrics.monthlyRevenue,
+  };
+
+  return { ok: true, group: updatedGroup, updatedIdols };
 }
 
 export function buildGroupRadar(members: GroupMember[]): GroupRadarPoint[] {

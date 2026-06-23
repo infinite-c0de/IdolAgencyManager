@@ -59,6 +59,19 @@ export type AddGroupMembersBuildResult =
   | { ok: true; group: Group; updatedIdols: Idol[]; addedCount: number }
   | Extract<AddGroupMembersResult, { ok: false }>;
 
+export type UpdateGroupRolesPayload = {
+  groupId: string;
+  roleAssignments: Partial<Record<GroupRole, string>>;
+};
+
+export type UpdateGroupRolesResult =
+  | { ok: true; groupName: string }
+  | { ok: false; reason: 'GROUP_NOT_FOUND' | 'INVALID_ROLE_ASSIGNMENT' };
+
+export type UpdateGroupRolesBuildResult =
+  | { ok: true; group: Group; updatedIdols: Idol[] }
+  | Extract<UpdateGroupRolesResult, { ok: false }>;
+
 export type ReleaseDebutPayload = {
   groupId: string;
   title: string;
