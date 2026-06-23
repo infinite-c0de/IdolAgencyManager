@@ -173,7 +173,7 @@ export function GroupsScreen() {
                   )}
                 </Text>
                 <Text style={styles.readinessHint}>
-                  Trigger rules: 3+ members, leader assigned, balanced performance stats, debut content, promotion plan.
+                  To debut: 3+ members, a Leader assigned, balanced performance stats, and a promotion plan in place.
                 </Text>
               </View>
             </Card>
@@ -505,41 +505,57 @@ function NewGroupModal({
                 {selectedIds.length === 0 ? (
                   <Text style={styles.helperText}>Select members first to assign core roles.</Text>
                 ) : (
-                  <View style={styles.roleSection}>
-                    {GROUP_ROLES.map(role => {
-                      const assignedId = roleAssignments[role];
-                      const isRequired = REQUIRED_ROLES.includes(role);
-                      return (
-                        <View key={role} style={styles.roleRow}>
-                          <Text style={styles.roleTitle}>
-                            {role}
-                            {isRequired ? ' *' : ''}
-                          </Text>
-                          <View style={styles.chipWrap}>
-                            {available
-                              .filter(member => selectedIds.includes(member.id))
-                              .map(member => {
-                                const active = assignedId === member.id;
-                                return (
-                                  <TouchableOpacity
-                                    key={`${role}-${member.id}`}
-                                    style={[styles.roleChip, active && styles.selectedChip]}
-                                    onPress={() => assignRole(role, member.id)}
-                                    activeOpacity={0.8}>
-                                    <Text style={[styles.roleChipText, active && styles.selectedChipText]}>
-                                      {member.stageName} ({scoreRoleFit(member, role)})
-                                    </Text>
-                                  </TouchableOpacity>
-                                );
-                              })}
+                  <View style={styles.roleTable}>
+                    {/* Header */}
+                    <View style={styles.roleTableHeader}>
+                      <View style={styles.roleTableRoleCell}>
+                        <Text style={styles.roleTableHeadText}>ROLE</Text>
+                      </View>
+                      {available
+                        .filter(m => selectedIds.includes(m.id))
+                        .map(m => (
+                          <View key={m.id} style={styles.roleTableMemberCell}>
+                            <Avatar name={m.stageName} gradient={m.gradient} image={m.image} size={22} />
+                            <Text style={styles.roleTableMemberName} numberOfLines={1}>{m.stageName}</Text>
                           </View>
+                        ))}
+                    </View>
+                    {/* Rows */}
+                    {GROUP_ROLES.map(role => {
+                      const isRequired = REQUIRED_ROLES.includes(role);
+                      const assignedId = roleAssignments[role];
+                      return (
+                        <View key={role} style={styles.roleTableRow}>
+                          <View style={styles.roleTableRoleCell}>
+                            <Text style={[styles.roleTableRoleText, isRequired && styles.roleTableRoleRequired]}>
+                              {role}{isRequired ? ' *' : ''}
+                            </Text>
+                          </View>
+                          {available
+                            .filter(m => selectedIds.includes(m.id))
+                            .map(m => {
+                              const active = assignedId === m.id;
+                              const score = scoreRoleFit(m, role);
+                              return (
+                                <TouchableOpacity
+                                  key={`${role}-${m.id}`}
+                                  style={styles.roleTableMemberCell}
+                                  onPress={() => assignRole(role, m.id)}
+                                  activeOpacity={0.8}>
+                                  <View style={[styles.roleCheckBox, active && styles.roleCheckBoxActive]}>
+                                    {active && <Text style={styles.roleCheckMark}>✓</Text>}
+                                  </View>
+                                  <Text style={[styles.roleScoreText, active && styles.roleScoreActive]}>{score}</Text>
+                                </TouchableOpacity>
+                              );
+                            })}
                         </View>
                       );
                     })}
                   </View>
                 )}
                 <Text style={styles.helperText}>
-                  Required roles: Leader, Main Vocal, Main Dancer. Better role fit increases group synergy.
+                  Required (*): Leader, Main Vocal, Main Dancer. Score = fit for that role (higher is better).
                 </Text>
               </View>
             </View>
@@ -681,6 +697,30 @@ const styles = StyleSheet.create({
   roleSection: { marginTop: spacing.sm, gap: spacing.sm },
   roleRow: { gap: 6 },
   roleTitle: { fontSize: 11, fontWeight: '700', color: colors.foreground },
+
+  roleTable: { marginTop: spacing.sm, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
+  roleTableHeader: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.04)', borderBottomWidth: 1, borderBottomColor: colors.border },
+  roleTableRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.04)' },
+  roleTableRoleCell: { width: 90, paddingHorizontal: spacing.sm, paddingVertical: spacing.sm, justifyContent: 'center' },
+  roleTableMemberCell: { flex: 1, alignItems: 'center', paddingVertical: spacing.sm, gap: 3 },
+  roleTableHeadText: { fontSize: 8, fontWeight: '800', letterSpacing: 1, color: colors.mutedForeground },
+  roleTableMemberName: { fontSize: 7, fontWeight: '700', color: colors.mutedForeground, textAlign: 'center' },
+  roleTableRoleText: { fontSize: 10, fontWeight: '600', color: colors.foreground },
+  roleTableRoleRequired: { color: colors.tealBright },
+  roleCheckBox: {
+    width: 20,
+    height: 20,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.whiteA05,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  roleCheckBoxActive: { borderColor: 'rgba(34,211,238,0.7)', backgroundColor: 'rgba(34,211,238,0.15)' },
+  roleCheckMark: { fontSize: 11, fontWeight: '900', color: colors.tealBright },
+  roleScoreText: { fontSize: 9, fontWeight: '600', color: colors.mutedForeground },
+  roleScoreActive: { color: colors.tealBright },
   fieldInput: {
     marginTop: 4,
     borderRadius: radius.lg,

@@ -1,7 +1,6 @@
 import { ChevronRight, Music2, Sparkles } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { AppShell, Card } from '../components/AppShell';
+import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';import { AppShell, Card } from '../components/AppShell';
 import { Gradient } from '../components/ui/Gradient';
 import { projectRelease, RELEASE_QUALITY_COST } from '../features/groups';
 import { useGame } from '../state/GameContext';
@@ -36,12 +35,33 @@ export function ReleaseScreen() {
   const [quality, setQuality] = useState<1 | 2 | 3 | 4 | 5>(2);
   const [lang, setLang] = useState(languageOptions[0]);
   const [budget, setBudget] = useState(60_000_000);
+  const [budgetText, setBudgetText] = useState('60');
   const [result, setResult] = useState<ResultData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!groupId && groups[0]) setGroupId(groups[0].id);
   }, [groups, groupId]);
+
+  const commitBudget = (raw: string) => {
+    const digits = raw.replace(/[^0-9]/g, '');
+    const n = parseInt(digits, 10);
+    if (!isNaN(n) && n > 0) {
+      const clamped = Math.min(BUDGET_MAX / 1_000_000, Math.max(BUDGET_MIN / 1_000_000, n));
+      setBudget(clamped * 1_000_000);
+      setBudgetText(String(clamped));
+    } else {
+      setBudgetText(String(budget / 1_000_000));
+    }
+  };
+
+  const stepBudget = (delta: number) => {
+    setBudget(prev => {
+      const next = Math.min(BUDGET_MAX, Math.max(BUDGET_MIN, prev + delta));
+      setBudgetText(String(Math.round(next / 1_000_000)));
+      return next;
+    });
+  };
 
   const selectedGroup = groups.find(g => g.id === groupId);
   const members = useMemo(
@@ -210,20 +230,30 @@ export function ReleaseScreen() {
             <View style={styles.col}>
               <View style={styles.rowBetween}>
                 <Text style={styles.label}>Promotion Budget</Text>
-                <Text style={styles.valueText}>{fmt(budget)}</Text>
+                <TextInput
+                  style={styles.budgetInput}
+                  value={budgetText}
+                  onChangeText={setBudgetText}
+                  onEndEditing={() => commitBudget(budgetText)}
+                  onBlur={() => commitBudget(budgetText)}
+                  keyboardType="numeric"
+                  selectTextOnFocus
+                  placeholderTextColor={colors.mutedForeground}
+                />
+                <Text style={styles.budgetUnit}>M</Text>
               </View>
               <View style={styles.stepperRow}>
-                <TouchableOpacity style={styles.stepperBtn} onPress={() => setBudget(b => Math.max(BUDGET_MIN, b - BUDGET_STEP))} activeOpacity={0.8}>
+                <TouchableOpacity style={styles.stepperBtn} onPress={() => stepBudget(-BUDGET_STEP)} activeOpacity={0.8}>
                   <Text style={styles.stepperSign}>−</Text>
                 </TouchableOpacity>
                 <View style={styles.budgetTrack}>
                   <Gradient colors={[colors.teal, colors.violet]} direction="to-r" style={[styles.budgetFill, { width: `${((budget - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100}%` }]} />
                 </View>
-                <TouchableOpacity style={styles.stepperBtn} onPress={() => setBudget(b => Math.min(BUDGET_MAX, b + BUDGET_STEP))} activeOpacity={0.8}>
+                <TouchableOpacity style={styles.stepperBtn} onPress={() => stepBudget(BUDGET_STEP)} activeOpacity={0.8}>
                   <Text style={styles.stepperSign}>＋</Text>
                 </TouchableOpacity>
               </View>
-              <Text style={styles.hint}>More budget = wider reach and faster fan growth.</Text>
+              <Text style={styles.hint}>More budget = wider reach and faster fan growth. Range: ₩10M – ₩500M</Text>
             </View>
           )}
         </View>
@@ -392,6 +422,20 @@ const styles = StyleSheet.create({
   stepperSign: { fontSize: 20, color: colors.tealBright, fontWeight: '700' },
   budgetTrack: { flex: 1, height: 6, borderRadius: radius.full, backgroundColor: colors.whiteA10, overflow: 'hidden' },
   budgetFill: { height: '100%' },
+  budgetInput: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.whiteA05,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.tealBright,
+    minWidth: 54,
+    textAlign: 'right',
+  },
+  budgetUnit: { fontSize: 12, color: colors.mutedForeground, fontWeight: '600' },
 
   estRow: { marginTop: spacing.lg, flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   est: { flexGrow: 1, flexBasis: '46%', borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.whiteA05, padding: 10 },

@@ -90,27 +90,26 @@ export function TopBar() {
       <View style={styles.topBarRow}>
         <AgencyLogoBadge logo={agency.logo} />
         <View style={styles.flex1}>
-          <View style={styles.rowCenter}>
-            <Text style={styles.agencyName} numberOfLines={1}>
-              {agency.name}
-            </Text>
+          <Text style={styles.agencyName} numberOfLines={1}>
+            {agency.name}
+          </Text>
+          <Text style={styles.agencyCity}>{agency.city}</Text>
+        </View>
+        <View style={styles.topBarRight}>
+          <Text style={styles.statMoney}>{fmt(agency.money)}</Text>
+          <View style={styles.rowCenterSm}>
+            <Wallet size={11} color={colors.mint} />
+            <Text style={styles.statMint}> {weeklyNetLabel}/wk</Text>
           </View>
         </View>
       </View>
-      <View style={styles.topStats}>
-        <Text style={styles.statMoney}>{fmt(agency.money)}</Text>
+      <View style={styles.topSubRow}>
         <View style={styles.rowCenterSm}>
-          <Users size={12} color={colors.violetBright} />
+          <Users size={11} color={colors.violetBright} />
           <Text style={styles.statViolet}> {fanbaseLabel}</Text>
         </View>
-        <View style={styles.rowCenterSm}>
-          <Wallet size={12} color={colors.mint} />
-          <Text style={styles.statMint}>
-            {' '}
-            {weeklyNetLabel} / week
-          </Text>
-        </View>
         <Text style={styles.muted}>Global #{agency.ranking}</Text>
+        <Text style={styles.muted}>Week {currentWeek}</Text>
       </View>
     </View>
   );
@@ -145,24 +144,26 @@ export function MoreNavRow() {
   const navigation = useNavigation<Nav>();
   const route = useRoute();
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.moreRow}>
-      {more.map(({ to, label, Icon }) => {
-        const active = route.name === to;
-        return (
-          <TouchableOpacity
-            key={to}
-            onPress={() => navigation.navigate(to as never)}
-            style={[styles.morePill, active ? styles.morePillActive : styles.morePillIdle]}
-            activeOpacity={0.7}>
-            <Icon size={14} color={active ? colors.tealBright : colors.mutedForeground} />
-            <Text style={[styles.morePillText, active && styles.morePillTextActive]}>{label}</Text>
-          </TouchableOpacity>
-        );
-      })}
-    </ScrollView>
+    <View style={styles.moreNavWrap}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.moreRow}>
+        {more.map(({ to, label, Icon }) => {
+          const active = route.name === to;
+          return (
+            <TouchableOpacity
+              key={to}
+              onPress={() => navigation.navigate(to as never)}
+              style={[styles.morePill, active ? styles.morePillActive : styles.morePillIdle]}
+              activeOpacity={0.7}>
+              <Icon size={14} color={active ? colors.tealBright : colors.mutedForeground} />
+              <Text style={[styles.morePillText, active && styles.morePillTextActive]}>{label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    </View>
   );
 }
 
@@ -203,11 +204,11 @@ export function AppShell({
       <View style={{ paddingTop: insets.top }}>
         <TopBar />
       </View>
+      <MoreNavRow />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
         {title ? <PageHeader title={title} subtitle={subtitle} action={action} /> : null}
-        <MoreNavRow />
         {children}
       </ScrollView>
       <BottomNav />
@@ -327,13 +328,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.borderStrong,
   },
-  topBarRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
   logo: {
     width: 40,
     height: 40,
@@ -345,21 +339,31 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   customLogoImage: { width: '100%', height: '100%' },
-  agencyName: {
-    color: colors.foreground,
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: 1,
-    flexShrink: 1,
+  topBarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xs,
   },
-  topStats: {
+  topBarRight: { alignItems: 'flex-end', gap: 2 },
+  topSubRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.sm,
   },
-  statMoney: { color: colors.foreground, fontSize: 11, fontWeight: '600' },
+  agencyName: {
+    color: colors.foreground,
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    flexShrink: 1,
+  },
+  agencyCity: { fontSize: 10, color: colors.mutedForeground, marginTop: 1 },
+  statMoney: { color: colors.tealBright, fontSize: 15, fontWeight: '900' },
   statViolet: { color: colors.violetBright, fontSize: 11 },
   statMint: { color: colors.mint, fontSize: 11 },
   muted: { color: colors.mutedForeground, fontSize: 11 },
@@ -407,7 +411,8 @@ const styles = StyleSheet.create({
   navLabel: { fontSize: 10, fontWeight: '500', color: colors.mutedForeground },
   navLabelActive: { color: colors.tealBright },
 
-  moreRow: { gap: spacing.sm, paddingVertical: 2 },
+  moreNavWrap: { borderBottomWidth: 1, borderBottomColor: colors.border },
+  moreRow: { gap: spacing.sm, paddingVertical: 6, paddingHorizontal: spacing.lg },
   morePill: {
     flexDirection: 'row',
     alignItems: 'center',

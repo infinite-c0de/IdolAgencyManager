@@ -239,16 +239,35 @@ export function RecruitScreen() {
               <Text style={styles.matchLabel}> match{list.length !== 1 ? 'es' : ''}</Text>
             </View>
             <Text style={styles.filterActiveLabel}>
-              Page {allFilteredCandidates.length === 0 ? 0 : page + 1} / {allFilteredCandidates.length === 0 ? 0 : totalPages}
+              {allFilteredCandidates.length === 0 ? '0 results' : `${allFilteredCandidates.length} total`}
             </Text>
             {activeFilterCount > 0 && (
               <Text style={styles.filterActiveLabel}>{activeFilterCount} filter{activeFilterCount > 1 ? 's' : ''} active</Text>
             )}
           </View>
           <View style={styles.refreshSide}>
+            {/* Free prev/next page navigation */}
+            <View style={styles.pageNav}>
+              <TouchableOpacity
+                style={[styles.pageNavBtn, page === 0 && styles.pageNavBtnDisabled]}
+                onPress={() => setPage(p => Math.max(0, p - 1))}
+                disabled={page === 0}
+                activeOpacity={0.8}>
+                <Text style={styles.pageNavText}>‹</Text>
+              </TouchableOpacity>
+              <Text style={styles.pageNavLabel}>{allFilteredCandidates.length === 0 ? '0/0' : `${page + 1}/${totalPages}`}</Text>
+              <TouchableOpacity
+                style={[styles.pageNavBtn, page >= totalPages - 1 && styles.pageNavBtnDisabled]}
+                onPress={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
+                activeOpacity={0.8}>
+                <Text style={styles.pageNavText}>›</Text>
+              </TouchableOpacity>
+            </View>
+            {/* Paid refresh — clearly labeled */}
             <TouchableOpacity style={styles.refreshBtn} onPress={handleRefresh} activeOpacity={0.85}>
               <RefreshCw size={13} color={colors.slate900} />
-              <Text style={styles.refreshBtnText}>Refresh {refreshCostLabel}</Text>
+              <Text style={styles.refreshBtnText}>New Pool {refreshCostLabel}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -271,14 +290,9 @@ export function RecruitScreen() {
           <View style={styles.emptyState}>
             {allFilteredCandidates.length > 0 ? (
               <>
-                <Text style={styles.emptyTitle}>No matches</Text>
+                <Text style={styles.emptyTitle}>No results on this page</Text>
                 <Text style={styles.emptyBody}>
-                  {activeFilter !== 'All' && `Skill: ${activeFilter}  `}
-                  {genderFilter !== 'All' && `Gender: ${genderFilter}  `}
-                  {nationalityFilter !== 'All' && `Nation: ${nationalityFilter}`}
-                </Text>
-                <Text style={styles.emptyBody}>
-                  Matching profiles exist. Click Refresh to move to the next result page.
+                  Use ‹ › to browse other pages, or "New Pool" to refresh the scouting pool (costs {refreshCostLabel}).
                 </Text>
                 <TouchableOpacity
                   style={styles.emptyRefreshBtn}
@@ -328,7 +342,7 @@ export function RecruitScreen() {
                 <Sparkles size={14} color={colors.slate900} />
                 <Text style={styles.successBadgeText}>SIGNED</Text>
               </View>
-              <Text style={styles.successName}>{confirm?.name}</Text>
+              <Text style={styles.successName}>{confirm?.stageName ?? confirm?.name}</Text>
               <Text style={styles.successSub}>
                 {confirm?.nationality} · {confirm?.skill} · Age {confirm?.age}
               </Text>
@@ -630,8 +644,27 @@ const styles = StyleSheet.create({
   },
   refreshSide: {
     alignItems: 'flex-end',
-    gap: 5,
+    gap: 6,
   },
+  pageNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.whiteA05,
+    overflow: 'hidden',
+  },
+  pageNavBtn: {
+    width: 30,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pageNavBtnDisabled: { opacity: 0.35 },
+  pageNavText: { fontSize: 16, fontWeight: '700', color: colors.tealBright },
+  pageNavLabel: { fontSize: 11, fontWeight: '700', color: colors.foreground, paddingHorizontal: 4 },
   costBreakdown: {
     flexDirection: 'row',
     gap: 6,

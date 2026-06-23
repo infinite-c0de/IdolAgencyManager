@@ -2,21 +2,13 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
   Activity,
-  Award,
-  BedDouble,
   ChevronLeft,
   ChevronRight,
-  Drama,
   Heart,
-  Languages,
-  Mic,
-  MoreHorizontal,
-  Music,
-  Star,
   Users,
   Zap,
 } from 'lucide-react-native';
-import React, { ComponentType, ReactNode, useState } from 'react';
+import React, { ReactNode, useState } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card, SectionTitle, StatusDot } from '../components/AppShell';
 import { AgencyLogoMark } from '../components/ui/AgencyLogoMark';
@@ -26,6 +18,8 @@ import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
+
+import type { ComponentType } from 'react';
 
 type IconType = ComponentType<{ size?: number; color?: string }>;
 type IdolModel = import('../types').Idol;
@@ -69,7 +63,7 @@ function formatTrainingMonths(months: number) {
 
 export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>) {
   const navigation = useNavigation<Nav>();
-  const { idols, groups } = useGame();
+  const { idols, groups, trainingTypes, trainingPlans } = useGame();
   const i = idols.find(x => x.id === route.params.id);
   const idolGroup = i?.group ? groups.find(g => g.name === i.group) : undefined;
   const [tab, setTab] = useState<'info' | 'stats' | 'schedule'>('info');
@@ -84,27 +78,10 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
     );
   }
 
-  const trainings: { Icon: IconType; label: string }[] = [
-    { Icon: Mic, label: 'Vocal Coaching' },
-    { Icon: Music, label: 'Dance Practice' },
-    { Icon: Mic, label: 'Rap Training' },
-    { Icon: Star, label: 'Visual Training' },
-    { Icon: Drama, label: 'Acting Class' },
-    { Icon: Languages, label: 'Language Lab' },
-    { Icon: BedDouble, label: 'Rest' },
-    { Icon: MoreHorizontal, label: 'Other' },
-  ];
-  const achievements: { Icon: IconType; t: string; d: string }[] = [
-    { Icon: Award, t: 'Best New Vocalist nomination', d: 'Korea Music Awards · 2 days ago' },
-    { Icon: Star, t: 'Stage performance milestone', d: 'Music Bank · 5 days ago' },
-    { Icon: Heart, t: 'Crossed 1M fan milestone', d: 'LUMINA fandom · 1 week ago' },
-    { Icon: Activity, t: 'Training breakthrough — Vocal +4', d: 'Studio · 2 weeks ago' },
-  ];
-
   const backAction = (
-    <TouchableOpacity style={styles.backBtn} onPress={() => navigation.navigate('Idols')} activeOpacity={0.8}>
+    <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.8}>
       <ChevronLeft size={14} color={colors.foreground} />
-      <Text style={styles.backText}>Roster</Text>
+      <Text style={styles.backText}>Back</Text>
     </TouchableOpacity>
   );
 
@@ -142,7 +119,7 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
             onPress={() => setTab(t)}
             activeOpacity={0.8}>
             <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
-              {t === 'info' ? 'INFO' : t === 'stats' ? 'SKILLS' : 'SCHEDULE'}
+              {t === 'info' ? 'INFO' : t === 'stats' ? 'SKILLS' : 'HISTORY'}
             </Text>
           </TouchableOpacity>
         ))}
@@ -245,39 +222,107 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
         </Card>
       )}
 
-      {/* ── SCHEDULE TAB ── */}
+      {/* ── HISTORY TAB ── */}
       {tab === 'schedule' && (
-        <>
-          <Card glow="teal">
-            <SectionTitle>TRAINING & DEVELOPMENT</SectionTitle>
-            <View style={styles.trainGrid}>
-              {trainings.map(({ Icon, label }) => (
-                <View key={label} style={styles.trainBtn}>
-                  <Icon size={16} color={colors.tealBright} />
-                  <Text style={styles.trainLabel}>{label}</Text>
-                </View>
-              ))}
-            </View>
-          </Card>
-          <Card>
-            <SectionTitle>RECENT ACHIEVEMENTS</SectionTitle>
-            <View style={styles.achList}>
-              {achievements.map(({ Icon, t, d }) => (
-                <View key={t} style={styles.achItem}>
-                  <Gradient colors={['rgba(34,211,238,0.2)', 'rgba(217,70,239,0.2)']} style={styles.achIcon}>
-                    <Icon size={16} color={colors.tealBright} />
-                  </Gradient>
-                  <View style={styles.flex1}>
-                    <Text style={styles.achTitle} numberOfLines={1}>{t}</Text>
-                    <Text style={styles.tinyMuted}>{d}</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </Card>
-        </>
+        <HistoryTab idol={i} idolGroup={idolGroup} trainingPlans={trainingPlans} trainingTypes={trainingTypes} />
       )}
     </AppShell>
+  );
+}
+
+const TRAINING_ACCENT: Record<string, string> = {
+  vocal: '#E879F9',
+  dance: '#67E8F9',
+  rap: '#FCD34D',
+  visual: '#FB7185',
+  acting: '#34D399',
+  language: '#93C5FD',
+  lang: '#93C5FD',
+  rest: '#6B7280',
+};
+
+function getAccent(id: string, name: string): string {
+  const lower = (id + name).toLowerCase();
+  if (lower.includes('vocal')) return TRAINING_ACCENT.vocal;
+  if (lower.includes('dance')) return TRAINING_ACCENT.dance;
+  if (lower.includes('rap')) return TRAINING_ACCENT.rap;
+  if (lower.includes('visual')) return TRAINING_ACCENT.visual;
+  if (lower.includes('acting')) return TRAINING_ACCENT.acting;
+  if (lower.includes('lang')) return TRAINING_ACCENT.lang;
+  if (lower.includes('rest')) return TRAINING_ACCENT.rest;
+  return TRAINING_ACCENT.vocal;
+}
+
+const SESSION_ROWS = ['AM', 'PM', 'EVE'] as const;
+const SESSION_DAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'] as const;
+
+function HistoryTab({
+  idol,
+  idolGroup,
+  trainingPlans,
+  trainingTypes,
+}: {
+  idol: IdolModel;
+  idolGroup: { id: string } | undefined;
+  trainingPlans: Record<string, Record<string, string>>;
+  trainingTypes: { id: string; name: string }[];
+}) {
+  const planKey = idolGroup?.id ?? 'SOLO_DEFAULT';
+  const plan = trainingPlans[planKey] ?? {};
+  const hasSessions = Object.keys(plan).length > 0;
+
+  return (
+    <Card glow="teal">
+      <SectionTitle>THIS WEEK'S TRAINING PLAN</SectionTitle>
+      {hasSessions ? (
+        <View style={styles.historyGrid}>
+          {/* Header row */}
+          <View style={styles.historyRow}>
+            <View style={styles.historyRowLabel} />
+            {SESSION_DAYS.map(d => (
+              <View key={d} style={styles.historyDayCell}>
+                <Text style={styles.historyDayHead}>{d}</Text>
+              </View>
+            ))}
+          </View>
+          {SESSION_ROWS.map((rowLabel, row) => (
+            <View key={row} style={styles.historyRow}>
+              <View style={styles.historyRowLabel}>
+                <Text style={styles.historyRowLabelText}>{rowLabel}</Text>
+              </View>
+              {SESSION_DAYS.map(d => {
+                const key = `${row}-${d}`;
+                const typeId = plan[key];
+                const matchType = typeId ? trainingTypes.find(t => t.id === typeId) : null;
+                const accent = matchType ? getAccent(matchType.id, matchType.name) : undefined;
+                const label = matchType ? matchType.name.split(' ')[0] : '';
+                return (
+                  <View
+                    key={key}
+                    style={[
+                      styles.historySlot,
+                      accent
+                        ? { borderColor: accent + '88', backgroundColor: accent + '18' }
+                        : styles.historySlotEmpty,
+                    ]}>
+                    {accent && <View style={[styles.historyDot, { backgroundColor: accent }]} />}
+                    {label ? (
+                      <Text style={[styles.historySlotText, { color: accent }]} numberOfLines={1}>
+                        {label}
+                      </Text>
+                    ) : null}
+                  </View>
+                );
+              })}
+            </View>
+          ))}
+        </View>
+      ) : (
+        <Text style={styles.historyEmpty}>
+          No training plan set for this week. Go to the Training screen to plan sessions.
+        </Text>
+      )}
+    </Card>
   );
 }
 
@@ -579,4 +624,25 @@ const styles = StyleSheet.create({
   },
   achIcon: { width: 32, height: 32, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   achTitle: { fontSize: 12, fontWeight: '600', color: colors.foreground },
+
+  historyGrid: { gap: 4 },
+  historyRow: { flexDirection: 'row', gap: 4, alignItems: 'center' },
+  historyRowLabel: { width: 28, alignItems: 'flex-end', paddingRight: 2 },
+  historyRowLabelText: { fontSize: 8, fontWeight: '800', letterSpacing: 0.8, color: colors.mutedForeground },
+  historyDayCell: { flex: 1, alignItems: 'center' },
+  historyDayHead: { fontSize: 9, fontWeight: '800', letterSpacing: 0.8, color: colors.mutedForeground },
+  historySlot: {
+    flex: 1,
+    aspectRatio: 1,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 1,
+    padding: 1,
+  },
+  historySlotEmpty: { borderColor: colors.border, backgroundColor: colors.whiteA05 },
+  historyDot: { width: 6, height: 6, borderRadius: radius.full },
+  historySlotText: { fontSize: 7, fontWeight: '700', lineHeight: 9 },
+  historyEmpty: { fontSize: 12, color: colors.mutedForeground, fontStyle: 'italic', textAlign: 'center', paddingVertical: spacing.md },
 });

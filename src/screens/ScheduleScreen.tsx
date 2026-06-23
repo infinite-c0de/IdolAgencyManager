@@ -69,6 +69,7 @@ export function ScheduleScreen() {
     [cities, agency, idols, selectedGroup],
   );
   const [error, setError] = useState<string | null>(null);
+  const [confirmPromotion, setConfirmPromotion] = useState<{ id: string; name: string; cost: number } | null>(null);
   const [promotionResult, setPromotionResult] = useState<{
     name: string;
     fans: number;
@@ -159,6 +160,17 @@ export function ScheduleScreen() {
       setError('Select a group before scheduling a promotion.');
       return;
     }
+    // Show confirmation before spending money
+    setConfirmPromotion({
+      id: promotionId,
+      name: selectedPromotion?.name ?? '',
+      cost: selectedPromotion?.cost ?? 0,
+    });
+  };
+
+  const executePromotion = (promotionId: string) => {
+    setConfirmPromotion(null);
+    if (!selectedGroup) return;
 
     const result = runPromotion({
       promotionId,
@@ -213,6 +225,8 @@ export function ScheduleScreen() {
         <View style={styles.weekRow}>
           {days.map((d, i) => {
             const events = effectiveSchedule.filter(item => item.dayIndex === i);
+            const visible = events.slice(0, 2);
+            const overflow = events.length - visible.length;
             const first = events[0];
             const cellStyle =
               first?.accent === 'teal'
@@ -224,11 +238,14 @@ export function ScheduleScreen() {
               <View key={d} style={styles.dayCol}>
                 <Text style={styles.dayHead}>{d}</Text>
                 <View style={[styles.dayCell, cellStyle]}>
-                  {events.map(ev => (
-                    <Text key={ev.id} style={[styles.eventText, { color: eventColor[ev.accent] }]} numberOfLines={2}>
+                  {visible.map(ev => (
+                    <Text key={ev.id} style={[styles.eventText, { color: eventColor[ev.accent] }]} numberOfLines={1}>
                       {ev.title}
                     </Text>
                   ))}
+                  {overflow > 0 && (
+                    <Text style={styles.overflowText}>+{overflow} more</Text>
+                  )}
                 </View>
               </View>
             );
@@ -315,7 +332,7 @@ export function ScheduleScreen() {
                 disabled={Boolean(lockReason)}
                 activeOpacity={0.8}>
                 <Text style={styles.scheduleBtnText}>
-                  {lockReason ? 'Locked' : `Schedule ${dayLabels[selectedDayIndex]}`}
+                  {lockReason ? 'Locked' : `Run on ${dayLabels[selectedDayIndex]} · ${fmt(p.cost)}`}
                 </Text>
               </TouchableOpacity>
               </View>
@@ -332,6 +349,28 @@ export function ScheduleScreen() {
             <TouchableOpacity style={styles.modalBtn} onPress={() => setError(null)} activeOpacity={0.8}>
               <Text style={styles.modalBtnText}>OK</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={confirmPromotion !== null} transparent animationType="fade" onRequestClose={() => setConfirmPromotion(null)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Confirm Promotion</Text>
+            <Text style={styles.promoResultTitle}>{confirmPromotion?.name}</Text>
+            <Text style={styles.tinyMuted}>
+              {selectedGroup?.name} · {dayLabels[selectedDayIndex]}
+            </Text>
+            <Text style={styles.confirmCost}>Cost: {fmt(confirmPromotion?.cost ?? 0)}</Text>
+            <Text style={styles.tinyMuted}>This will immediately deduct funds and run the promotion.</Text>
+            <View style={styles.confirmRow}>
+              <TouchableOpacity style={styles.confirmCancelBtn} onPress={() => setConfirmPromotion(null)} activeOpacity={0.8}>
+                <Text style={styles.confirmCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalBtn} onPress={() => confirmPromotion && executePromotion(confirmPromotion.id)} activeOpacity={0.8}>
+                <Text style={styles.modalBtnText}>Run Promotion</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -395,6 +434,7 @@ const styles = StyleSheet.create({
   cellTeal: { borderColor: 'rgba(34,211,238,0.6)', backgroundColor: 'rgba(34,211,238,0.1)' },
   cellViolet: { borderColor: 'rgba(217,70,239,0.6)', backgroundColor: 'rgba(217,70,239,0.1)' },
   eventText: { fontSize: 9, fontWeight: '700' },
+  overflowText: { fontSize: 8, fontWeight: '600', color: colors.mutedForeground, marginTop: 2 },
 
   list: { gap: spacing.sm },
   activity: {
@@ -433,4 +473,8 @@ const styles = StyleSheet.create({
   modalStats: { marginTop: spacing.sm, flexDirection: 'row', flexWrap: 'wrap' },
   modalBtn: { marginTop: spacing.md, borderRadius: radius.md, backgroundColor: colors.teal, paddingVertical: spacing.sm, alignItems: 'center' },
   modalBtnText: { fontSize: 12, fontWeight: '800', color: colors.slate900 },
+  confirmRow: { marginTop: spacing.md, flexDirection: 'row', gap: spacing.sm },
+  confirmCancelBtn: { flex: 1, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.whiteA05, paddingVertical: spacing.sm, alignItems: 'center' },
+  confirmCancelText: { fontSize: 12, fontWeight: '700', color: colors.foreground },
+  confirmCost: { fontSize: 16, fontWeight: '900', color: colors.tealBright, marginTop: spacing.xs },
 });

@@ -54,11 +54,17 @@ function buildPerformanceStats(idols: ReturnType<typeof useGame>['idols']) {
 
 export function AgencyDashboardScreen() {
   const navigation = useNavigation<Nav>();
-  const { agency, idols, trainees, groups, revenueHistory, currentWeek, advanceWeek } = useGame();
-  const [perfGroupId, setPerfGroupId] = useState<string | null>(null);
+  const { agency, idols, trainees, groups, revenueHistory, currentWeek, advanceWeek } = useGame();  const [perfGroupId, setPerfGroupId] = useState<string | null>(null);
 
   const schedule = selectDynamicSchedule(idols, groups);
   const allMembers = idols.slice(0, 8);
+
+  const totalRevenue = revenueHistory.reduce((sum, p) => sum + p.group + p.solo + p.merch, 0);
+  const revRangeLabel = revenueHistory.length >= 2
+    ? `${revenueHistory[0].m} – ${revenueHistory[revenueHistory.length - 1].m} total`
+    : revenueHistory.length === 1
+      ? `${revenueHistory[0].m} total`
+      : 'No revenue yet';
 
   // Performance group picker: null = agency avg, else a specific group
   const selectedGroup = perfGroupId ? (groups.find(g => g.id === perfGroupId) ?? null) : null;
@@ -316,7 +322,7 @@ export function AgencyDashboardScreen() {
         <SectionTitle>THIS WEEK</SectionTitle>
         <View style={styles.scheduleGrid}>
           {schedule.map(s => (
-            <ScheduleCard key={s.id} s={s} />
+            <ScheduleCard key={s.id} s={s} onDetails={() => navigation.navigate('Schedule')} />
           ))}
         </View>
       </Card>
@@ -326,8 +332,8 @@ export function AgencyDashboardScreen() {
         <View style={styles.revenueHeader}>
           <SectionTitle>REVENUE</SectionTitle>
           <View style={styles.alignEnd}>
-            <Text style={styles.revenueTotal}>₩1.45B</Text>
-            <Text style={styles.tinyMuted}>Jan – Sep total</Text>
+            <Text style={styles.revenueTotal}>{totalRevenue > 0 ? fmt(totalRevenue) : '—'}</Text>
+            <Text style={styles.tinyMuted}>{revRangeLabel}</Text>
           </View>
         </View>
         <ResponsiveChart height={160}>
@@ -390,7 +396,7 @@ function Legend({ color, label }: { color: string; label: string }) {
   );
 }
 
-function ScheduleCard({ s }: { s: DynamicScheduleItem }) {
+function ScheduleCard({ s, onDetails }: { s: DynamicScheduleItem; onDetails: () => void }) {
   const accentStyle =
     s.accent === 'teal'
       ? styles.accentTeal
@@ -431,10 +437,10 @@ function ScheduleCard({ s }: { s: DynamicScheduleItem }) {
               </View>
             </View>
           )}
-          <View style={styles.detailsBtn}>
+          <TouchableOpacity style={styles.detailsBtn} onPress={onDetails} activeOpacity={0.7}>
             <Text style={styles.detailsText}>Details</Text>
             <ChevronRight size={12} color={colors.mutedForeground} />
-          </View>
+          </TouchableOpacity>
         </View>
       </View>
     </View>

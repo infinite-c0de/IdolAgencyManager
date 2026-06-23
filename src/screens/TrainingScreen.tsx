@@ -1,6 +1,6 @@
 import { FastForward } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card } from '../components/AppShell';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
@@ -81,9 +81,24 @@ export function TrainingScreen() {
     });
 
   const simulate = () => {
-    advanceWeek();
-    setToast(idols.length > 0 ? 'Week advanced — training applied.' : 'Week advanced.');
-    setTimeout(() => setToast(null), 2500);
+    Alert.alert(
+      'Advance to Next Week?',
+      weeklyCost > 0
+        ? `Training costs ${fmt(weeklyCost)} will be deducted. This cannot be undone.`
+        : 'No training sessions are planned this week. Advance anyway?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Advance',
+          style: 'default',
+          onPress: () => {
+            advanceWeek();
+            setToast(idols.length > 0 ? 'Week advanced — training applied.' : 'Week advanced.');
+            setTimeout(() => setToast(null), 2500);
+          },
+        },
+      ],
+    );
   };
 
   // Compute total weekly training cost across all plans × idols
@@ -99,25 +114,10 @@ export function TrainingScreen() {
     return total;
   }, [trainingPlans, idols, groups]);
   const canAffordWeek = agency.money >= weeklyCost;
-
-  const simulateAction = (
-    <View style={styles.nextWeekWrap}>
-      {weeklyCost > 0 && (
-        <Text style={[styles.costPreview, !canAffordWeek && styles.costPreviewWarn]}>
-          {fmt(weeklyCost)}/wk
-        </Text>
-      )}
-      <TouchableOpacity style={[styles.nextWeekBtn, !canAffordWeek && styles.nextWeekBtnWarn]} onPress={simulate} activeOpacity={0.8}>
-        <FastForward size={14} color={colors.slate900} />
-        <Text style={styles.nextWeekText}>Next Week</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
   const selectedTrainType = trainingTypes.find(t => t.id === selectedType);
 
   return (
-    <AppShell title="Training" subtitle="Plan the week, then advance" action={simulateAction}>
+    <AppShell title="Training" subtitle="Plan the week, then advance">
 
       {/* ── Target selector + member preview ── */}
       <Card>
@@ -268,25 +268,52 @@ export function TrainingScreen() {
           <Text style={styles.toastText}>{toast}</Text>
         </View>
       )}
+
+      {/* ── ADVANCE WEEK ── bottom CTA */}
+      <View style={[styles.advanceWrap, !canAffordWeek && styles.advanceWrapWarn]}>
+        {weeklyCost > 0 && (
+          <Text style={[styles.costPreview, !canAffordWeek && styles.costPreviewWarn]}>
+            Training cost this week: {fmt(weeklyCost)}
+          </Text>
+        )}
+        <TouchableOpacity
+          style={[styles.nextWeekBtn, !canAffordWeek && styles.nextWeekBtnWarn]}
+          onPress={simulate}
+          activeOpacity={0.8}>
+          <FastForward size={16} color={colors.slate900} />
+          <Text style={styles.nextWeekText}>Advance to Next Week</Text>
+        </TouchableOpacity>
+      </View>
     </AppShell>
   );
 }
 
 const styles = StyleSheet.create({
-  nextWeekWrap: { alignItems: 'flex-end', gap: 3 },
-  costPreview: { fontSize: 9, fontWeight: '700', color: colors.mint, letterSpacing: 0.5 },
+  advanceWrap: {
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(34,211,238,0.3)',
+    backgroundColor: 'rgba(34,211,238,0.04)',
+    padding: spacing.md,
+    gap: spacing.sm,
+    alignItems: 'center',
+  },
+  advanceWrapWarn: { borderColor: 'rgba(248,113,113,0.3)', backgroundColor: 'rgba(248,113,113,0.04)' },
+  costPreview: { fontSize: 11, fontWeight: '700', color: colors.mint, letterSpacing: 0.5 },
   costPreviewWarn: { color: '#FDA4AF' },
   nextWeekBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'center',
+    gap: 6,
     borderRadius: radius.lg,
     backgroundColor: colors.teal,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    width: '100%',
   },
   nextWeekBtnWarn: { backgroundColor: '#F87171' },
-  nextWeekText: { fontSize: 11, fontWeight: '700', color: colors.slate900 },
+  nextWeekText: { fontSize: 14, fontWeight: '800', color: colors.slate900 },
 
   rowLabel: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   rowLabelText: { fontSize: 9, fontWeight: '800', letterSpacing: 1.5, color: colors.mutedForeground, width: 48 },
