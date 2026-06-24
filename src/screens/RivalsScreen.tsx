@@ -1,4 +1,4 @@
-import { BarChart3, Megaphone, Search, ShieldAlert, Swords } from 'lucide-react-native';
+import { BarChart3, Eye, Info, ShieldAlert, Swords } from 'lucide-react-native';
 import React, { ComponentType } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card, SectionTitle } from '../components/AppShell';
@@ -51,9 +51,9 @@ export function RivalsScreen() {
             </View>
             <View style={styles.actRow}>
               <Act Icon={BarChart3} t="Compare" />
-              <Act Icon={Search} t="Details" />
-              <Act Icon={Megaphone} t="Counter" />
-              <Act Icon={Swords} t="Scout" />
+              <Act Icon={Info}     t="Details" />
+              <Act Icon={Swords}   t="Counter" />
+              <Act Icon={Eye}      t="Scout"   />
             </View>
           </Card>
         );

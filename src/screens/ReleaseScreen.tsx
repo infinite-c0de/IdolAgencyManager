@@ -1,4 +1,4 @@
-import { ChevronRight, Music2, Sparkles, TrendingDown } from 'lucide-react-native';
+import { ChevronRight, Music2, Sparkles, TrendingDown, TrendingUp } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card, SectionTitle } from '../components/AppShell';
@@ -361,10 +361,11 @@ export function ReleaseScreen() {
 import type { Group } from '../types';
 
 function chartColor(pos: number) {
-  if (pos <= 10) return colors.mint;
-  if (pos <= 30) return colors.tealBright;
-  if (pos <= 60) return colors.amber;
-  return colors.mutedForeground;
+  if (pos <= 10)  return colors.mint;
+  if (pos <= 30)  return colors.tealBright;
+  if (pos <= 60)  return colors.amber;
+  if (pos <= 99)  return colors.mutedForeground;
+  return colors.whiteA05;
 }
 
 function ChartTracker({ groups, currentWeek }: { groups: Group[]; currentWeek: number }) {
@@ -377,31 +378,47 @@ function ChartTracker({ groups, currentWeek }: { groups: Group[]; currentWeek: n
 
   return (
     <Card>
-      <SectionTitle>CHART TRACKER</SectionTitle>
+      <SectionTitle>RELEASE HISTORY  <Text style={styles.sectionNote}>{sorted.length} release{sorted.length !== 1 ? 's' : ''}</Text></SectionTitle>
       <View style={styles.trackerList}>
-        {sorted.map(r => {
-          const weeksSince = Math.max(0, currentWeek - r.weekReleased);
-          const currentChart = Math.min(99, r.chartPosition + Math.round(weeksSince * 2.4));
-          const peaked = currentChart >= 95;
-          const cc = chartColor(currentChart);
+        {sorted.map((r, idx) => {
+          const weeksSince   = Math.max(0, currentWeek - r.weekReleased);
+          const currentChart = r.chartPosition + Math.round(weeksSince * 2.4);
+          const offChart     = currentChart > 99;
+          const cc           = offChart ? colors.whiteA05 : chartColor(currentChart);
+          const isNew        = weeksSince === 0;
+
           return (
-            <View key={r.id} style={styles.trackerRow}>
+            <View
+              key={r.id}
+              style={[styles.trackerRow, idx === sorted.length - 1 && styles.trackerRowLast]}>
+              {/* Index badge */}
+              <View style={styles.trackerIndex}>
+                <Text style={styles.trackerIndexText}>{idx + 1}</Text>
+              </View>
+
+              {/* Info */}
               <View style={styles.trackerLeft}>
                 <Text style={styles.trackerTitle} numberOfLines={1}>"{r.title}"</Text>
                 <Text style={styles.trackerMeta}>
                   {r.groupName} · Week {r.weekReleased}
-                  {weeksSince > 0 ? ` · ${weeksSince}w ago` : ' · This week'}
+                  {isNew ? '  🆕' : `  ${weeksSince} weeks ago`}
                 </Text>
-              </View>
-              <View style={styles.trackerRight}>
-                <View style={styles.chartPosRow}>
-                  <TrendingDown size={10} color={peaked ? colors.mutedForeground : cc} />
-                  <Text style={[styles.chartPos, { color: peaked ? colors.mutedForeground : cc }]}>
-                    #{currentChart}
-                  </Text>
-                </View>
-                <Text style={styles.chartPeak}>Peak #{r.chartPosition}</Text>
                 <Text style={styles.trackerSales}>{fmtCount(r.totalSales)} sales</Text>
+              </View>
+
+              {/* Chart status */}
+              <View style={styles.trackerRight}>
+                {offChart ? (
+                  <Text style={styles.offChart}>Off chart</Text>
+                ) : (
+                  <View style={styles.chartPosRow}>
+                    {isNew
+                      ? <TrendingUp  size={10} color={cc} />
+                      : <TrendingDown size={10} color={cc} />}
+                    <Text style={[styles.chartPos, { color: cc }]}>#{currentChart}</Text>
+                  </View>
+                )}
+                <Text style={styles.chartDebut}>Debut #{r.chartPosition}</Text>
               </View>
             </View>
           );
@@ -524,22 +541,26 @@ const styles = StyleSheet.create({
   continueText: { fontSize: 14, fontWeight: '700', color: colors.slate900 },
 
   // Chart tracker
-  trackerList: { gap: 0 },
-  trackerRow: {
+  sectionNote:    { fontSize: 9, fontWeight: '400', color: colors.mutedForeground, letterSpacing: 0 },
+  trackerList:    { gap: 0 },
+  trackerRow:     {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.04)',
+    borderBottomColor: 'rgba(255,255,255,0.05)',
     gap: spacing.sm,
   },
-  trackerLeft: { flex: 1, gap: 3 },
-  trackerTitle: { fontSize: 13, fontWeight: '800', color: colors.foreground },
-  trackerMeta: { fontSize: 10, color: colors.mutedForeground },
-  trackerRight: { alignItems: 'flex-end', gap: 2, minWidth: 64 },
-  chartPosRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  chartPos: { fontSize: 16, fontWeight: '900' },
-  chartPeak: { fontSize: 9, color: colors.mutedForeground, fontWeight: '600' },
-  trackerSales: { fontSize: 9, color: colors.mutedForeground },
+  trackerRowLast: { borderBottomWidth: 0 },
+  trackerIndex:   { width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  trackerIndexText:{ fontSize: 9, fontWeight: '700', color: colors.mutedForeground },
+  trackerLeft:    { flex: 1, gap: 2 },
+  trackerTitle:   { fontSize: 13, fontWeight: '800', color: colors.foreground },
+  trackerMeta:    { fontSize: 10, color: colors.mutedForeground },
+  trackerSales:   { fontSize: 10, color: colors.mutedForeground },
+  trackerRight:   { alignItems: 'flex-end', gap: 2, minWidth: 72 },
+  chartPosRow:    { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  chartPos:       { fontSize: 18, fontWeight: '900' },
+  chartDebut:     { fontSize: 9, color: colors.mutedForeground, fontWeight: '600' },
+  offChart:       { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.2)', fontStyle: 'italic' },
 });

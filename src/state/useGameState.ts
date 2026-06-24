@@ -273,6 +273,15 @@ export function useGameState(): GameState {
       return [...current.slice(-200), progression.revenuePoint];
     });
 
+    // Clear all training slots for the new week
+    setTrainingPlans(current => {
+      const cleared: TrainingPlans = {};
+      for (const key of Object.keys(current)) {
+        cleared[key] = {};
+      }
+      return cleared;
+    });
+
     setCurrentWeek(week => week + 1);
   };
 

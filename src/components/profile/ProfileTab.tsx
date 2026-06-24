@@ -48,12 +48,12 @@ export function ProfileTab({ idol, idolGroup, currentWeek, onGroupPress, onRenew
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>IDENTITY</Text>
         <View style={styles.infoList}>
-          <InfoRow label="FULL NAME"    value={idol.fullName} />
-          <InfoRow label="NATIONALITY"  value={`${idol.flag} ${idol.nationality}`} />
-          <InfoRow label="AGE / DOB"    value={`${idol.age} yr  ·  ${idol.dob}`} />
-          <InfoRow label="GENDER"       value={genderLabel} />
-          <InfoRow label="LANGUAGES"    value={idol.languages.join(' · ')} />
-          <InfoRow label="TRAINING"     value={formatTrainingMonths(idol.trainingMonths)} />
+          <InfoRow label="FULL NAME" value={idol.fullName} />
+          <InfoRow label="NATIONALITY" value={`${idol.flag} ${idol.nationality}`} />
+          <InfoRow label="AGE / DOB" value={`${idol.age} yr  ·  ${idol.dob}`} />
+          <InfoRow label="GENDER" value={genderLabel} />
+          <InfoRow label="LANGUAGES" value={idol.languages.join(' · ')} />
+          <InfoRow label="TRAINING" value={formatTrainingMonths(idol.trainingMonths)} />
         </View>
       </View>
 
@@ -138,10 +138,7 @@ export function ProfileTab({ idol, idolGroup, currentWeek, onGroupPress, onRenew
 
       {/* ── Contract ── */}
       <View style={styles.section}>
-        <View style={styles.sectionHeaderRow}>
-          <FileText size={12} color={colors.mutedForeground} />
-          <Text style={styles.sectionTitle}>CONTRACT</Text>
-        </View>
+        <Text style={styles.sectionTitle}>CONTRACT</Text>
         <ContractBlock
           contractExpiresWeek={idol.contractExpiresWeek}
           popularity={idol.popularity}
@@ -170,15 +167,15 @@ function ContractBlock({
 
   const statusColor =
     weeksLeft <= 0 ? colors.hot :
-    weeksLeft <= 8 ? colors.hotSoft :
-    weeksLeft <= 16 ? colors.amber :
-    colors.mint;
+      weeksLeft <= 8 ? colors.hotSoft :
+        weeksLeft <= 16 ? colors.amber :
+          colors.mint;
 
   const statusLabel =
     weeksLeft <= 0 ? 'EXPIRED' :
-    weeksLeft <= 8 ? 'EXPIRING SOON' :
-    weeksLeft <= 16 ? 'RENEW SOON' :
-    'ACTIVE';
+      weeksLeft <= 8 ? 'EXPIRING SOON' :
+        weeksLeft <= 16 ? 'RENEW SOON' :
+          'ACTIVE';
 
   const expiresLabel = weeksLeft <= 0
     ? 'Contract has expired'
@@ -337,11 +334,6 @@ const styles = StyleSheet.create({
   soloLabel: { fontSize: 13, fontWeight: '700', color: colors.mutedForeground },
 
   // Contract
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
   contractBlock: { gap: spacing.sm },
   contractRow: {
     flexDirection: 'row',

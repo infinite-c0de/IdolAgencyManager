@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
   nextWeekText: { fontSize: 13, fontWeight: '900', color: colors.slate900 },
 
   rowLabel: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  rowLabelText: { fontSize: 9, fontWeight: '800', letterSpacing: 1.5, color: colors.mutedForeground, width: 48 },
+  rowLabelText: { fontSize: 9, fontWeight: '800', color: colors.mutedForeground, width: 44 },
   chipRow: { flexDirection: 'row', gap: 6 },
   targetChip: {
     borderRadius: radius.full,

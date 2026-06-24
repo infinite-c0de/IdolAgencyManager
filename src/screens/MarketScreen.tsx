@@ -181,7 +181,7 @@ export function MarketScreen() {
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Opportunity Taken</Text>
             <Text style={styles.resultMsgText}>{resultMsg}</Text>
-            <TouchableOpacity style={styles.confirmBtn} onPress={() => setResultMsg(null)} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.confirmBtnFull} onPress={() => setResultMsg(null)} activeOpacity={0.8}>
               <Text style={styles.confirmText}>Continue</Text>
             </TouchableOpacity>
           </View>
@@ -279,5 +279,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: spacing.xs,
   },
-  confirmText: { fontSize: 12, fontWeight: '800', color: colors.slate900 },
+  confirmBtnFull: {
+    borderRadius: radius.md,
+    backgroundColor: colors.teal,
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+    marginTop: spacing.xs,
+  },
+  confirmText: { fontSize: 12, fontWeight: '800', color: '#fff' },
 });

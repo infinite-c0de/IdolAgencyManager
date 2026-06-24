@@ -2,8 +2,9 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CalendarDays, Lock, Megaphone, Sparkles } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card, SectionTitle } from '../components/AppShell';
+import { AgencyLogoMark } from '../components/ui/AgencyLogoMark';
 import { fmtCount } from '../utils/format';
 import {
   selectDynamicSchedule,
@@ -247,7 +248,7 @@ export function ScheduleScreen() {
         <SectionTitle>THIS WEEK</SectionTitle>
         <View style={styles.weekRow}>
           {days.map((d, i) => {
-            const events = effectiveSchedule.filter(item => item.dayIndex === i);            const visible = events.slice(0, 2);
+            const events = effectiveSchedule.filter(item => item.dayIndex === i); const visible = events.slice(0, 2);
             const overflow = events.length - visible.length;
             const first = events[0];
             const isSelected = selectedDayIndex === i;
@@ -328,48 +329,59 @@ export function ScheduleScreen() {
         {promoMode === 'group' ? (
           <>
             <Text style={styles.tinyMuted}>Step 1: pick group</Text>
-            <View style={styles.selectRow}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.selectRow}>
               {groups.map(group => {
                 const active = selectedGroupId === group.id;
+                const logoPreset = group.logo?.kind === 'preset' ? group.logo.preset : 1;
                 return (
                   <TouchableOpacity
                     key={group.id}
-                    style={[styles.selectChip, active ? styles.selectChipActive : styles.selectChipIdle]}
+                    style={[styles.avatarChip, active ? styles.avatarChipActive : styles.avatarChipIdle]}
                     onPress={() => setSelectedGroupId(group.id)}
                     activeOpacity={0.8}>
-                    <Text style={[styles.selectChipText, active && styles.selectChipTextActive]}>{group.name}</Text>
+                    <View style={styles.groupLogoWrap}>
+                      <AgencyLogoMark preset={logoPreset} size={46} />
+                    </View>
+                    <Text style={[styles.avatarChipName, active && styles.avatarChipNameActive]}>{group.name}</Text>
                   </TouchableOpacity>
                 );
               })}
               {groups.length === 0 && <Text style={styles.tinyMuted}>Create a group first to unlock group promotions.</Text>}
-            </View>
+            </ScrollView>
           </>
         ) : (
           <>
             <Text style={styles.tinyMuted}>Step 1: pick idol</Text>
-            <View style={styles.selectRow}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.selectIdolRow}>
               {idols.map(idol => {
                 const active = selectedIdolId === idol.id;
                 const isInjured = idol.status === 'Injured';
                 return (
                   <TouchableOpacity
                     key={idol.id}
-                    style={[styles.selectChip, active ? styles.selectChipActive : styles.selectChipIdle, isInjured && styles.selectChipDisabled]}
+                    style={[styles.avatarChip, active ? styles.avatarChipActive : styles.avatarChipIdle, isInjured && styles.avatarChipDisabled]}
                     onPress={() => !isInjured && setSelectedIdolId(idol.id)}
                     activeOpacity={0.8}
                     disabled={isInjured}>
-                    <Text style={[styles.selectChipText, active && styles.selectChipTextActive, isInjured && styles.selectChipTextDisabled]}>
+                    <View style={styles.idolAvatarWrap}>
+                      {idol.image ? (
+                        <Image source={idol.image} resizeMode="cover" style={styles.idolAvatarImg} />
+                      ) : (
+                        <Text style={styles.idolAvatarFallback}>{idol.stageName.slice(0, 1)}</Text>
+                      )}
+                    </View>
+                    <Text style={[styles.avatarChipName, active && styles.avatarChipNameActive]} numberOfLines={1}>
                       {idol.stageName}{isInjured ? ' 🤕' : ''}
                     </Text>
                   </TouchableOpacity>
                 );
               })}
               {idols.length === 0 && <Text style={styles.tinyMuted}>Recruit idols first.</Text>}
-            </View>
+            </ScrollView>
           </>
         )}
 
-        <Text style={styles.tinyMuted}>Step 2: pick day in Week {currentWeek}</Text>
+        <Text style={styles.tinyMuted}>Step 2: pick day</Text>
         <View style={styles.selectRow}>
           {days.map((day, index) => {
             const active = selectedDayIndex === index;
@@ -385,38 +397,39 @@ export function ScheduleScreen() {
           })}
         </View>
 
+        <Text style={styles.tinyMuted}>Step 3: run promotion</Text>
         <View style={styles.promoGrid}>
           {(promoMode === 'group' ? promotions : soloPromotions).map(p => {
             const lockReason = promoMode === 'group' ? getPromotionLockReason(p) : p.lockedReason;
             return (
               <View key={p.id} style={styles.promo}>
-              <View style={styles.rowBetween}>
-                <Text style={styles.promoName}>{p.name}</Text>
-                {lockReason ? <Lock size={16} color={colors.mutedForeground} /> : <Megaphone size={16} color={colors.violetBright} />}
-              </View>
-              <Text style={styles.tinyMuted}>
-                Target · {promoMode === 'solo' ? (selectedIdol?.stageName ?? '—') : (selectedGroup?.name ?? p.target)}
-              </Text>
-              <View style={styles.statGrid}>
-                <Stat k="Cost" v={fmt(p.cost)} />
-                <Stat k="Energy" v={`-${p.energyCost}`} c={colors.hotSoft} />
-                <Stat k="Fans" v={`+${fmtCount(p.fansGain)}`} c={colors.mint} />
-                <Stat k="Reputation" v={`+${p.reputationGain}`} c={colors.tealBright} />
-                <Stat k="Fatigue" v={`+${p.fatigueGain}`} c={colors.hotSoft} />
-                <Stat k="Duration" v={toDurationLabel(p.durationHours)} />
-                <Stat k="Est. Revenue" v={fmt(p.expectedRevenue)} c={colors.violetBright} />
-                <Stat k="Efficiency" v={`${p.efficiencyScore}`} />
-              </View>
-              {lockReason ? <Text style={styles.lockText}>{lockReason}</Text> : null}
-              <TouchableOpacity
-                style={[styles.scheduleBtn, lockReason && styles.scheduleBtnDisabled]}
-                onPress={() => !lockReason && handleRunPromotion(p.id)}
-                disabled={Boolean(lockReason)}
-                activeOpacity={0.8}>
-                <Text style={styles.scheduleBtnText}>
-                  {lockReason ? 'Locked' : `Run on ${dayLabels[selectedDayIndex]} · ${fmt(p.cost)}`}
+                <View style={styles.rowBetween}>
+                  <Text style={styles.promoName}>{p.name}</Text>
+                  {lockReason ? <Lock size={16} color={colors.mutedForeground} /> : <Megaphone size={16} color={colors.violetBright} />}
+                </View>
+                <Text style={styles.tinyMuted}>
+                  Target · {promoMode === 'solo' ? (selectedIdol?.stageName ?? '—') : (selectedGroup?.name ?? p.target)}
                 </Text>
-              </TouchableOpacity>
+                <View style={styles.statGrid}>
+                  <Stat k="Cost" v={fmt(p.cost)} />
+                  <Stat k="Energy" v={`-${p.energyCost}`} c={colors.hotSoft} />
+                  <Stat k="Fans" v={`+${fmtCount(p.fansGain)}`} c={colors.mint} />
+                  <Stat k="Reputation" v={`+${p.reputationGain}`} c={colors.tealBright} />
+                  <Stat k="Fatigue" v={`+${p.fatigueGain}`} c={colors.hotSoft} />
+                  <Stat k="Duration" v={toDurationLabel(p.durationHours)} />
+                  <Stat k="Est. Revenue" v={fmt(p.expectedRevenue)} c={colors.violetBright} />
+                  <Stat k="Efficiency" v={`${p.efficiencyScore}`} />
+                </View>
+                {lockReason ? <Text style={styles.lockText}>{lockReason}</Text> : null}
+                <TouchableOpacity
+                  style={[styles.scheduleBtn, lockReason && styles.scheduleBtnDisabled]}
+                  onPress={() => !lockReason && handleRunPromotion(p.id)}
+                  disabled={Boolean(lockReason)}
+                  activeOpacity={0.8}>
+                  <Text style={styles.scheduleBtnText}>
+                    {lockReason ? 'Locked' : `Run on ${dayLabels[selectedDayIndex]} · ${fmt(p.cost)}`}
+                  </Text>
+                </TouchableOpacity>
               </View>
             );
           })}
@@ -547,10 +560,11 @@ const styles = StyleSheet.create({
   },
   activityTitle: { fontSize: 13, fontWeight: '700', color: colors.foreground, flexShrink: 1 },
 
-  promoGrid: { gap: spacing.sm },
+  promoGrid: { gap: spacing.sm, marginTop: 6 },
   promo: { borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.whiteA05, padding: spacing.md },
   promoName: { fontSize: 13, fontWeight: '700', color: colors.foreground },
   selectRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6, marginBottom: spacing.sm },
+  selectIdolRow: { flexDirection: 'row', gap: 6, marginTop: 6, marginBottom: spacing.sm },
   selectChip: { borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 6, borderWidth: 1 },
   selectChipIdle: { borderColor: colors.border, backgroundColor: colors.whiteA05 },
   selectChipActive: { borderColor: colors.tealActiveBorder, backgroundColor: colors.tealActiveBg },
@@ -558,6 +572,39 @@ const styles = StyleSheet.create({
   selectChipText: { fontSize: 11, fontWeight: '600', color: colors.mutedForeground },
   selectChipTextActive: { color: colors.tealBright },
   selectChipTextDisabled: { color: colors.mutedForeground },
+
+  // Avatar chips ─ group logo or idol photo
+  avatarChip: {
+    alignItems: 'center',
+    gap: 3,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+    minWidth: 52,
+  },
+  avatarChipIdle:       { borderColor: colors.border, backgroundColor: colors.whiteA05 },
+  avatarChipActive:     { borderColor: colors.tealActiveBorder, backgroundColor: colors.tealActiveBg },
+  avatarChipDisabled:   { opacity: 0.4 },
+  avatarChipName:       { fontSize: 10, fontWeight: '700', color: colors.mutedForeground },
+  avatarChipNameActive: { color: colors.tealBright },
+
+  groupLogoWrap: {
+    width: 46, height: 46,
+    borderRadius: radius.lg,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    alignItems: 'center', justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  idolAvatarWrap: {
+    width: 42, height: 42, borderRadius: 18,
+    backgroundColor: colors.whiteA05,
+    overflow: 'hidden',
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+  },
+  idolAvatarImg:      { width: '100%', height: '100%' },
+  idolAvatarFallback: { fontSize: 14, fontWeight: '800', color: colors.mutedForeground },
   modeRow: {
     flexDirection: 'row',
     borderRadius: radius.lg,
@@ -591,11 +638,11 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 18, fontWeight: '800', color: colors.tealBright },
   promoResultTitle: { fontSize: 12, color: colors.foreground, fontWeight: '600' },
   modalStats: { marginTop: spacing.sm, flexDirection: 'row', flexWrap: 'wrap' },
-  modalBtn:     { marginTop: spacing.md, borderRadius: radius.md, backgroundColor: colors.teal, paddingVertical: spacing.sm, alignItems: 'center' },
+  modalBtn: { marginTop: spacing.md, borderRadius: radius.md, backgroundColor: colors.teal, paddingVertical: spacing.sm, alignItems: 'center' },
   modalBtnText: { fontSize: 12, fontWeight: '800', color: colors.slate900 },
-  confirmRow:       { marginTop: spacing.md, flexDirection: 'row', gap: spacing.sm },
+  confirmRow: { marginTop: spacing.md, flexDirection: 'row', gap: spacing.sm },
   confirmCancelBtn: { flex: 1, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.whiteA05, paddingVertical: spacing.sm, alignItems: 'center' },
-  confirmCancelText:{ fontSize: 12, fontWeight: '700', color: colors.foreground },
-  confirmRunBtn:    { flex: 1, borderRadius: radius.md, backgroundColor: colors.teal, paddingVertical: spacing.sm, alignItems: 'center' },
+  confirmCancelText: { fontSize: 12, fontWeight: '700', color: colors.foreground },
+  confirmRunBtn: { flex: 1, borderRadius: radius.md, backgroundColor: colors.teal, paddingVertical: spacing.sm, alignItems: 'center' },
   confirmCost: { fontSize: 16, fontWeight: '900', color: colors.tealBright, marginTop: spacing.xs },
 });

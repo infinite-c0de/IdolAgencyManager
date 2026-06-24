@@ -24,17 +24,17 @@ const CELL_H = H / 4;
 // 12 fixed idol portraits for the mosaic — 3 cols × 4 rows
 const MOSAIC: number[] = [
   require('../assets/idols/idol_sooyeon.webp'),
-  require('../assets/idols/idol_mina.webp'),
+  require('../assets/idols/idol_minhan.webp'),
   require('../assets/idols/idol_akari.webp'),
-  require('../assets/idols/idol_daichi.webp'),
-  require('../assets/idols/idol_meilin.webp'),
+  require('../assets/idols/idol_chenxi.webp'),
+  require('../assets/idols/idol_dawon.webp'),
   require('../assets/idols/idol_chaewon.webp'),
-  require('../assets/idols/idol_kaito.webp'),
-  require('../assets/idols/idol_aria.webp'),
-  require('../assets/idols/idol_xinyi.webp'),
-  require('../assets/idols/idol_haruto.webp'),
+  require('../assets/idols/idol_ming.webp'),
+  require('../assets/idols/idol_quynh.webp'),
+  require('../assets/idols/idol_ren.webp'),
+  require('../assets/idols/idol_junho.webp'),
   require('../assets/idols/idol_hana.webp'),
-  require('../assets/idols/idol_kiyomi.webp'),
+  require('../assets/idols/idol_yue.webp'),
 ];
 
 export function HomeScreen() {
