@@ -30,6 +30,8 @@ export type PromotionOption = {
 export type RunPromotionPayload = {
   promotionId: string;
   groupId?: string;
+  /** Set for solo idol promotions (no group required). */
+  idolId?: string;
   week?: number;
   dayIndex?: number;
 };
@@ -48,10 +50,14 @@ export type RunPromotionResult =
   | {
       ok: true;
       promotionName: string;
-      groupId: string;
+      /** Undefined for solo promotions. */
+      groupId?: string;
       groupName: string;
-      updatedGroup: Group;
+      /** Undefined for solo promotions. */
+      updatedGroup?: Group;
       updatedIdols: Idol[];
+      /** Set for solo promotions. */
+      idolId?: string;
       totalCost: number;
       revenueGained: number;
       netDelta: number;
@@ -65,6 +71,7 @@ export type RunPromotionResult =
       ok: false;
       reason:
         | 'GROUP_NOT_FOUND'
+        | 'IDOL_NOT_FOUND'
         | 'PROMOTION_NOT_FOUND'
         | 'PROMOTION_LOCKED'
         | 'INSUFFICIENT_FUNDS'
@@ -80,9 +87,14 @@ export type MarketPulse = {
 };
 
 export type MarketOpportunity = {
+  id: string;
   region: string;
   text: string;
   tone: 'mint' | 'hot' | 'violet' | 'teal';
+  actionLabel: string;
+  actionCost: number;
+  reputationGain: number;
+  incomeGain: number;
 };
 
 export type RivalIntel = {
@@ -99,4 +111,19 @@ export type RivalFeedItem = {
   t: string;
   time: string;
   tone: 'mint' | 'hot' | 'violet' | 'teal';
+};
+
+export type ProgressionEventType =
+  | 'injury'
+  | 'burnout'
+  | 'low_morale'
+  | 'low_health'
+  | 'contract_warning'
+  | 'contract_expired';
+
+export type ProgressionEvent = {
+  type: ProgressionEventType;
+  idolId: string;
+  idolName: string;
+  message: string;
 };

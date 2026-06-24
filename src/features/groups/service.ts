@@ -1,5 +1,6 @@
 import type { Group, GroupRole, Idol } from '../../types';
 import { normalizePersonalityProfile } from '../idols';
+import { MIN_GROUP_MEMBERS, MAX_GROUP_MEMBERS } from '../../data/gameData';
 import type {
   AddGroupMembersBuildResult,
   AddGroupMembersPayload,
@@ -16,8 +17,6 @@ const GROUP_GRADIENTS = [
   ['rgba(252,211,77,0.42)', 'rgba(251,113,133,0.38)', 'rgba(217,70,239,0.35)'],
 ];
 
-const MIN_GROUP_MEMBERS = 2;
-const MAX_GROUP_MEMBERS = 6;
 const REQUIRED_ROLES: GroupRole[] = ['Leader', 'Main Vocal', 'Main Dancer'];
 const CORE_ROLES: GroupRole[] = ['Leader', 'Main Vocal', 'Main Dancer', 'Main Rapper', 'Visual', 'Center'];
 export const RELEASE_QUALITY_COST: Record<1 | 2 | 3 | 4 | 5, number> = {

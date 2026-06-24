@@ -90,6 +90,16 @@ const idolFanta = require('../assets/idols/idol_fanta.webp');
 const idolPrae = require('../assets/idols/idol_prae.webp');
 const idolYam = require('../assets/idols/idol_yam.webp'); 
 const idolKoi = require('../assets/idols/idol_koi.webp');
+const idolHyunjin = require('../assets/idols/idol_hyunjin.webp');
+const idolSoyeon = require('../assets/idols/idol_soyeon.webp');
+const idolTzuyu = require('../assets/idols/idol_tzuyu.webp');
+const idolYeji = require('../assets/idols/idol_yeji.webp');
+const idolJiwon = require('../assets/idols/idol_jiwon.webp');
+const idolTaeil = require('../assets/idols/idol_taeil.webp');
+const idolXuanyi = require('../assets/idols/idol_xuanyi.webp');
+const idolNattawee = require('../assets/idols/idol_nattawee.webp');
+const idolThida = require('../assets/idols/idol_thida.webp');
+const idolMinhyuk = require('../assets/idols/idol_minhyuk.webp');
 
 export const LOGO_IMAGES: Record<number, ReturnType<typeof require>> = {
   1:  require('../assets/logos/1.webp'),
@@ -349,6 +359,16 @@ export const traineeArtPool = [
   { artKey: 88, gender: 'female', availableNationality: 'Thai, Vietnamese', image: idolPrae },
   { artKey: 89, gender: 'female', availableNationality: 'Thai, Vietnamese', image: idolKoi },
   { artKey: 90, gender: 'female', availableNationality: 'Thai, Vietnamese', image: idolYam },
+  { artKey: 91, gender: 'female', availableNationality: 'Korean', image: idolHyunjin },
+  { artKey: 92, gender: 'female', availableNationality: 'Korean', image: idolSoyeon },
+  { artKey: 93, gender: 'female', availableNationality: 'Chinese, Korean', image: idolTzuyu },
+  { artKey: 94, gender: 'female', availableNationality: 'Korean', image: idolYeji },
+  { artKey: 95, gender: 'male', availableNationality: 'Korean', image: idolJiwon },
+  { artKey: 96, gender: 'male', availableNationality: 'Korean', image: idolTaeil },
+  { artKey: 97, gender: 'female', availableNationality: 'Chinese', image: idolXuanyi },
+  { artKey: 98, gender: 'male', availableNationality: 'Thai', image: idolNattawee },
+  { artKey: 99, gender: 'female', availableNationality: 'Thai', image: idolThida },
+  { artKey: 100, gender: 'male', availableNationality: 'Korean', image: idolMinhyuk },
 ] as const;
 
 export const trainingTypes = [
@@ -364,6 +384,11 @@ export const trainingTypes = [
 ];
 
 export const BASE_REFRESH_COST = 10_000_000;
+
+// ── Roster & group size limits ──────────────────────────────────────────────
+export const MAX_ROSTER_SIZE = 30;
+export const MIN_GROUP_MEMBERS = 2;
+export const MAX_GROUP_MEMBERS = 6;
 
 export const conceptOptions = ['Girl Crush', 'Fresh', 'Elegant', 'Hip-Hop', 'Ballad', 'Experimental', 'Global Pop'];
 export const languageOptions = ['Korean', 'Japanese', 'Chinese', 'Vietnamese', 'English'];

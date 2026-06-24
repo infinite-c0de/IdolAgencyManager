@@ -1,6 +1,7 @@
-import { ChevronRight, Music2, Sparkles } from 'lucide-react-native';
+import { ChevronRight, Music2, Sparkles, TrendingDown } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';import { AppShell, Card } from '../components/AppShell';
+import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { AppShell, Card, SectionTitle } from '../components/AppShell';
 import { Gradient } from '../components/ui/Gradient';
 import { projectRelease, RELEASE_QUALITY_COST } from '../features/groups';
 import { useGame } from '../state/GameContext';
@@ -27,7 +28,7 @@ type ResultData = {
 };
 
 export function ReleaseScreen() {
-  const { groups, idols, agency, conceptOptions, languageOptions, releaseDebut } = useGame();
+  const { groups, idols, agency, conceptOptions, languageOptions, releaseDebut, currentWeek } = useGame();
   const [step, setStep] = useState(1);
   const [groupId, setGroupId] = useState(groups[0]?.id ?? '');
   const [title, setTitle] = useState('');
@@ -302,9 +303,11 @@ export function ReleaseScreen() {
         </View>
       </Card>
 
+      {/* Chart Tracker */}
+      <ChartTracker groups={groups} currentWeek={currentWeek} />
+
       {/* Error modal */}
-      <Modal visible={error !== null} transparent animationType="fade" onRequestClose={() => setError(null)}>
-        <View style={styles.modalBackdrop}>
+      <Modal visible={error !== null} transparent animationType="fade" onRequestClose={() => setError(null)}>        <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Cannot Release</Text>
             <Text style={styles.tinyMuted}>{error}</Text>
@@ -352,6 +355,63 @@ export function ReleaseScreen() {
     </AppShell>
   );
 }
+
+// ── Chart Tracker ─────────────────────────────────────────────────────────
+
+import type { Group } from '../types';
+
+function chartColor(pos: number) {
+  if (pos <= 10) return colors.mint;
+  if (pos <= 30) return colors.tealBright;
+  if (pos <= 60) return colors.amber;
+  return colors.mutedForeground;
+}
+
+function ChartTracker({ groups, currentWeek }: { groups: Group[]; currentWeek: number }) {
+  const allReleases = groups.flatMap(g =>
+    (g.releases ?? []).map(r => ({ ...r, groupName: g.name })),
+  );
+  if (allReleases.length === 0) return null;
+
+  const sorted = [...allReleases].sort((a, b) => b.weekReleased - a.weekReleased);
+
+  return (
+    <Card>
+      <SectionTitle>CHART TRACKER</SectionTitle>
+      <View style={styles.trackerList}>
+        {sorted.map(r => {
+          const weeksSince = Math.max(0, currentWeek - r.weekReleased);
+          const currentChart = Math.min(99, r.chartPosition + Math.round(weeksSince * 2.4));
+          const peaked = currentChart >= 95;
+          const cc = chartColor(currentChart);
+          return (
+            <View key={r.id} style={styles.trackerRow}>
+              <View style={styles.trackerLeft}>
+                <Text style={styles.trackerTitle} numberOfLines={1}>"{r.title}"</Text>
+                <Text style={styles.trackerMeta}>
+                  {r.groupName} · Week {r.weekReleased}
+                  {weeksSince > 0 ? ` · ${weeksSince}w ago` : ' · This week'}
+                </Text>
+              </View>
+              <View style={styles.trackerRight}>
+                <View style={styles.chartPosRow}>
+                  <TrendingDown size={10} color={peaked ? colors.mutedForeground : cc} />
+                  <Text style={[styles.chartPos, { color: peaked ? colors.mutedForeground : cc }]}>
+                    #{currentChart}
+                  </Text>
+                </View>
+                <Text style={styles.chartPeak}>Peak #{r.chartPosition}</Text>
+                <Text style={styles.trackerSales}>{fmtCount(r.totalSales)} sales</Text>
+              </View>
+            </View>
+          );
+        })}
+      </View>
+    </Card>
+  );
+}
+
+// ── Small helpers ──────────────────────────────────────────────────────────
 
 function Est({ k, v, c }: { k: string; v: string; c?: string }) {
   return (
@@ -462,4 +522,24 @@ const styles = StyleSheet.create({
   resultV: { fontSize: 16, fontWeight: '700', color: colors.foreground },
   continueBtn: { marginTop: spacing.lg, alignItems: 'center', borderRadius: radius.lg, backgroundColor: colors.teal, paddingVertical: spacing.sm },
   continueText: { fontSize: 14, fontWeight: '700', color: colors.slate900 },
+
+  // Chart tracker
+  trackerList: { gap: 0 },
+  trackerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.04)',
+    gap: spacing.sm,
+  },
+  trackerLeft: { flex: 1, gap: 3 },
+  trackerTitle: { fontSize: 13, fontWeight: '800', color: colors.foreground },
+  trackerMeta: { fontSize: 10, color: colors.mutedForeground },
+  trackerRight: { alignItems: 'flex-end', gap: 2, minWidth: 64 },
+  chartPosRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  chartPos: { fontSize: 16, fontWeight: '900' },
+  chartPeak: { fontSize: 9, color: colors.mutedForeground, fontWeight: '600' },
+  trackerSales: { fontSize: 9, color: colors.mutedForeground },
 });

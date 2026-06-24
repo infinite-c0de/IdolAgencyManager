@@ -92,6 +92,20 @@ export function selectMarketByRegion(markets: MarketPoint[], region: string) {
   return markets.find(market => market.region === region) ?? null;
 }
 
+export type FinanceHealth = 'healthy' | 'deficit' | 'critical';
+
+export function selectFinanceHealth(net: number, balance: number): FinanceHealth {
+  if (net >= 0) return 'healthy';
+  if (balance > 0 && Math.abs(net) < balance * 0.05) return 'deficit';
+  return 'critical';
+}
+
+/** Weeks of runway at current weekly burn rate. Returns Infinity if profitable. */
+export function selectRunwayWeeks(balance: number, net: number): number {
+  if (net >= 0) return Infinity;
+  return Math.floor(balance / Math.abs(net));
+}
+
 function toSigned(value: number) {
   return value >= 0 ? `+${value}` : `${value}`;
 }

@@ -1,4 +1,4 @@
-import { ChevronRight, Users } from 'lucide-react-native';
+import { ChevronRight, FileText, Users } from 'lucide-react-native';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ARCHETYPE_COLOR, TRAIT_LABELS } from '../ui/idolConstants';
@@ -6,6 +6,7 @@ import { AgencyLogoMark } from '../ui/AgencyLogoMark';
 import { StatBar } from '../ui/StatBar';
 import { colors, radius, spacing } from '../../theme';
 import type { Group, Idol } from '../../types';
+import { fmt } from '../../utils/format';
 
 function formatTrainingMonths(months: number): string {
   const m = Math.max(0, Math.round(months));
@@ -27,10 +28,12 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 type Props = {
   idol: Idol;
   idolGroup: Group | undefined;
+  currentWeek: number;
   onGroupPress: () => void;
+  onRenewContract: () => void;
 };
 
-export function ProfileTab({ idol, idolGroup, onGroupPress }: Props) {
+export function ProfileTab({ idol, idolGroup, currentWeek, onGroupPress, onRenewContract }: Props) {
   const archetype = idol.personalityProfile?.archetype ?? 'All-Rounder';
   const dominance = idol.personalityProfile?.dominance ?? 55;
   const archetypeColor = ARCHETYPE_COLOR[archetype] ?? colors.mutedForeground;
@@ -133,6 +136,71 @@ export function ProfileTab({ idol, idolGroup, onGroupPress }: Props) {
         )}
       </View>
 
+      {/* ── Contract ── */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeaderRow}>
+          <FileText size={12} color={colors.mutedForeground} />
+          <Text style={styles.sectionTitle}>CONTRACT</Text>
+        </View>
+        <ContractBlock
+          contractExpiresWeek={idol.contractExpiresWeek}
+          popularity={idol.popularity}
+          currentWeek={currentWeek}
+          onRenew={onRenewContract}
+        />
+      </View>
+
+    </View>
+  );
+}
+
+function ContractBlock({
+  contractExpiresWeek,
+  popularity,
+  currentWeek,
+  onRenew,
+}: {
+  contractExpiresWeek: number;
+  popularity: number;
+  currentWeek: number;
+  onRenew: () => void;
+}) {
+  const weeksLeft = contractExpiresWeek - currentWeek;
+  const renewalCost = Math.max(5_000_000, Math.min(50_000_000, Math.round(popularity * 500_000)));
+
+  const statusColor =
+    weeksLeft <= 0 ? colors.hot :
+    weeksLeft <= 8 ? colors.hotSoft :
+    weeksLeft <= 16 ? colors.amber :
+    colors.mint;
+
+  const statusLabel =
+    weeksLeft <= 0 ? 'EXPIRED' :
+    weeksLeft <= 8 ? 'EXPIRING SOON' :
+    weeksLeft <= 16 ? 'RENEW SOON' :
+    'ACTIVE';
+
+  const expiresLabel = weeksLeft <= 0
+    ? 'Contract has expired'
+    : `Expires in ${weeksLeft} week${weeksLeft === 1 ? '' : 's'}`;
+
+  return (
+    <View style={styles.contractBlock}>
+      <View style={styles.contractRow}>
+        <View style={styles.contractLeft}>
+          <View style={[styles.contractStatusPill, { borderColor: statusColor + '55', backgroundColor: statusColor + '18' }]}>
+            <View style={[styles.contractDot, { backgroundColor: statusColor }]} />
+            <Text style={[styles.contractStatusText, { color: statusColor }]}>{statusLabel}</Text>
+          </View>
+          <Text style={styles.contractExpiry}>{expiresLabel}</Text>
+        </View>
+        <TouchableOpacity
+          style={[styles.renewBtn, weeksLeft <= 0 && styles.renewBtnUrgent]}
+          onPress={onRenew}
+          activeOpacity={0.8}>
+          <Text style={styles.renewBtnText}>Renew  {fmt(renewalCost)}</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -267,4 +335,50 @@ const styles = StyleSheet.create({
   },
   soloEmoji: { fontSize: 20 },
   soloLabel: { fontSize: 13, fontWeight: '700', color: colors.mutedForeground },
+
+  // Contract
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  contractBlock: { gap: spacing.sm },
+  contractRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  contractLeft: { gap: 5, flex: 1 },
+  contractStatusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    alignSelf: 'flex-start',
+    borderRadius: radius.full,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  contractDot: { width: 5, height: 5, borderRadius: radius.full },
+  contractStatusText: { fontSize: 9, fontWeight: '800', letterSpacing: 1 },
+  contractExpiry: { fontSize: 11, color: colors.mutedForeground, fontWeight: '500' },
+  renewBtn: {
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(52,211,153,0.5)',
+    backgroundColor: 'rgba(52,211,153,0.08)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 1,
+  },
+  renewBtnUrgent: {
+    borderColor: 'rgba(239,68,68,0.5)',
+    backgroundColor: 'rgba(239,68,68,0.08)',
+  },
+  renewBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.mint,
+    letterSpacing: 0.2,
+  },
 });

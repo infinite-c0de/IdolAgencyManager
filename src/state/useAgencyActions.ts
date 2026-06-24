@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { BASE_REFRESH_COST, cities } from '../data/gameData';
+import { BASE_REFRESH_COST, MAX_ROSTER_SIZE, cities } from '../data/gameData';
 import {
   buildCreatedAgency,
   canRecruitTrainee,
@@ -25,13 +25,13 @@ export function useAgencyActions({
   agency,
   idols,
   trainees,
+  currentWeek,
   setAgency,
   setIdols,
   setTrainees,
   setIsAgencyCreated,
 }: UseAgencyActionsParams) {
   const VISIBLE_CANDIDATE_COUNT = 10;
-  const MAX_ROSTER_SIZE = 30;
   const recentlyShownTraineeIdsRef = useRef<string[]>([]);
 
   const createAgency = ({ agencyName, ceoName, cityId, logo }: CreateAgencyPayload) => {
@@ -73,7 +73,7 @@ export function useAgencyActions({
       return { ok: false, reason: 'INSUFFICIENT_FUNDS' };
     }
 
-    const created = traineeToIdol(trainee);
+    const created = traineeToIdol(trainee, currentWeek);
     setIdols(current => sortIdolsNewestFirst(created, current));
     setTrainees(current =>
       current.filter(

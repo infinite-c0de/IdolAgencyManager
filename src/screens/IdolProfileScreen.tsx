@@ -2,7 +2,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ChevronLeft } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card } from '../components/AppShell';
 import { ProfileHero } from '../components/profile/ProfileHero';
 import { ProfileTab } from '../components/profile/ProfileTab';
@@ -17,7 +17,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>) {
   const navigation = useNavigation<Nav>();
-  const { idols, groups, trainingTypes, trainingPlans } = useGame();
+  const { idols, groups, trainingTypes, trainingPlans, renewContract, currentWeek } = useGame();
   const idol = idols.find(x => x.id === route.params.id);
   const idolGroup = idol?.group ? groups.find(g => g.name === idol.group) : undefined;
   const [tab, setTab] = useState<ProfileTabKey>('profile');
@@ -65,7 +65,32 @@ export function IdolProfileScreen({ route }: RootStackScreenProps<'IdolProfile'>
           <ProfileTab
             idol={idol}
             idolGroup={idolGroup}
+            currentWeek={currentWeek}
             onGroupPress={() => idolGroup && navigation.navigate('GroupProfile', { groupId: idolGroup.id })}
+            onRenewContract={() => {
+              const cost = Math.max(5_000_000, Math.min(50_000_000, Math.round(idol.popularity * 500_000)));
+              Alert.alert(
+                'Renew Contract',
+                `Renew ${idol.stageName}'s contract for 1 year?\nCost: ₩${(cost / 1_000_000).toFixed(1)}M`,
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Renew',
+                    onPress: () => {
+                      const result = renewContract(idol.id);
+                      if (!result.ok) {
+                        Alert.alert(
+                          'Cannot Renew',
+                          result.reason === 'INSUFFICIENT_FUNDS'
+                            ? 'Insufficient funds to renew this contract.'
+                            : 'Something went wrong.',
+                        );
+                      }
+                    },
+                  },
+                ],
+              );
+            }}
           />
         )}
         {tab === 'skills' && <SkillsTab idol={idol} />}

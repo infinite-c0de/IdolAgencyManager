@@ -26,9 +26,11 @@ export type ScoutingFilters = {
   nationality: string;
 };
 
-export type UseAgencyActionsParams = {  agency: Agency;
+export type UseAgencyActionsParams = {
+  agency: Agency;
   idols: Idol[];
   trainees: Trainee[];
+  currentWeek: number;
   setAgency: Dispatch<SetStateAction<Agency>>;
   setIdols: Dispatch<SetStateAction<Idol[]>>;
   setTrainees: Dispatch<SetStateAction<Trainee[]>>;

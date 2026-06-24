@@ -8,6 +8,7 @@ import { fmtCount } from '../utils/format';
 import {
   selectDynamicSchedule,
   selectPromotionOptions,
+  selectSoloPromotionOptions,
   type DynamicScheduleItem,
 } from '../features/simulation';
 import type { RootStackParamList } from '../navigation/types';
@@ -69,6 +70,16 @@ export function ScheduleScreen() {
     [cities, agency, idols, selectedGroup],
   );
   const [error, setError] = useState<string | null>(null);
+  const [promoMode, setPromoMode] = useState<'group' | 'solo'>('group');
+  const [selectedIdolId, setSelectedIdolId] = useState(idols[0]?.id ?? '');
+  const selectedIdol = useMemo(
+    () => idols.find(i => i.id === selectedIdolId) ?? null,
+    [idols, selectedIdolId],
+  );
+  const soloPromotions = useMemo(
+    () => (selectedIdol ? selectSoloPromotionOptions(cities, agency, selectedIdol) : []),
+    [cities, agency, selectedIdol],
+  );
   const [confirmPromotion, setConfirmPromotion] = useState<{ id: string; name: string; cost: number } | null>(null);
   const [promotionResult, setPromotionResult] = useState<{
     name: string;
@@ -153,17 +164,23 @@ export function ScheduleScreen() {
   };
 
   const handleRunPromotion = (promotionId: string) => {
-    const selectedPromotion = promotions.find(item => item.id === promotionId);
+    const isSolo = promoMode === 'solo';
+    const selectedPromotion = isSolo
+      ? soloPromotions.find(item => item.id === promotionId)
+      : promotions.find(item => item.id === promotionId);
     const selectedLockReason = selectedPromotion ? getPromotionLockReason(selectedPromotion) : undefined;
     if (selectedLockReason) {
       setError(selectedLockReason);
       return;
     }
-    if (!selectedGroup) {
+    if (!isSolo && !selectedGroup) {
       setError('Select a group before scheduling a promotion.');
       return;
     }
-    // Show confirmation before spending money
+    if (isSolo && !selectedIdol) {
+      setError('Select an idol before scheduling a solo promotion.');
+      return;
+    }
     setConfirmPromotion({
       id: promotionId,
       name: selectedPromotion?.name ?? '',
@@ -173,14 +190,15 @@ export function ScheduleScreen() {
 
   const executePromotion = (promotionId: string) => {
     setConfirmPromotion(null);
-    if (!selectedGroup) return;
+    const isSolo = promoMode === 'solo';
+    if (!isSolo && !selectedGroup) return;
+    if (isSolo && !selectedIdol) return;
 
-    const result = runPromotion({
-      promotionId,
-      groupId: selectedGroup.id,
-      week: currentWeek,
-      dayIndex: selectedDayIndex,
-    });
+    const result = runPromotion(
+      isSolo
+        ? { promotionId, idolId: selectedIdol!.id, week: currentWeek, dayIndex: selectedDayIndex }
+        : { promotionId, groupId: selectedGroup!.id, week: currentWeek, dayIndex: selectedDayIndex },
+    );
     if (!result.ok) {
       if (result.reason === 'INSUFFICIENT_FUNDS') {
         setError('Not enough funds for this promotion.');
@@ -229,10 +247,10 @@ export function ScheduleScreen() {
         <SectionTitle>THIS WEEK</SectionTitle>
         <View style={styles.weekRow}>
           {days.map((d, i) => {
-            const events = effectiveSchedule.filter(item => item.dayIndex === i);
-            const visible = events.slice(0, 2);
+            const events = effectiveSchedule.filter(item => item.dayIndex === i);            const visible = events.slice(0, 2);
             const overflow = events.length - visible.length;
             const first = events[0];
+            const isSelected = selectedDayIndex === i;
             const cellStyle =
               first?.accent === 'teal'
                 ? styles.cellTeal
@@ -241,8 +259,11 @@ export function ScheduleScreen() {
                   : styles.cellIdle;
             return (
               <View key={d} style={styles.dayCol}>
-                <Text style={styles.dayHead}>{d}</Text>
-                <View style={[styles.dayCell, cellStyle]}>
+                <Text style={[styles.dayHead, isSelected && styles.dayHeadSelected]}>{d}</Text>
+                <TouchableOpacity
+                  style={[styles.dayCell, cellStyle, isSelected && styles.cellSelected]}
+                  onPress={() => setSelectedDayIndex(i)}
+                  activeOpacity={0.75}>
                   {visible.map(ev => (
                     <Text key={ev.id} style={[styles.eventText, { color: eventColor[ev.accent] }]} numberOfLines={1}>
                       {ev.title}
@@ -251,15 +272,18 @@ export function ScheduleScreen() {
                   {overflow > 0 && (
                     <Text style={styles.overflowText}>+{overflow} more</Text>
                   )}
-                </View>
+                </TouchableOpacity>
               </View>
             );
           })}
         </View>
+        <Text style={styles.calendarHint}>
+          Tap a day to select it for your promotion ·{' '}
+          <Text style={styles.calendarHintAccent}>{dayLabels[selectedDayIndex]} selected</Text>
+        </Text>
       </Card>
 
       <Card>
-        <SectionTitle>UPCOMING ACTIVITIES</SectionTitle>
         <View style={styles.list}>
           {effectiveSchedule.map(s => (
             <View key={s.id} style={styles.activity}>
@@ -280,22 +304,71 @@ export function ScheduleScreen() {
 
       <Card glow="violet">
         <SectionTitle>PROMOTION CATALOG</SectionTitle>
-        <Text style={styles.tinyMuted}>Step 1: pick group</Text>
-        <View style={styles.selectRow}>
-          {groups.map(group => {
-            const active = selectedGroupId === group.id;
-            return (
-              <TouchableOpacity
-                key={group.id}
-                style={[styles.selectChip, active ? styles.selectChipActive : styles.selectChipIdle]}
-                onPress={() => setSelectedGroupId(group.id)}
-                activeOpacity={0.8}>
-                <Text style={[styles.selectChipText, active && styles.selectChipTextActive]}>{group.name}</Text>
-              </TouchableOpacity>
-            );
-          })}
-          {groups.length === 0 && <Text style={styles.tinyMuted}>Create a group first to unlock promotions.</Text>}
+
+        {/* Group / Solo toggle */}
+        <View style={styles.modeRow}>
+          <TouchableOpacity
+            style={[styles.modeTab, promoMode === 'group' && styles.modeTabActive]}
+            onPress={() => setPromoMode('group')}
+            activeOpacity={0.8}>
+            <Text style={[styles.modeTabText, promoMode === 'group' && styles.modeTabTextActive]}>
+              GROUP
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.modeTab, promoMode === 'solo' && styles.modeTabActive]}
+            onPress={() => setPromoMode('solo')}
+            activeOpacity={0.8}>
+            <Text style={[styles.modeTabText, promoMode === 'solo' && styles.modeTabTextActive]}>
+              SOLO ARTIST
+            </Text>
+          </TouchableOpacity>
         </View>
+
+        {promoMode === 'group' ? (
+          <>
+            <Text style={styles.tinyMuted}>Step 1: pick group</Text>
+            <View style={styles.selectRow}>
+              {groups.map(group => {
+                const active = selectedGroupId === group.id;
+                return (
+                  <TouchableOpacity
+                    key={group.id}
+                    style={[styles.selectChip, active ? styles.selectChipActive : styles.selectChipIdle]}
+                    onPress={() => setSelectedGroupId(group.id)}
+                    activeOpacity={0.8}>
+                    <Text style={[styles.selectChipText, active && styles.selectChipTextActive]}>{group.name}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+              {groups.length === 0 && <Text style={styles.tinyMuted}>Create a group first to unlock group promotions.</Text>}
+            </View>
+          </>
+        ) : (
+          <>
+            <Text style={styles.tinyMuted}>Step 1: pick idol</Text>
+            <View style={styles.selectRow}>
+              {idols.map(idol => {
+                const active = selectedIdolId === idol.id;
+                const isInjured = idol.status === 'Injured';
+                return (
+                  <TouchableOpacity
+                    key={idol.id}
+                    style={[styles.selectChip, active ? styles.selectChipActive : styles.selectChipIdle, isInjured && styles.selectChipDisabled]}
+                    onPress={() => !isInjured && setSelectedIdolId(idol.id)}
+                    activeOpacity={0.8}
+                    disabled={isInjured}>
+                    <Text style={[styles.selectChipText, active && styles.selectChipTextActive, isInjured && styles.selectChipTextDisabled]}>
+                      {idol.stageName}{isInjured ? ' 🤕' : ''}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+              {idols.length === 0 && <Text style={styles.tinyMuted}>Recruit idols first.</Text>}
+            </View>
+          </>
+        )}
+
         <Text style={styles.tinyMuted}>Step 2: pick day in Week {currentWeek}</Text>
         <View style={styles.selectRow}>
           {days.map((day, index) => {
@@ -311,16 +384,19 @@ export function ScheduleScreen() {
             );
           })}
         </View>
+
         <View style={styles.promoGrid}>
-          {promotions.map(p => {
-            const lockReason = getPromotionLockReason(p);
+          {(promoMode === 'group' ? promotions : soloPromotions).map(p => {
+            const lockReason = promoMode === 'group' ? getPromotionLockReason(p) : p.lockedReason;
             return (
               <View key={p.id} style={styles.promo}>
               <View style={styles.rowBetween}>
                 <Text style={styles.promoName}>{p.name}</Text>
                 {lockReason ? <Lock size={16} color={colors.mutedForeground} /> : <Megaphone size={16} color={colors.violetBright} />}
               </View>
-              <Text style={styles.tinyMuted}>Target · {selectedGroup?.name ?? p.target}</Text>
+              <Text style={styles.tinyMuted}>
+                Target · {promoMode === 'solo' ? (selectedIdol?.stageName ?? '—') : (selectedGroup?.name ?? p.target)}
+              </Text>
               <View style={styles.statGrid}>
                 <Stat k="Cost" v={fmt(p.cost)} />
                 <Stat k="Energy" v={`-${p.energyCost}`} c={colors.hotSoft} />
@@ -344,6 +420,16 @@ export function ScheduleScreen() {
               </View>
             );
           })}
+          {promoMode === 'group' && groups.length === 0 && (
+            <Text style={[styles.tinyMuted, { marginTop: spacing.sm }]}>
+              No groups yet — form a group to unlock group promotions.
+            </Text>
+          )}
+          {promoMode === 'solo' && idols.length === 0 && (
+            <Text style={[styles.tinyMuted, { marginTop: spacing.sm }]}>
+              No idols signed yet.
+            </Text>
+          )}
         </View>
       </Card>
 
@@ -365,7 +451,9 @@ export function ScheduleScreen() {
             <Text style={styles.modalTitle}>Confirm Promotion</Text>
             <Text style={styles.promoResultTitle}>{confirmPromotion?.name}</Text>
             <Text style={styles.tinyMuted}>
-              {selectedGroup?.name} · {dayLabels[selectedDayIndex]}
+              {promoMode === 'solo'
+                ? `${selectedIdol?.stageName ?? '—'} · ${dayLabels[selectedDayIndex]}`
+                : `${selectedGroup?.name ?? '—'} · ${dayLabels[selectedDayIndex]}`}
             </Text>
             <Text style={styles.confirmCost}>Cost: {fmt(confirmPromotion?.cost ?? 0)}</Text>
             <Text style={styles.tinyMuted}>This will immediately deduct funds and run the promotion.</Text>
@@ -435,12 +523,16 @@ const styles = StyleSheet.create({
   weekRow: { flexDirection: 'row', gap: 4 },
   dayCol: { flex: 1, alignItems: 'center', gap: 4 },
   dayHead: { fontSize: 9, fontWeight: '700', textTransform: 'uppercase', color: colors.mutedForeground },
+  dayHeadSelected: { color: colors.tealBright },
   dayCell: { height: 80, width: '100%', borderRadius: radius.md, borderWidth: 1, padding: 4 },
   cellIdle: { borderColor: colors.border, backgroundColor: colors.whiteA05 },
   cellTeal: { borderColor: colors.tealActiveBorder, backgroundColor: colors.tealActiveBg },
   cellViolet: { borderColor: 'rgba(217,70,239,0.6)', backgroundColor: 'rgba(217,70,239,0.1)' },
+  cellSelected: { borderColor: colors.tealBright, borderWidth: 2 },
   eventText: { fontSize: 9, fontWeight: '700' },
   overflowText: { fontSize: 8, fontWeight: '600', color: colors.mutedForeground, marginTop: 2 },
+  calendarHint: { marginTop: spacing.sm, fontSize: 10, color: colors.mutedForeground },
+  calendarHintAccent: { color: colors.tealBright, fontWeight: '700' },
 
   list: { gap: spacing.sm },
   activity: {
@@ -462,8 +554,30 @@ const styles = StyleSheet.create({
   selectChip: { borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 6, borderWidth: 1 },
   selectChipIdle: { borderColor: colors.border, backgroundColor: colors.whiteA05 },
   selectChipActive: { borderColor: colors.tealActiveBorder, backgroundColor: colors.tealActiveBg },
+  selectChipDisabled: { opacity: 0.4 },
   selectChipText: { fontSize: 11, fontWeight: '600', color: colors.mutedForeground },
   selectChipTextActive: { color: colors.tealBright },
+  selectChipTextDisabled: { color: colors.mutedForeground },
+  modeRow: {
+    flexDirection: 'row',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+    marginBottom: spacing.sm,
+  },
+  modeTab: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    backgroundColor: colors.whiteA05,
+  },
+  modeTabActive: {
+    backgroundColor: colors.tealActiveBg,
+    borderColor: colors.tealActiveBorder,
+  },
+  modeTabText: { fontSize: 10, fontWeight: '800', letterSpacing: 1, color: colors.mutedForeground },
+  modeTabTextActive: { color: colors.tealBright },
   lockText: { marginTop: spacing.sm, fontSize: 10, color: colors.mutedForeground },
   statGrid: { marginTop: spacing.sm, flexDirection: 'row', flexWrap: 'wrap' },
   statItem: { width: '50%', flexDirection: 'row', justifyContent: 'space-between', paddingRight: spacing.md, marginBottom: 2 },
@@ -480,7 +594,7 @@ const styles = StyleSheet.create({
   modalBtn: { marginTop: spacing.md, borderRadius: radius.md, backgroundColor: colors.teal, paddingVertical: spacing.sm, alignItems: 'center' },
   modalBtnText: { fontSize: 12, fontWeight: '800', color: colors.slate900 },
   confirmRow: { marginTop: spacing.md, flexDirection: 'row', gap: spacing.sm },
-  confirmCancelBtn: { flex: 1, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.whiteA05, paddingVertical: spacing.sm, alignItems: 'center' },
+  confirmCancelBtn: { borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.whiteA05, paddingVertical: spacing.sm, alignItems: 'center' },
   confirmCancelText: { fontSize: 12, fontWeight: '700', color: colors.foreground },
   confirmCost: { fontSize: 16, fontWeight: '900', color: colors.tealBright, marginTop: spacing.xs },
 });

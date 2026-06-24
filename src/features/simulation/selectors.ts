@@ -208,8 +208,133 @@ export function selectDynamicSchedule(idols: Idol[], groups: Group[]): DynamicSc
   ];
 }
 
-export function selectPromotionOptions(
+export type SoloPromotionTemplate = {
+  id: string;
+  name: string;
+  baseCost: number;
+  baseFansK: number;
+  baseReputation: number;
+  baseFatigue: number;
+  baseRevenueK: number;
+  durationHours: number;
+  popularityWeight: number;
+  intensity: number;
+  requiresActive?: boolean;
+};
+
+export const SOLO_PROMOTION_TEMPLATES: SoloPromotionTemplate[] = [
+  {
+    id: 'solo-social',
+    name: 'Solo Social Post',
+    baseCost: 1_200_000,
+    baseFansK: 4,
+    baseReputation: 1,
+    baseFatigue: 2,
+    baseRevenueK: 2_500,
+    durationHours: 48,
+    popularityWeight: 0.65,
+    intensity: 0.5,
+  },
+  {
+    id: 'cf-deal',
+    name: 'CF / Brand Deal',
+    baseCost: 6_000_000,
+    baseFansK: 7,
+    baseReputation: 2,
+    baseFatigue: 4,
+    baseRevenueK: 18_000,
+    durationHours: 96,
+    popularityWeight: 0.8,
+    intensity: 0.8,
+  },
+  {
+    id: 'variety-show',
+    name: 'Variety Show Appearance',
+    baseCost: 4_500_000,
+    baseFansK: 12,
+    baseReputation: 3,
+    baseFatigue: 7,
+    baseRevenueK: 8_000,
+    durationHours: 72,
+    popularityWeight: 0.75,
+    intensity: 1.0,
+  },
+  {
+    id: 'solo-fansign',
+    name: 'Solo Fan Sign',
+    baseCost: 9_000_000,
+    baseFansK: 15,
+    baseReputation: 3,
+    baseFatigue: 9,
+    baseRevenueK: 12_000,
+    durationHours: 24,
+    popularityWeight: 0.55,
+    intensity: 1.2,
+  },
+  {
+    id: 'solo-concert',
+    name: 'Solo Mini Concert',
+    baseCost: 22_000_000,
+    baseFansK: 22,
+    baseReputation: 5,
+    baseFatigue: 14,
+    baseRevenueK: 35_000,
+    durationHours: 24,
+    popularityWeight: 1.0,
+    intensity: 1.6,
+    requiresActive: true,
+  },
+];
+
+export function selectSoloPromotionOptions(
   cities: City[],
+  agency: Agency,
+  idol: Idol,
+): PromotionOption[] {
+  const homeCity = cities.find(city => city.name === agency.city) ?? cities[0];
+  const cityCostFactor = homeCity ? homeCity.cost : 1;
+  const cityRevenueFactor = homeCity ? homeCity.revenue : 1;
+  const repFactor = clamp(0.85 + agency.reputation / 250, 0.85, 1.35);
+  const isActive = idol.status === 'Active' || idol.status === 'Promoting';
+
+  return SOLO_PROMOTION_TEMPLATES.map(template => {
+    const cost = Math.round(template.baseCost * cityCostFactor * (1 + idol.popularity / 300));
+    const energyCost = Math.max(4, Math.round(template.intensity * 10));
+    const fansGain = Math.max(
+      500,
+      Math.round(
+        (template.baseFansK * 1000 + idol.popularity * template.popularityWeight * 100) *
+          repFactor,
+      ),
+    );
+    const reputationGain = Math.max(1, Math.round(template.baseReputation + idol.popularity / 60));
+    const fatigueGain = Math.max(1, Math.round(template.baseFatigue + template.intensity * 2));
+    const expectedRevenue = Math.round(
+      template.baseRevenueK * (1 + cityRevenueFactor * 0.4 + idol.popularity / 200) * repFactor,
+    );
+    const efficiencyScore = Math.max(1, Math.round((expectedRevenue / Math.max(cost, 1)) * 100));
+    const lockedReason = template.requiresActive && !isActive
+      ? 'Idol must be active (in a group or promoted) to run solo concerts.'
+      : undefined;
+
+    return {
+      id: template.id,
+      name: template.name,
+      cost,
+      energyCost,
+      fansGain,
+      reputationGain,
+      fatigueGain,
+      durationHours: template.durationHours,
+      expectedRevenue,
+      efficiencyScore,
+      target: idol.stageName,
+      lockedReason,
+    };
+  });
+}
+
+export function selectPromotionOptions(  cities: City[],
   agency: Agency,
   idols: Idol[],
   groups: Group[],
@@ -350,14 +475,24 @@ export function selectMarketOpportunities(
   if (idols.length === 0) {
     return [
       {
+        id: 'local-pr',
         region: homeCity.name,
         text: 'Open trainee scouting to start building local awareness.',
         tone: 'teal',
+        actionLabel: 'Launch PR Campaign',
+        actionCost: 3_000_000,
+        reputationGain: 2,
+        incomeGain: 0,
       },
       {
+        id: 'market-data',
         region: 'Global',
         text: 'No market traction yet. Recruiting is the first growth lever.',
         tone: 'violet',
+        actionLabel: 'Buy Market Report',
+        actionCost: 2_000_000,
+        reputationGain: 1,
+        incomeGain: 0,
       },
     ];
   }
@@ -365,36 +500,61 @@ export function selectMarketOpportunities(
   if (!group) {
     return [
       {
+        id: 'grassroots',
         region: homeCity.name,
         text: 'You have recruited talent. Form a group to unlock promotion campaigns.',
         tone: 'mint',
+        actionLabel: 'Grassroots Campaign',
+        actionCost: 8_000_000,
+        reputationGain: 2,
+        incomeGain: 5_000_000,
       },
       {
+        id: 'comp-intel',
         region: homeCity.name,
         text: `Competition pressure is ${homeCity.competition}%, so role balance matters before debut.`,
         tone: 'hot',
+        actionLabel: 'Analyse Rivals',
+        actionCost: 4_000_000,
+        reputationGain: 1,
+        incomeGain: 0,
       },
     ];
   }
 
+  const isActive = group.status === 'Active';
   return [
     {
+      id: 'local-showcase',
       region: homeCity.name,
       text: `${group.name} can convert local reputation into stronger early fan growth.`,
       tone: 'mint',
+      actionLabel: isActive ? 'Book Local Showcase' : 'Host Pre-Debut Event',
+      actionCost: isActive ? 18_000_000 : 12_000_000,
+      reputationGain: isActive ? 4 : 2,
+      incomeGain: isActive ? 16_000_000 : 8_000_000,
     },
     {
+      id: 'global-push',
       region: 'Global',
-      text:
-        group.status === 'Active'
-          ? 'Active promotions can lift global rank this month.'
-          : 'A debut release will unlock chart movement.',
+      text: isActive
+        ? 'Active promotions can lift global rank this month.'
+        : 'A debut release will unlock chart movement.',
       tone: 'teal',
+      actionLabel: isActive ? 'Streaming Push' : 'Teaser Campaign',
+      actionCost: isActive ? 15_000_000 : 6_000_000,
+      reputationGain: isActive ? 3 : 1,
+      incomeGain: isActive ? 20_000_000 : 3_000_000,
     },
     {
+      id: 'cost-cut',
       region: homeCity.name,
       text: `Office costs are ${fmt(homeCity.officeRentWeekly)}/week, so avoid over-scheduling low-return campaigns.`,
       tone: 'violet',
+      actionLabel: 'Optimise Budget',
+      actionCost: 4_000_000,
+      reputationGain: 0,
+      incomeGain: 12_000_000,
     },
   ];
 }

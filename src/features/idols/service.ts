@@ -466,7 +466,7 @@ function buildInitialIdolStats(trainee: Trainee): Idol['stats'] {
   return stats;
 }
 
-export function traineeToIdol(trainee: Trainee): Idol {
+export function traineeToIdol(trainee: Trainee, currentWeek = 1): Idol {
   const identity = normalizeNameIdentity(trainee, trainee.id);
   const stage = identity.stageName;
   const initialBase = stage.toLowerCase().replace(/\s+/g, '-');
@@ -484,6 +484,7 @@ export function traineeToIdol(trainee: Trainee): Idol {
     personality: trainee.personality,
     personalityProfile: normalizePersonalityProfile(trainee.personalityProfile, trainee.personality),
     trainingMonths: 0,
+    contractExpiresWeek: currentWeek + 52,
     role: `${trainee.skill} Trainee`,
     status: 'Trainee',
     popularity: Math.round(40 + trainee.potential * 0.35),

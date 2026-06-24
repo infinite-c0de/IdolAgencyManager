@@ -1,5 +1,5 @@
 import type { Agency, City, Group, Idol } from '../../types';
-import { clamp, primaryGroup, selectPromotionOptions } from './selectors';
+import { clamp, primaryGroup, selectPromotionOptions, selectSoloPromotionOptions } from './selectors';
 import type { RunPromotionPayload, RunPromotionResult } from './types';
 
 export function runPromotionAction(
@@ -9,6 +9,65 @@ export function runPromotionAction(
   groups: Group[],
   payload: RunPromotionPayload,
 ): RunPromotionResult {
+  // ── Solo idol path ──────────────────────────────────────────────────────
+  if (payload.idolId) {
+    const idol = idols.find(i => i.id === payload.idolId);
+    if (!idol) return { ok: false, reason: 'IDOL_NOT_FOUND' };
+
+    const options = selectSoloPromotionOptions(cities, agency, idol);
+    const option = options.find(o => o.id === payload.promotionId);
+    if (!option) return { ok: false, reason: 'PROMOTION_NOT_FOUND' };
+    if (option.lockedReason) return { ok: false, reason: 'PROMOTION_LOCKED' };
+    if (agency.energy < option.energyCost) return { ok: false, reason: 'INSUFFICIENT_ENERGY' };
+    if (agency.money < option.cost) return { ok: false, reason: 'INSUFFICIENT_FUNDS' };
+
+    const readinessFactor = clamp(
+      (idol.energy * 0.55 + idol.morale * 0.45) / 100,
+      0.55,
+      1.15,
+    );
+    const fansGained = Math.max(500, Math.round(option.fansGain * readinessFactor));
+    const reputationGained = Math.max(
+      1,
+      Math.round(option.reputationGain * (0.75 + readinessFactor * 0.25)),
+    );
+    const revenueGained = Math.round(option.expectedRevenue * (0.65 + readinessFactor * 0.5));
+    const popularityBoost = Math.max(1, Math.round(fansGained / 9_000));
+    const moraleDelta = Math.max(1, Math.round(option.fatigueGain * 0.55));
+    const energyDelta = Math.max(1, Math.round(option.fatigueGain * 0.9));
+
+    const updatedIdols = idols.map(i =>
+      i.id === idol.id
+        ? {
+            ...i,
+            popularity: clamp(i.popularity + popularityBoost, 0, 100),
+            morale: clamp(i.morale - moraleDelta, 0, 100),
+            energy: clamp(i.energy - energyDelta, 0, 100),
+            status: 'Promoting' as const,
+          }
+        : i,
+    );
+
+    return {
+      ok: true,
+      promotionName: option.name,
+      groupId: undefined,
+      groupName: idol.stageName,
+      updatedGroup: undefined,
+      updatedIdols,
+      idolId: idol.id,
+      totalCost: option.cost,
+      revenueGained,
+      netDelta: revenueGained - option.cost,
+      fansGained,
+      reputationGained,
+      fatigueApplied: option.fatigueGain,
+      energySpent: option.energyCost,
+      performanceFactor: readinessFactor,
+    };
+  }
+
+  // ── Group path ──────────────────────────────────────────────────────────
   const targetGroup = payload.groupId
     ? (groups.find(g => g.id === payload.groupId) ?? null)
     : primaryGroup(groups);

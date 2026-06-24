@@ -11,12 +11,12 @@ import { GroupProfileTabBar } from '../components/groupProfile/GroupProfileTabBa
 import type { GroupProfileTab } from '../components/groupProfile/GroupProfileTabBar';
 import { GroupReleasesTab } from '../components/groupProfile/GroupReleasesTab';
 import { buildGroupRadar, buildGroupReadiness, getGroupMembers } from '../features/groups';
+import { MAX_GROUP_MEMBERS } from '../data/gameData';
 import type { RootStackParamList } from '../navigation/types';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 import type { GroupRole } from '../types';
 
-const MAX_GROUP_SIZE = 6;
 const ROLE_OPTIONS: GroupRole[] = ['Leader', 'Main Vocal', 'Main Dancer', 'Main Rapper', 'Visual', 'Center'];
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -124,7 +124,7 @@ export function GroupProfileScreen() {
         GROUP_NOT_FOUND:    'Group not found.',
         NO_MEMBERS_SELECTED:'Select at least one idol to add.',
         MEMBER_UNAVAILABLE: 'One or more selected idols are already assigned.',
-        TOO_MANY_MEMBERS:   `Groups are limited to ${MAX_GROUP_SIZE} members. Remove some selections.`,
+        TOO_MANY_MEMBERS:   `Groups are limited to ${MAX_GROUP_MEMBERS} members. Remove some selections.`,
       };
       Alert.alert('Cannot add members', messages[result.reason]);
       return;

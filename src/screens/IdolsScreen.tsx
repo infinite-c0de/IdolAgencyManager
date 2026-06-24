@@ -14,7 +14,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export function IdolsScreen() {
   const navigation = useNavigation<Nav>();
-  const { idols, groups } = useGame();
+  const { idols, groups, currentWeek } = useGame();
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<IdolFilterStatus>('All');
 
@@ -82,6 +82,18 @@ export function IdolsScreen() {
                 groupLogoPreset={groupLogoPreset}
                 onPress={() => navigation.navigate('IdolProfile', { id: i.id })}
               />
+              {(() => {
+                const weeksLeft = (i.contractExpiresWeek ?? 999) - currentWeek;
+                if (weeksLeft > 16) return null;
+                const isExpired = weeksLeft <= 0;
+                const bgColor = isExpired ? 'rgba(239,68,68,0.9)' : 'rgba(251,191,36,0.9)';
+                const label = isExpired ? 'EXPIRED' : `${weeksLeft}w`;
+                return (
+                  <View style={[styles.contractBadge, { backgroundColor: bgColor }]}>
+                    <Text style={styles.contractBadgeText}>{label}</Text>
+                  </View>
+                );
+              })()}
             </View>
           );
         })}
@@ -139,6 +151,21 @@ const styles = StyleSheet.create({
 
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   cardWrap: { width: '50%', padding: spacing.xs },
+  contractBadge: {
+    position: 'absolute',
+    top: spacing.xs + 6,
+    right: spacing.xs + 6,
+    borderRadius: radius.full,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    zIndex: 10,
+  },
+  contractBadgeText: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: '#0f172a',
+    letterSpacing: 0.5,
+  },
 
   emptyState: { width: '100%', alignItems: 'center', paddingVertical: 40, gap: spacing.sm },
   emptyTitle: { fontSize: 16, fontWeight: '800', color: colors.foreground },

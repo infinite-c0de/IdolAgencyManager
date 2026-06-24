@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Alert } from 'react-native';
 import {
   initialAgency,
   cities,
@@ -76,6 +77,13 @@ export type GameState = {
   releaseDebut: (payload: ReleaseDebutPayload) => ReleaseDebutResult;
   runPromotion: (payload: RunPromotionPayload) => RunPromotionResult;
   addPromotionScheduleEntry: (entry: PromotionScheduleEntry) => void;
+  renewContract: (idolId: string) => { ok: boolean; reason?: string; cost?: number };
+  takeMarketOpportunity: (
+    actionId: string,
+    cost: number,
+    reputationGain: number,
+    incomeGain: number,
+  ) => { ok: boolean; reason?: string };
   startNewGameInSlot: (slotId: number) => Promise<void>;
   loadGameFromSlot: (slotId: number) => Promise<'AgencyDashboard' | 'Onboarding' | false>;
   deleteSaveSlot: (slotId: number) => Promise<void>;
@@ -142,6 +150,7 @@ export function useGameState(): GameState {
     agency,
     idols,
     trainees,
+    currentWeek,
     setAgency,
     setIdols,
     setTrainees,
@@ -182,18 +191,43 @@ export function useGameState(): GameState {
 
     setAgency(() => ({
       ...economy.agency,
-      money: economy.agency.money - progression.trainingCostAmount,
+      money: economy.agency.money - progression.trainingCostAmount + progression.weeklyMerchRevenue,
       monthlyIncome: progression.nextMonthlyIncome,
       reputation: progression.nextReputation,
       ranking: progression.nextRanking,
-      // Action energy regenerates each week so promotions are rate-limited.
       energy: agency.energyMax,
     }));
 
     setIdols(progression.nextIdols);
-    setGroups(progression.nextGroups);
+    setGroups(prev => {
+      // Remove departed members from groups
+      if (progression.departedIdolIds.length === 0) return progression.nextGroups;
+      const departed = new Set(progression.departedIdolIds);
+      return progression.nextGroups.map(g => ({
+        ...g,
+        memberIds: g.memberIds.filter(id => !departed.has(id)),
+        roleAssignments: g.roleAssignments
+          ? Object.fromEntries(
+              Object.entries(g.roleAssignments).filter(([, id]) => !departed.has(id)),
+            ) as typeof g.roleAssignments
+          : undefined,
+      }));
+    });
     setTrainees(current => rotateScoutingPool(current));
     setScoutingLastGrowthAt(new Date().toISOString());
+
+    // Show event alerts grouped by severity
+    const urgentEvents = progression.events.filter(e => e.type === 'injury' || e.type === 'contract_expired');
+    const warningEvents = progression.events.filter(e =>
+      e.type === 'contract_warning' || e.type === 'low_morale' || e.type === 'burnout' || e.type === 'low_health',
+    );
+    if (urgentEvents.length > 0) {
+      const body = urgentEvents.map(e => `• ${e.message}`).join('\n');
+      Alert.alert('⚠ Agency Alert', body);
+    } else if (warningEvents.length > 0) {
+      const body = warningEvents.map(e => `• ${e.message}`).join('\n');
+      Alert.alert('Management Warning', body);
+    }
 
     setTransactions(current => {
       const baseId = current[current.length - 1]?.id ?? 0;
@@ -223,11 +257,20 @@ export function useGameState(): GameState {
           date: dateLabel,
         });
       }
+      if (progression.weeklyMerchRevenue > 0) {
+        entries.push({
+          id: baseId + 4,
+          label: 'Merchandise Sales',
+          type: 'income',
+          amount: progression.weeklyMerchRevenue,
+          date: dateLabel,
+        });
+      }
       return [...current, ...entries].slice(-40);
     });
 
     setRevenueHistory(current => {
-      return [...current.slice(-8), progression.revenuePoint];
+      return [...current.slice(-200), progression.revenuePoint];
     });
 
     setCurrentWeek(week => week + 1);
@@ -292,7 +335,7 @@ export function useGameState(): GameState {
     }
 
     setGroups(current =>
-      current.map(group => (group.id === result.groupId ? result.updatedGroup : group)),
+      current.map(group => (group.id === result.groupId && result.updatedGroup ? result.updatedGroup : group)),
     );
     setIdols(result.updatedIdols);
     setAgency(current => ({
@@ -336,6 +379,63 @@ export function useGameState(): GameState {
     setPromotionSchedule(current => [...current, entry].slice(-120));
   };
 
+  /** Take a market opportunity: spend cost, gain reputation + one-time income. */
+  const takeMarketOpportunity = (
+    actionId: string,
+    cost: number,
+    reputationGain: number,
+    incomeGain: number,
+  ): { ok: boolean; reason?: string } => {
+    if (agency.money < cost) return { ok: false, reason: 'INSUFFICIENT_FUNDS' };
+    setAgency(current => ({
+      ...current,
+      money: Math.max(0, current.money - cost + incomeGain),
+      reputation: Math.min(100, current.reputation + reputationGain),
+    }));
+    setTransactions(current => {
+      const baseId = current[current.length - 1]?.id ?? 0;
+      const label = actionId
+        .split('-')
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+      const entries: FinanceTransaction[] = [
+        { id: baseId + 1, label: `Market: ${label}`, type: 'expense', amount: -cost, date: `Week ${currentWeek}` },
+      ];
+      if (incomeGain > 0) {
+        entries.push({ id: baseId + 2, label: `Market Return: ${label}`, type: 'income', amount: incomeGain, date: `Week ${currentWeek}` });
+      }
+      return [...current, ...entries].slice(-40);
+    });
+    return { ok: true };
+  };
+  const renewContract = (idolId: string): { ok: boolean; reason?: string; cost?: number } => {
+    const idol = idols.find(i => i.id === idolId);
+    if (!idol) return { ok: false, reason: 'NOT_FOUND' };
+    const cost = Math.max(5_000_000, Math.min(50_000_000, Math.round(idol.popularity * 500_000)));
+    if (agency.money < cost) return { ok: false, reason: 'INSUFFICIENT_FUNDS' };
+
+    setAgency(current => ({ ...current, money: Math.max(0, current.money - cost) }));
+    setIdols(current =>
+      current.map(i =>
+        i.id === idolId ? { ...i, contractExpiresWeek: (i.contractExpiresWeek ?? currentWeek) + 52 } : i,
+      ),
+    );
+    setTransactions(current => {
+      const baseId = current[current.length - 1]?.id ?? 0;
+      return [
+        ...current,
+        {
+          id: baseId + 1,
+          label: `Contract Renewal: ${idol.stageName}`,
+          type: 'expense' as const,
+          amount: -cost,
+          date: `Week ${currentWeek}`,
+        },
+      ].slice(-40);
+    });
+    return { ok: true, cost };
+  };
+
   return useMemo(
     () => ({
       agency,
@@ -368,6 +468,8 @@ export function useGameState(): GameState {
       releaseDebut,
       runPromotion,
       addPromotionScheduleEntry,
+      renewContract,
+      takeMarketOpportunity,
       startNewGameInSlot,
       loadGameFromSlot,
       deleteSaveSlot,
@@ -403,6 +505,8 @@ export function useGameState(): GameState {
       releaseDebut,
       runPromotion,
       addPromotionScheduleEntry,
+      renewContract,
+      takeMarketOpportunity,
       startNewGameInSlot,
       loadGameFromSlot,
       deleteSaveSlot,

@@ -1,6 +1,7 @@
 import type { Agency, City, Group, Idol, Status } from '../../types';
 import { normalizePersonalityProfile } from '../idols';
 import { computeGroupSynergy, estimateGroupMonthlyRevenue } from '../groups';
+import type { ProgressionEvent } from './types';
 
 type TrainingPlans = Record<string, Record<string, string>>;
 
@@ -27,7 +28,10 @@ export type WeeklyProgressionResult = {
   nextReputation: number;
   nextRanking: number;
   trainingCostAmount: number;
+  weeklyMerchRevenue: number;
   revenuePoint: RevenuePoint;
+  events: ProgressionEvent[];
+  departedIdolIds: string[];
 };
 
 /** ₩ cost per training session, by training type id. */
@@ -121,75 +125,156 @@ export function calculateWeeklyProgression({
   const monthTick = nextWeek % 4 === 0 ? 1 : 0;
   const yearTick = nextWeek % WEEKS_PER_YEAR === 0 ? 1 : 0;
 
-  const nextIdols = idols.map(idol => {
-    const plan = resolvePlan(idol, trainingPlans, groupIdByName);
-    const profile = normalizePersonalityProfile(idol.personalityProfile, idol.personality);
+  const events: ProgressionEvent[] = [];
+  const departedIdolIds: string[] = [];
 
-    const vocalSessions = countSessions(plan, 'vocal');
-    const danceSessions = countSessions(plan, 'dance');
-    const rapSessions = countSessions(plan, 'rap');
-    const visualSessions = countSessions(plan, 'visual');
-    const actingSessions = countSessions(plan, 'acting');
-    const languageSessions = countSessions(plan, 'lang');
-    const mediaSessions = countSessions(plan, 'media');
-    const staminaSessions = countSessions(plan, 'stamina');
-    const restSessions = countSessions(plan, 'rest');
-    const totalTraining =
-      vocalSessions +
-      danceSessions +
-      rapSessions +
-      visualSessions +
-      actingSessions +
-      languageSessions +
-      mediaSessions +
-      staminaSessions;
+  // Detect contract departures first so we can exclude departed idols from training
+  for (const idol of idols) {
+    const weeksLeft = (idol.contractExpiresWeek ?? 999) - nextWeek;
+    if (weeksLeft <= 0) {
+      departedIdolIds.push(idol.id);
+      events.push({
+        type: 'contract_expired',
+        idolId: idol.id,
+        idolName: idol.stageName,
+        message: `${idol.stageName} has left the agency — their contract has expired.`,
+      });
+    } else if (weeksLeft <= 8) {
+      events.push({
+        type: 'contract_warning',
+        idolId: idol.id,
+        idolName: idol.stageName,
+        message: `${idol.stageName}'s contract expires in ${weeksLeft} week${weeksLeft === 1 ? '' : 's'}.`,
+      });
+    }
+  }
 
-    // Personality-driven efficiency: discipline makes skill drills more
-    // reliable; adaptability boosts media/language; responsibility cushions
-    // morale/health drops; low energy (fatigue) reduces all gains.
-    const disciplineFactor = clampSigned(0.8 + profile.traits.discipline / 100 * 0.4, 0.8, 1.2);
-    const adaptabilityFactor = clampSigned(0.8 + profile.traits.adaptability / 100 * 0.4, 0.8, 1.2);
-    const dropScale = clampSigned(1 - (profile.traits.responsibility - 50) / 150, 0.6, 1.3);
-    const exhaustionFactor = idol.energy < 25 ? 0.6 : idol.energy < 45 ? 0.85 : 1;
-    const skillMultiplier = disciplineFactor * exhaustionFactor;
-    const mediaMultiplier = adaptabilityFactor * exhaustionFactor;
+  const departedSet = new Set(departedIdolIds);
 
-    const energyDelta = restSessions * 6 - totalTraining * 5;
-    const moraleDelta = restSessions * 1.6 - totalTraining * 0.32 * dropScale;
-    const healthDelta = restSessions * 1.1 - totalTraining * 0.24 * dropScale;
-    const popGain = Math.round(
-      (mediaSessions + languageSessions) * 0.28 * adaptabilityFactor + (restSessions > 0 ? 1 : 0),
-    );
+  const nextIdols = idols
+    .filter(idol => !departedSet.has(idol.id))
+    .map(idol => {
+      const isInjured = idol.status === 'Injured';
 
-    const nextEnergy = clamp(idol.energy + energyDelta);
-    const nextMorale = clamp(idol.morale + moraleDelta);
-    const nextHealth = clamp(idol.health + healthDelta);
+      // Injured idols skip training entirely — they rest and recover.
+      if (isInjured) {
+        const healedHealth = clamp(idol.health + 6);
+        const healedEnergy = clamp(idol.energy + 3);
+        const healedMorale = clamp(idol.morale - 1);
+        return {
+          ...idol,
+          health: healedHealth,
+          energy: healedEnergy,
+          morale: healedMorale,
+          status: nextIdolStatus('Injured', healedHealth, healedEnergy, Boolean(idol.group)),
+          age: idol.age + yearTick,
+          trainingMonths: Math.max(0, Math.round((idol.trainingMonths ?? 0) + monthTick)),
+        };
+      }
 
-    return {
-      ...idol,
-      stats: {
-        ...idol.stats,
-        vocal: clamp(idol.stats.vocal + statGain(vocalSessions, totalTraining, skillMultiplier)),
-        dance: clamp(idol.stats.dance + statGain(danceSessions, totalTraining, skillMultiplier)),
-        rap: clamp(idol.stats.rap + statGain(rapSessions, totalTraining, skillMultiplier)),
-        visual: clamp(idol.stats.visual + statGain(visualSessions, totalTraining, skillMultiplier)),
-        acting: clamp(idol.stats.acting + statGain(actingSessions, totalTraining, skillMultiplier)),
-        stamina: clamp(idol.stats.stamina + statGain(staminaSessions, totalTraining, skillMultiplier)),
-        variety: clamp(idol.stats.variety + statGain(mediaSessions, totalTraining, mediaMultiplier)),
-        charisma: clamp(
-          idol.stats.charisma +
-            Math.round((mediaSessions + languageSessions) * 0.25 * adaptabilityFactor),
-        ),
-      },
-      popularity: clamp(idol.popularity + popGain),
-      energy: nextEnergy,
-      morale: nextMorale,
-      health: nextHealth,
-      status: nextIdolStatus(idol.status, nextHealth, nextEnergy, Boolean(idol.group)),
-      age: idol.age + yearTick,
-      trainingMonths: Math.max(0, Math.round((idol.trainingMonths ?? 0) + monthTick)),
-    };
-  });
+      const plan = resolvePlan(idol, trainingPlans, groupIdByName);
+      const profile = normalizePersonalityProfile(idol.personalityProfile, idol.personality);
+
+      const vocalSessions = countSessions(plan, 'vocal');
+      const danceSessions = countSessions(plan, 'dance');
+      const rapSessions = countSessions(plan, 'rap');
+      const visualSessions = countSessions(plan, 'visual');
+      const actingSessions = countSessions(plan, 'acting');
+      const languageSessions = countSessions(plan, 'lang');
+      const mediaSessions = countSessions(plan, 'media');
+      const staminaSessions = countSessions(plan, 'stamina');
+      const restSessions = countSessions(plan, 'rest');
+      const totalTraining =
+        vocalSessions +
+        danceSessions +
+        rapSessions +
+        visualSessions +
+        actingSessions +
+        languageSessions +
+        mediaSessions +
+        staminaSessions;
+
+      const disciplineFactor = clampSigned(0.8 + profile.traits.discipline / 100 * 0.4, 0.8, 1.2);
+      const adaptabilityFactor = clampSigned(0.8 + profile.traits.adaptability / 100 * 0.4, 0.8, 1.2);
+      const dropScale = clampSigned(1 - (profile.traits.responsibility - 50) / 150, 0.6, 1.3);
+      const exhaustionFactor = idol.energy < 25 ? 0.6 : idol.energy < 45 ? 0.85 : 1;
+      const skillMultiplier = disciplineFactor * exhaustionFactor;
+      const mediaMultiplier = adaptabilityFactor * exhaustionFactor;
+
+      const energyDelta = restSessions * 6 - totalTraining * 5;
+      const moraleDelta = restSessions * 1.6 - totalTraining * 0.32 * dropScale;
+      const healthDelta = restSessions * 1.1 - totalTraining * 0.24 * dropScale;
+      const popGain = Math.round(
+        (mediaSessions + languageSessions) * 0.28 * adaptabilityFactor + (restSessions > 0 ? 1 : 0),
+      );
+
+      const nextEnergy = clamp(idol.energy + energyDelta);
+      const nextMorale = clamp(idol.morale + moraleDelta);
+      const nextHealth = clamp(idol.health + healthDelta);
+      const nextStatus = nextIdolStatus(idol.status, nextHealth, nextEnergy, Boolean(idol.group));
+
+      // Detect new injuries this tick
+      if (idol.status !== 'Injured' && nextStatus === 'Injured') {
+        events.push({
+          type: 'injury',
+          idolId: idol.id,
+          idolName: idol.stageName,
+          message: `${idol.stageName} has been injured and needs rest. Training is paused until recovery.`,
+        });
+      }
+      // Detect burnout (forced rest from energy collapse)
+      if (idol.status !== 'Resting' && nextStatus === 'Resting') {
+        events.push({
+          type: 'burnout',
+          idolId: idol.id,
+          idolName: idol.stageName,
+          message: `${idol.stageName} is burned out and needs rest. Reduce training intensity.`,
+        });
+      }
+      // Morale crash (first drop below 30)
+      if (idol.morale >= 30 && nextMorale < 30) {
+        events.push({
+          type: 'low_morale',
+          idolId: idol.id,
+          idolName: idol.stageName,
+          message: `${idol.stageName}'s morale has fallen critically low (${nextMorale}). Add rest sessions.`,
+        });
+      }
+      // Health warning (entering danger zone before injury)
+      if (idol.health >= 40 && nextHealth < 40 && nextHealth >= 25) {
+        events.push({
+          type: 'low_health',
+          idolId: idol.id,
+          idolName: idol.stageName,
+          message: `${idol.stageName}'s health is dropping (${nextHealth}). Risk of injury if overworked.`,
+        });
+      }
+
+      return {
+        ...idol,
+        stats: {
+          ...idol.stats,
+          vocal: clamp(idol.stats.vocal + statGain(vocalSessions, totalTraining, skillMultiplier)),
+          dance: clamp(idol.stats.dance + statGain(danceSessions, totalTraining, skillMultiplier)),
+          rap: clamp(idol.stats.rap + statGain(rapSessions, totalTraining, skillMultiplier)),
+          visual: clamp(idol.stats.visual + statGain(visualSessions, totalTraining, skillMultiplier)),
+          acting: clamp(idol.stats.acting + statGain(actingSessions, totalTraining, skillMultiplier)),
+          stamina: clamp(idol.stats.stamina + statGain(staminaSessions, totalTraining, skillMultiplier)),
+          variety: clamp(idol.stats.variety + statGain(mediaSessions, totalTraining, mediaMultiplier)),
+          charisma: clamp(
+            idol.stats.charisma +
+              Math.round((mediaSessions + languageSessions) * 0.25 * adaptabilityFactor),
+          ),
+        },
+        popularity: clamp(idol.popularity + popGain),
+        energy: nextEnergy,
+        morale: nextMorale,
+        health: nextHealth,
+        status: nextStatus,
+        age: idol.age + yearTick,
+        trainingMonths: Math.max(0, Math.round((idol.trainingMonths ?? 0) + monthTick)),
+      };
+    });
 
   const nextGroups = groups.map(group => {
     const members = nextIdols.filter(idol => group.memberIds.includes(idol.id));
@@ -199,8 +284,6 @@ export function calculateWeeklyProgression({
       members.reduce((sum, member) => sum + member.energy, 0) / Math.max(members.length, 1);
     const baseSynergy = computeGroupSynergy(group, members);
     const energyPressure = Math.max(0, 70 - avgEnergy) / 12;
-    // Reuse the personality/role synergy model, smoothed for stability and
-    // penalised when the group is fatigued.
     const nextSynergy = clamp(group.synergy * 0.55 + baseSynergy * 0.45 - energyPressure);
     const nextPopularity = clamp(group.popularity * 0.9 + avgPopularity * 0.1 + nextSynergy / 45);
     const nextMonthlyRevenue = estimateGroupMonthlyRevenue(
@@ -243,14 +326,23 @@ export function calculateWeeklyProgression({
   );
   const nextRanking = Math.max(1, agency.ranking - rankDelta);
 
-  // Training costs across every idol's resolved plan.
+  // Training costs — departed and injured idols don't incur training cost.
   let trainingCostAmount = 0;
   for (const idol of idols) {
+    if (departedSet.has(idol.id) || idol.status === 'Injured') continue;
     const plan = resolvePlan(idol, trainingPlans, groupIdByName);
     for (const typeId of Object.values(plan)) {
       trainingCostAmount += SESSION_COST[typeId] ?? 0;
     }
   }
+
+  // Merchandise revenue from active groups: scales with popularity × synergy × member count.
+  const weeklyMerchRevenue = nextGroups
+    .filter(g => g.status === 'Active')
+    .reduce((sum, g) => {
+      const memberCount = nextIdols.filter(i => g.memberIds.includes(i.id)).length;
+      return sum + Math.round((g.popularity / 100) * (g.synergy / 100) * Math.max(memberCount, 1) * 2_500_000);
+    }, 0);
 
   return {
     nextIdols,
@@ -259,11 +351,14 @@ export function calculateWeeklyProgression({
     nextReputation,
     nextRanking,
     trainingCostAmount,
+    weeklyMerchRevenue,
     revenuePoint: {
       m: `W${currentWeek + 1}`,
       group: Math.round(groupsRevenue / 4),
-      solo: Math.round(Math.max(nextIdols.length, 1) * 2_200_000),
-      merch: Math.round(Math.max(nextGroups.length, 0) * 6_500_000),
+      solo: Math.round(Math.max(nextIdols.filter(i => !i.group).length, 0) * 2_200_000),
+      merch: weeklyMerchRevenue,
     },
+    events,
+    departedIdolIds,
   };
 }

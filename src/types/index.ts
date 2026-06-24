@@ -95,6 +95,8 @@ export type Idol = {
   personality: string;
   personalityProfile?: PersonalityProfile;
   trainingMonths: number;
+  /** Week number when the contract expires. */
+  contractExpiresWeek: number;
   role: string;
   group?: string;
   status: Status;
