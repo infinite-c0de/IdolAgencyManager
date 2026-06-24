@@ -461,7 +461,7 @@ export function ScheduleScreen() {
               <TouchableOpacity style={styles.confirmCancelBtn} onPress={() => setConfirmPromotion(null)} activeOpacity={0.8}>
                 <Text style={styles.confirmCancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.modalBtn} onPress={() => confirmPromotion && executePromotion(confirmPromotion.id)} activeOpacity={0.8}>
+              <TouchableOpacity style={styles.confirmRunBtn} onPress={() => confirmPromotion && executePromotion(confirmPromotion.id)} activeOpacity={0.8}>
                 <Text style={styles.modalBtnText}>Run Promotion</Text>
               </TouchableOpacity>
             </View>
@@ -591,10 +591,11 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 18, fontWeight: '800', color: colors.tealBright },
   promoResultTitle: { fontSize: 12, color: colors.foreground, fontWeight: '600' },
   modalStats: { marginTop: spacing.sm, flexDirection: 'row', flexWrap: 'wrap' },
-  modalBtn: { marginTop: spacing.md, borderRadius: radius.md, backgroundColor: colors.teal, paddingVertical: spacing.sm, alignItems: 'center' },
+  modalBtn:     { marginTop: spacing.md, borderRadius: radius.md, backgroundColor: colors.teal, paddingVertical: spacing.sm, alignItems: 'center' },
   modalBtnText: { fontSize: 12, fontWeight: '800', color: colors.slate900 },
-  confirmRow: { marginTop: spacing.md, flexDirection: 'row', gap: spacing.sm },
-  confirmCancelBtn: { borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.whiteA05, paddingVertical: spacing.sm, alignItems: 'center' },
-  confirmCancelText: { fontSize: 12, fontWeight: '700', color: colors.foreground },
+  confirmRow:       { marginTop: spacing.md, flexDirection: 'row', gap: spacing.sm },
+  confirmCancelBtn: { flex: 1, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.whiteA05, paddingVertical: spacing.sm, alignItems: 'center' },
+  confirmCancelText:{ fontSize: 12, fontWeight: '700', color: colors.foreground },
+  confirmRunBtn:    { flex: 1, borderRadius: radius.md, backgroundColor: colors.teal, paddingVertical: spacing.sm, alignItems: 'center' },
   confirmCost: { fontSize: 16, fontWeight: '900', color: colors.tealBright, marginTop: spacing.xs },
 });

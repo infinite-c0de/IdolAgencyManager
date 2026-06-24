@@ -1,6 +1,6 @@
-import { ArrowDownRight, ArrowUpRight, TrendingDown, TrendingUp, Minus } from 'lucide-react-native';
-import React, { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, TrendingDown, TrendingUp, Minus } from 'lucide-react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card, SectionTitle } from '../components/AppShell';
 import { LineChart, ResponsiveChart, lineColors } from '../components/charts';
 import { getCityByName } from '../features/cities';
@@ -14,6 +14,8 @@ import { fmtCount } from '../utils/format';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 import { fmt } from '../utils/format';
+
+const TXN_PAGE_SIZE = 10;
 
 // ── constants ─────────────────────────────────────────────────────────────────
 
@@ -110,6 +112,20 @@ export function FinanceScreen() {
   const hCfg       = HEALTH_CONFIG[health];
   const HealthIcon = hCfg.icon;
   const runwayLabel = runway === Infinity ? '∞ profitable' : `${runway} wk runway`;
+
+  // ── transaction pagination ─────────────────────────────────────────────────
+  const [txPage, setTxPage] = useState(0);
+  const txReversed = useMemo(() => [...transactions].reverse(), [transactions]);
+  const txTotal    = txReversed.length;
+  const txPages    = Math.max(1, Math.ceil(txTotal / TXN_PAGE_SIZE));
+
+  // Jump to page 0 (latest) whenever new transactions arrive
+  useEffect(() => { setTxPage(0); }, [txTotal]);
+
+  const txSlice   = txReversed.slice(txPage * TXN_PAGE_SIZE, (txPage + 1) * TXN_PAGE_SIZE);
+  // Range in original chronological 1-based numbering (newest = highest number)
+  const rangeHigh = txTotal - txPage * TXN_PAGE_SIZE;
+  const rangeLow  = Math.max(1, rangeHigh - TXN_PAGE_SIZE + 1);
 
   return (
     <AppShell title="Finance" subtitle="Agency ledger">
@@ -255,28 +271,53 @@ export function FinanceScreen() {
 
       {/* ── 8. Transactions ───────────────────────────────── */}
       <Card>
-        <SectionTitle>TRANSACTIONS</SectionTitle>
-        {transactions.length === 0 ? (
+        {/* Header row: title + pagination controls */}
+        <View style={styles.txnHeader}>
+          <SectionTitle>TRANSACTIONS</SectionTitle>
+          {txTotal > 0 && txPages > 1 && (
+            <View style={styles.txnPager}>
+              <TouchableOpacity
+                onPress={() => setTxPage(p => Math.min(p + 1, txPages - 1))}
+                disabled={txPage >= txPages - 1}
+                style={[styles.pagerBtn, txPage >= txPages - 1 && styles.pagerBtnDisabled]}>
+                <ChevronLeft size={13} color={txPage >= txPages - 1 ? colors.mutedForeground : colors.foreground} />
+              </TouchableOpacity>
+
+              <Text style={styles.pagerInfo}>{rangeLow}–{rangeHigh}/{txTotal}</Text>
+
+              <TouchableOpacity
+                onPress={() => setTxPage(p => Math.max(p - 1, 0))}
+                disabled={txPage === 0}
+                style={[styles.pagerBtn, txPage === 0 && styles.pagerBtnDisabled]}>
+                <ChevronRight size={13} color={txPage === 0 ? colors.mutedForeground : colors.foreground} />
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        {txTotal === 0 ? (
           <Text style={styles.muted}>No transactions yet.</Text>
         ) : (
-          transactions.map((t, idx) => (
-            <View
-              key={t.id}
-              style={[styles.txn, idx < transactions.length - 1 && styles.txnDivider]}>
-              <View style={[styles.txnIcon, t.type === 'income' ? styles.txnIncome : styles.txnExpense]}>
-                {t.type === 'income'
-                  ? <ArrowUpRight   size={16} color={colors.mint}    />
-                  : <ArrowDownRight size={16} color={colors.hotSoft} />}
+          <>
+            {txSlice.map((t, idx) => (
+              <View
+                key={t.id}
+                style={[styles.txn, idx < txSlice.length - 1 && styles.txnDivider]}>
+                <View style={[styles.txnIcon, t.type === 'income' ? styles.txnIncome : styles.txnExpense]}>
+                  {t.type === 'income'
+                    ? <ArrowUpRight   size={16} color={colors.mint}    />
+                    : <ArrowDownRight size={16} color={colors.hotSoft} />}
+                </View>
+                <View style={styles.flex1}>
+                  <Text style={styles.txnLabel} numberOfLines={1}>{t.label}</Text>
+                  <Text style={styles.muted}>{t.date}</Text>
+                </View>
+                <Text style={[styles.txnAmt, { color: t.amount > 0 ? colors.mint : colors.hotSoft }]}>
+                  {t.amount > 0 ? '+' : ''}{fmt(t.amount)}
+                </Text>
               </View>
-              <View style={styles.flex1}>
-                <Text style={styles.txnLabel} numberOfLines={1}>{t.label}</Text>
-                <Text style={styles.muted}>{t.date}</Text>
-              </View>
-              <Text style={[styles.txnAmt, { color: t.amount > 0 ? colors.mint : colors.hotSoft }]}>
-                {t.amount > 0 ? '+' : ''}{fmt(t.amount)}
-              </Text>
-            </View>
-          ))
+            ))}
+          </>
         )}
       </Card>
 
@@ -381,11 +422,23 @@ const styles = StyleSheet.create({
   chipValue:{ fontSize: 11, fontWeight: '700', color: colors.foreground, marginTop: 1 },
 
   // Transactions
-  txn:       { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 10 },
-  txnDivider:{ borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
-  txnIcon:   { width: 36, height: 36, borderRadius: radius.lg, alignItems: 'center', justifyContent: 'center' },
-  txnIncome: { backgroundColor: 'rgba(52,211,153,0.15)' },
-  txnExpense:{ backgroundColor: 'rgba(251,113,133,0.15)' },
-  txnLabel:  { fontSize: 12, fontWeight: '600', color: colors.foreground },
-  txnAmt:    { fontSize: 14, fontWeight: '700' },
+  txn:              { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 10 },
+  txnDivider:       { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
+  txnIcon:          { width: 36, height: 36, borderRadius: radius.lg, alignItems: 'center', justifyContent: 'center' },
+  txnIncome:        { backgroundColor: 'rgba(52,211,153,0.15)' },
+  txnExpense:       { backgroundColor: 'rgba(251,113,133,0.15)' },
+  txnLabel:         { fontSize: 12, fontWeight: '600', color: colors.foreground },
+  txnAmt:           { fontSize: 14, fontWeight: '700' },
+
+  txnHeader:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 },
+  txnRange:         { fontSize: 12, fontWeight: '700', color: colors.tealBright },
+  txnRangeTotal:    { fontSize: 11, fontWeight: '400', color: colors.mutedForeground },
+  txnPager:         { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  pagerBtn:         { width: 26, height: 26, borderRadius: radius.md,
+                      alignItems: 'center', justifyContent: 'center',
+                      backgroundColor: 'rgba(255,255,255,0.06)' },
+  pagerBtnDisabled: { opacity: 0.3 },
+  pagerLabel:       { fontSize: 12, fontWeight: '600', color: colors.foreground },
+  pagerLabelDisabled:{ color: colors.mutedForeground },
+  pagerInfo:        { fontSize: 11, fontWeight: '700', color: colors.tealBright, minWidth: 64, textAlign: 'center' },
 });

@@ -79,8 +79,8 @@ export function ReleaseScreen() {
   const canAfford = agency.money >= totalCost;
   const canContinue =
     step === 1 ? Boolean(groupId) && members.length >= 2 :
-    step === 2 ? title.trim().length > 0 :
-    true;
+      step === 2 ? title.trim().length > 0 :
+        true;
 
   const handleRelease = () => {
     if (!selectedGroup) return;
@@ -278,7 +278,7 @@ export function ReleaseScreen() {
             <TouchableOpacity style={styles.backBtn} onPress={() => setStep(s => s - 1)} activeOpacity={0.8}>
               <Text style={styles.backText}>Back</Text>
             </TouchableOpacity>
-          ) : <View style={styles.backBtn} />}
+          ) : null}
 
           {step < STEP_NAMES.length ? (
             <TouchableOpacity
@@ -308,14 +308,14 @@ export function ReleaseScreen() {
 
       {/* Error modal */}
       <Modal visible={error !== null} transparent animationType="fade" onRequestClose={() => setError(null)}>        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Cannot Release</Text>
-            <Text style={styles.tinyMuted}>{error}</Text>
-            <TouchableOpacity style={styles.continueBtn} onPress={() => setError(null)} activeOpacity={0.8}>
-              <Text style={styles.continueText}>OK</Text>
-            </TouchableOpacity>
-          </View>
+        <View style={styles.modalCard}>
+          <Text style={styles.modalTitle}>Cannot Release</Text>
+          <Text style={styles.tinyMuted}>{error}</Text>
+          <TouchableOpacity style={styles.continueBtn} onPress={() => setError(null)} activeOpacity={0.8}>
+            <Text style={styles.continueText}>OK</Text>
+          </TouchableOpacity>
         </View>
+      </View>
       </Modal>
 
       {/* Success modal */}
