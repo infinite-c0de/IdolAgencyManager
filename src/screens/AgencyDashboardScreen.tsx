@@ -20,14 +20,6 @@ import { fmt } from '../utils/format';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
-function Legend({ color, label }: { color: string; label: string }) {
-  return (
-    <View style={styles.legendItem}>
-      <View style={[styles.legendDot, { backgroundColor: color }]} />
-      <Text style={styles.legendText}>{label}</Text>
-    </View>
-  );
-}
 
 export function AgencyDashboardScreen() {
   const navigation = useNavigation<Nav>();
@@ -80,7 +72,8 @@ export function AgencyDashboardScreen() {
   };
 
   return (
-    <AppShell title="Agency" subtitle={agency.name}>
+    <AppShell>
+    {/* <AppShell title="Agency" subtitle={agency.name}> */}
 
       {/* Agency identity banner */}
       <DashboardBanner agency={agency} />
@@ -154,25 +147,20 @@ export function AgencyDashboardScreen() {
               <Text style={styles.revRange}>{revRangeLabel}</Text>
             )}
           </View>
-          <ResponsiveChart height={150}>
+          <ResponsiveChart height={200}>
             {width => (
               <LineChart
                 width={width}
                 data={revenueHistory}
                 xKey="m"
                 series={[
-                  { key: 'group', color: lineColors.group, label: 'group' },
-                  { key: 'solo',  color: lineColors.solo,  label: 'solo' },
-                  { key: 'merch', color: lineColors.merch, label: 'merch' },
+                  { key: 'group', color: lineColors.group, label: 'Group' },
+                  { key: 'solo',  color: lineColors.solo,  label: 'Solo' },
+                  { key: 'merch', color: lineColors.merch, label: 'Merch' },
                 ]}
               />
             )}
           </ResponsiveChart>
-          <View style={styles.legendRow}>
-            <Legend color={lineColors.group} label="Group" />
-            <Legend color={lineColors.solo}  label="Solo" />
-            <Legend color={lineColors.merch} label="Merch" />
-          </View>
         </Card>
       )}
 
@@ -220,8 +208,4 @@ const styles = StyleSheet.create({
   revenueTotal: { fontSize: 22, fontWeight: '900', color: colors.tealBright },
   revRange: { fontSize: 11, color: colors.mutedForeground, marginBottom: 3 },
 
-  legendRow: { flexDirection: 'row', gap: spacing.lg, justifyContent: 'center', marginTop: spacing.sm },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  legendDot: { width: 7, height: 7, borderRadius: radius.full },
-  legendText: { fontSize: 10, color: colors.mutedForeground },
 });

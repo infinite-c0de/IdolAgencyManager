@@ -1,182 +1,364 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ChevronLeft, Rocket, Trash2 } from 'lucide-react-native';
+import {
+  Bell,
+  CalendarCheck,
+  ChevronLeft,
+  Heart,
+  Pencil,
+  Vibrate,
+  X,
+} from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Card, SectionTitle } from '../components/AppShell';
-import { Gradient } from '../components/ui/Gradient';
+import {
+  Modal,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { AppShell } from '../components/AppShell';
 import type { RootStackParamList } from '../navigation/types';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
-export function SettingsScreen() {
-  const navigation = useNavigation<Nav>();
-  const insets = useSafeAreaInsets();
-  const { resetGame } = useGame();
-  const [notifications, setNotifications] = useState(true);
-  const [haptics, setHaptics] = useState(false);
-  const [autoWeek, setAutoWeek] = useState(false);
-
-  const confirmReset = () => {
-    Alert.alert('Reset save data', 'This will clear every local save slot. Continue?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Reset',
-        style: 'destructive',
-        onPress: async () => {
-          await resetGame();
-          navigation.navigate('Home');
-        },
-      },
-    ]);
-  };
-
+// ─── Section wrapper ──────────────────────────────────────────────────────────
+function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <Gradient colors={['#050711', '#0E1624', '#1B1233']} direction="to-b" style={styles.root}>
-      <View
-        style={[
-          styles.container,
-          {
-            paddingTop: Math.max(insets.top, spacing.lg),
-            paddingBottom: Math.max(insets.bottom, spacing.lg),
-          },
-        ]}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Home'))}
-            style={styles.backBtn}
-            activeOpacity={0.8}>
-            <ChevronLeft size={16} color={colors.foreground} />
-            <Text style={styles.backText}>Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Settings</Text>
-          <View style={styles.headerSpacer} />
-        </View>
-
-        <Text style={styles.subtitle}>Gameplay controls and save management</Text>
-
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          <Card style={styles.modalCard}>
-            <SectionTitle>GAME</SectionTitle>
-            <Row label="Notifications" value={notifications} onToggle={() => setNotifications(v => !v)} />
-            <Row label="Haptics" value={haptics} onToggle={() => setHaptics(v => !v)} />
-            <Row label="Auto-advance week" value={autoWeek} onToggle={() => setAutoWeek(v => !v)} />
-            <TouchableOpacity
-              style={styles.linkRow}
-              onPress={() => navigation.navigate('Home')}
-              activeOpacity={0.7}>
-              <Text style={styles.linkText}>Back to title screen</Text>
-              <Rocket size={16} color={colors.tealBright} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.dangerRow} onPress={confirmReset} activeOpacity={0.7}>
-              <Text style={styles.dangerText}>Reset all save slots</Text>
-              <Trash2 size={16} color={colors.hotSoft} />
-            </TouchableOpacity>
-          </Card>
-        </ScrollView>
-      </View>
-    </Gradient>
+    <View style={styles.section}>
+      <Text style={styles.sectionLabel}>{label}</Text>
+      <View style={styles.sectionCard}>{children}</View>
+    </View>
   );
 }
 
-function Row({ label, value, onToggle }: { label: string; value: boolean; onToggle: () => void }) {
+// ─── Toggle row ───────────────────────────────────────────────────────────────
+function ToggleRow({
+  icon,
+  label,
+  sub,
+  value,
+  onToggle,
+  last,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  sub?: string;
+  value: boolean;
+  onToggle: () => void;
+  last?: boolean;
+}) {
   return (
-    <View style={styles.settingRow}>
-      <Text style={styles.settingLabel}>{label}</Text>
+    <View style={[styles.row, !last && styles.rowBorder]}>
+      <View style={styles.rowIcon}>{icon}</View>
+      <View style={styles.rowText}>
+        <Text style={styles.rowLabel}>{label}</Text>
+        {sub ? <Text style={styles.rowSub}>{sub}</Text> : null}
+      </View>
       <Toggle on={value} onPress={onToggle} />
     </View>
   );
 }
 
+// ─── Info row ─────────────────────────────────────────────────────────────────
+function InfoRow({
+  icon,
+  label,
+  value,
+  onEdit,
+  last,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  onEdit?: () => void;
+  last?: boolean;
+}) {
+  return (
+    <TouchableOpacity
+      style={[styles.row, !last && styles.rowBorder]}
+      onPress={onEdit}
+      activeOpacity={onEdit ? 0.7 : 1}
+      disabled={!onEdit}>
+      <View style={styles.rowIcon}>{icon}</View>
+      <View style={styles.rowText}>
+        <Text style={styles.rowLabel}>{label}</Text>
+        <Text style={styles.rowValue} numberOfLines={1}>{value}</Text>
+      </View>
+      {onEdit && <Pencil size={14} color={colors.mutedForeground} />}
+    </TouchableOpacity>
+  );
+}
+
+// ─── Toggle component ─────────────────────────────────────────────────────────
 function Toggle({ on, onPress }: { on: boolean; onPress: () => void }) {
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.8} style={[styles.toggle, on ? styles.toggleOn : styles.toggleOff]}>
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.8}
+      style={[styles.toggle, on ? styles.toggleOn : styles.toggleOff]}>
       <View style={[styles.knob, on ? styles.knobOn : styles.knobOff]} />
     </TouchableOpacity>
   );
 }
 
+// ─── Edit field modal ─────────────────────────────────────────────────────────
+function EditModal({
+  visible,
+  title,
+  value,
+  placeholder,
+  onConfirm,
+  onCancel,
+}: {
+  visible: boolean;
+  title: string;
+  value: string;
+  placeholder: string;
+  onConfirm: (v: string) => void;
+  onCancel: () => void;
+}) {
+  const [draft, setDraft] = useState(value);
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
+      <View style={styles.modalBackdrop}>
+        <View style={styles.modalCard}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>{title}</Text>
+            <TouchableOpacity onPress={onCancel} activeOpacity={0.7}>
+              <X size={18} color={colors.mutedForeground} />
+            </TouchableOpacity>
+          </View>
+          <TextInput
+            value={draft}
+            onChangeText={setDraft}
+            placeholder={placeholder}
+            placeholderTextColor={colors.mutedForeground}
+            style={styles.modalInput}
+            autoFocus
+            selectTextOnFocus
+          />
+          <View style={styles.modalActions}>
+            <TouchableOpacity style={styles.cancelBtn} onPress={onCancel} activeOpacity={0.8}>
+              <Text style={styles.cancelText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.confirmBtn, !draft.trim() && styles.confirmBtnDim]}
+              onPress={() => { if (draft.trim()) onConfirm(draft.trim()); }}
+              activeOpacity={0.8}>
+              <Text style={styles.confirmText}>Save</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ─── Main screen ──────────────────────────────────────────────────────────────
+export function SettingsScreen() {
+  const navigation = useNavigation<Nav>();
+  const { agency, updateAgencyProfile } = useGame();
+
+  const [confirmAdvance, setConfirmAdvance] = useState(true);
+  const [welfareAlerts, setWelfareAlerts]   = useState(true);
+  const [haptics, setHaptics]               = useState(false);
+  const [notifications, setNotifications]   = useState(true);
+
+  const [editField, setEditField] = useState<'name' | 'ceo' | null>(null);
+
+  return (
+    <AppShell title="Settings">
+
+      {/* ── AGENCY ── */}
+      <Section label="AGENCY">
+        <InfoRow
+          icon={<Text style={styles.fieldIcon}>🏢</Text>}
+          label="Agency Name"
+          value={agency.name}
+          onEdit={() => setEditField('name')}
+        />
+        <InfoRow
+          icon={<Text style={styles.fieldIcon}>👤</Text>}
+          label="CEO"
+          value={agency.ceoName || '—'}
+          onEdit={() => setEditField('ceo')}
+        />
+        <InfoRow
+          icon={<Text style={styles.fieldIcon}>📍</Text>}
+          label="City"
+          value={agency.city}
+          last
+        />
+      </Section>
+
+      {/* ── GAMEPLAY ── */}
+      <Section label="GAMEPLAY">
+        <ToggleRow
+          icon={<CalendarCheck size={16} color={colors.tealBright} />}
+          label="Confirm before advancing week"
+          sub="Show a dialog before each week advance"
+          value={confirmAdvance}
+          onToggle={() => setConfirmAdvance(v => !v)}
+        />
+        <ToggleRow
+          icon={<Heart size={16} color={colors.hot} />}
+          label="Low welfare alerts"
+          sub="Warn when morale or health drops below 40"
+          value={welfareAlerts}
+          onToggle={() => setWelfareAlerts(v => !v)}
+          last
+        />
+      </Section>
+
+      {/* ── FEEDBACK ── */}
+      <Section label="FEEDBACK">
+        <ToggleRow
+          icon={<Vibrate size={16} color={colors.violetBright} />}
+          label="Haptics"
+          value={haptics}
+          onToggle={() => setHaptics(v => !v)}
+        />
+        <ToggleRow
+          icon={<Bell size={16} color={colors.mint} />}
+          label="Notifications"
+          value={notifications}
+          onToggle={() => setNotifications(v => !v)}
+          last
+        />
+      </Section>
+
+      {/* ── Edit modals ── */}
+      <EditModal
+        visible={editField === 'name'}
+        title="Agency Name"
+        value={agency.name}
+        placeholder="e.g. AURORA ENTERTAINMENT"
+        onConfirm={v => { updateAgencyProfile({ name: v }); setEditField(null); }}
+        onCancel={() => setEditField(null)}
+      />
+      <EditModal
+        visible={editField === 'ceo'}
+        title="CEO Name"
+        value={agency.ceoName}
+        placeholder="e.g. Park Min-ji"
+        onConfirm={v => { updateAgencyProfile({ ceoName: v }); setEditField(null); }}
+        onCancel={() => setEditField(null)}
+      />
+
+    </AppShell>
+  );
+}
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  tinyMuted: { fontSize: 10, color: colors.mutedForeground },
-  root: { flex: 1 },
-  container: { flex: 1, paddingHorizontal: spacing.lg },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 36,
+  // Section
+  section: { gap: 6 },
+  sectionLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    color: colors.mutedForeground,
+    paddingHorizontal: spacing.xs,
   },
-  backBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    borderRadius: radius.full,
+  sectionCard: {
+    borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.whiteA05,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 6,
-  },
-  backText: { fontSize: 12, color: colors.foreground },
-  headerTitle: { fontSize: 24, fontWeight: '900', color: colors.tealBright, letterSpacing: -0.4 },
-  headerSpacer: { width: 72 },
-  subtitle: {
-    marginTop: spacing.sm,
-    fontSize: 12,
-    color: colors.mutedForeground,
-    textAlign: 'center',
-  },
-  scrollContent: { paddingTop: spacing.lg, paddingBottom: spacing.md },
-  modalCard: {
-    borderWidth: 1,
-    borderColor: 'rgba(103,232,249,0.45)',
-    backgroundColor: 'rgba(17,22,35,0.92)',
+    backgroundColor: 'rgba(22,26,40,0.85)',
+    overflow: 'hidden',
   },
 
-  settingRow: {
+  // Rows
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 13,
+  },
+  rowBorder: {
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.05)',
-    paddingVertical: 10,
   },
-  settingLabel: { fontSize: 14, color: colors.foreground },
-  toggle: { width: 36, height: 20, borderRadius: radius.full, justifyContent: 'center', paddingHorizontal: 2 },
-  toggleOn: { backgroundColor: colors.teal },
+  rowIcon: { width: 28, alignItems: 'center', flexShrink: 0 },
+  rowText: { flex: 1, gap: 2, minWidth: 0 },
+  rowLabel: { fontSize: 14, color: colors.foreground, fontWeight: '500' },
+  rowSub: { fontSize: 11, color: colors.mutedForeground, lineHeight: 15 },
+  rowValue: { fontSize: 12, color: colors.tealBright, fontWeight: '600' },
+  fieldIcon: { fontSize: 14 },
+
+  // Toggle
+  toggle: {
+    width: 38,
+    height: 22,
+    borderRadius: radius.full,
+    justifyContent: 'center',
+    paddingHorizontal: 2,
+    flexShrink: 0,
+  },
+  toggleOn:  { backgroundColor: colors.teal },
   toggleOff: { backgroundColor: colors.whiteA15 },
-  knob: { width: 16, height: 16, borderRadius: radius.full, backgroundColor: '#fff' },
-  knobOn: { alignSelf: 'flex-end' },
+  knob: { width: 18, height: 18, borderRadius: radius.full, backgroundColor: '#fff' },
+  knobOn:  { alignSelf: 'flex-end' },
   knobOff: { alignSelf: 'flex-start' },
 
-  linkRow: {
-    marginTop: spacing.md,
+  // Modal
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 380,
+    borderRadius: radius['2xl'],
+    backgroundColor: 'rgba(18,21,32,0.99)',
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  modalTitle: { fontSize: 16, fontWeight: '800', color: colors.foreground },
+  modalInput: {
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.whiteA05,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    fontSize: 15,
+    color: colors.foreground,
+  },
+  modalActions: { flexDirection: 'row', gap: spacing.sm },
+  cancelBtn: {
+    flex: 1,
+    alignItems: 'center',
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.whiteA05,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
+    paddingVertical: spacing.sm,
   },
-  linkText: { fontSize: 14, color: colors.foreground },
-  dangerRow: {
-    marginTop: spacing.sm,
-    flexDirection: 'row',
+  cancelText: { fontSize: 13, color: colors.foreground },
+  confirmBtn: {
+    flex: 1,
     alignItems: 'center',
-    justifyContent: 'space-between',
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(251,113,133,0.4)',
-    backgroundColor: 'rgba(251,113,133,0.1)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
+    backgroundColor: colors.teal,
+    paddingVertical: spacing.sm,
   },
-  dangerText: { fontSize: 14, color: colors.hotSoft },
-
+  confirmBtnDim: { opacity: 0.45 },
+  confirmText: { fontSize: 13, fontWeight: '700', color: colors.slate900 },
 });

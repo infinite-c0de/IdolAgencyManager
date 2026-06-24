@@ -98,26 +98,9 @@ export function TopBar() {
         <View style={styles.topBarRight}>
           <Text style={styles.statMoney}>{fmt(agency.money)}</Text>
           <View style={styles.rowCenterSm}>
-            <Wallet size={11} color={colors.mint} />
-            <Text style={styles.statMint}> {weeklyNetLabel}/wk</Text>
+            <Text style={styles.muted}>Week {currentWeek}</Text>
           </View>
         </View>
-      </View>
-      <View style={styles.topSubRow}>
-        <View style={styles.rowCenterSm}>
-          <Crown size={11} color={colors.tealBright} />
-          <Text style={styles.statTeal}> REP {agency.reputation}</Text>
-        </View>
-        <View style={styles.rowCenterSm}>
-          <Users size={11} color={colors.violetBright} />
-          <Text style={styles.statViolet}> {fanbaseLabel}</Text>
-        </View>
-        <View style={styles.rowCenterSm}>
-          <Zap size={11} color={colors.mint} />
-          <Text style={styles.statMint}> {agency.energy}/{agency.energyMax}</Text>
-        </View>
-        <Text style={styles.muted}>#{agency.ranking}</Text>
-        <Text style={styles.muted}>Week {currentWeek}</Text>
       </View>
     </View>
   );
@@ -354,13 +337,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xs,
   },
   topBarRight: { alignItems: 'flex-end', gap: 2 },
-  topSubRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.sm,
-  },
   agencyName: {
     color: colors.foreground,
     fontSize: 15,

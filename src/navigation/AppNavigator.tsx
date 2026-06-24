@@ -4,6 +4,7 @@ import { AgencyDashboardScreen } from '../screens/AgencyDashboardScreen';
 import { FinanceScreen } from '../screens/FinanceScreen';
 import { GroupsScreen } from '../screens/GroupsScreen';
 import { GroupProfileScreen } from '../screens/GroupProfileScreen';
+import { HomeScreen } from '../screens/HomeScreen';
 import { MainMenuScreen } from '../screens/MainMenuScreen';
 import { IdolProfileScreen } from '../screens/IdolProfileScreen';
 import { IdolsScreen } from '../screens/IdolsScreen';
@@ -34,7 +35,8 @@ function AppNavigator() {
         // the project already renders its own in-app navigation bar.
         tabBarStyle: { display: 'none' },
       }}>
-      <Tab.Screen name="Home" component={MainMenuScreen} />
+      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="MainMenu" component={MainMenuScreen} />
       <Tab.Screen name="AgencyDashboard" component={AgencyDashboardScreen} />
       <Tab.Screen name="Idols" component={IdolsScreen} />
       <Tab.Screen name="IdolProfile" component={IdolProfileScreen} />

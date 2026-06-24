@@ -80,6 +80,7 @@ export type GameState = {
   loadGameFromSlot: (slotId: number) => Promise<'AgencyDashboard' | 'Onboarding' | false>;
   deleteSaveSlot: (slotId: number) => Promise<void>;
   resetGame: () => Promise<void>;
+  updateAgencyProfile: (updates: Partial<Pick<Agency, 'name' | 'ceoName'>>) => void;
 };
 
 export function useGameState(): GameState {
@@ -371,6 +372,9 @@ export function useGameState(): GameState {
       loadGameFromSlot,
       deleteSaveSlot,
       resetGame,
+      updateAgencyProfile: (updates: Partial<Pick<Agency, 'name' | 'ceoName'>>) => {
+        setAgency(current => ({ ...current, ...updates }));
+      },
     }),
     [
       agency,

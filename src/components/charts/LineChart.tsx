@@ -1,5 +1,5 @@
 import React from 'react';
-import Svg, { Line as SvgLine, Polyline, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Line as SvgLine, Polyline, Text as SvgText } from 'react-native-svg';
 import { colors, statColors } from '../../theme';
 
 export type LineSeries = {
@@ -16,12 +16,13 @@ type Props = {
   height?: number;
 };
 
-/** Multi-line chart replacement for the web recharts LineChart. */
-export function LineChart({ data, xKey, series, width, height = 180 }: Props) {
+/** Multi-line chart — month labels + series legend both live inside the SVG canvas. */
+export function LineChart({ data, xKey, series, width, height = 200 }: Props) {
   const padLeft = 28;
   const padRight = 8;
   const padTop = 8;
-  const padBottom = 22;
+  // reserve: 14px months row + 4px gap + 14px legend row + 4px bottom margin = 36
+  const padBottom = 36;
   const innerW = Math.max(width - padLeft - padRight, 10);
   const innerH = Math.max(height - padTop - padBottom, 10);
 
@@ -35,8 +36,16 @@ export function LineChart({ data, xKey, series, width, height = 180 }: Props) {
 
   const yTicks = [minV, minV + range / 2, maxV];
 
+  // month labels sit 24px above SVG bottom; legend sits 8px above SVG bottom
+  const yMonths = height - 22;
+  const yLegend = height - 6;
+
+  // legend items spaced evenly across chart width
+  const legendSlotW = innerW / series.length;
+
   return (
     <Svg width={width} height={height}>
+      {/* y-axis tick labels */}
       {yTicks.map((t, i) => (
         <SvgText
           key={i}
@@ -49,6 +58,7 @@ export function LineChart({ data, xKey, series, width, height = 180 }: Props) {
         </SvgText>
       ))}
 
+      {/* horizontal grid lines */}
       {yTicks.map((t, i) => (
         <SvgLine
           key={`g${i}`}
@@ -61,6 +71,7 @@ export function LineChart({ data, xKey, series, width, height = 180 }: Props) {
         />
       ))}
 
+      {/* series polylines */}
       {series.map(s => (
         <Polyline
           key={s.key}
@@ -71,17 +82,36 @@ export function LineChart({ data, xKey, series, width, height = 180 }: Props) {
         />
       ))}
 
+      {/* x-axis month labels */}
       {data.map((d, i) => (
         <SvgText
           key={`x${i}`}
           x={x(i)}
-          y={height - 6}
+          y={yMonths}
           fill={colors.mutedForeground}
-          fontSize={10}
+          fontSize={9}
           textAnchor="middle">
           {String(d[xKey])}
         </SvgText>
       ))}
+
+      {/* series legend — centered row inside SVG, below month labels */}
+      {series.map((s, i) => {
+        const cx = padLeft + legendSlotW * i + legendSlotW / 2;
+        return (
+          <React.Fragment key={`leg${i}`}>
+            <Circle cx={cx - 20} cy={yLegend - 3} r={3} fill={s.color} />
+            <SvgText
+              x={cx - 14}
+              y={yLegend}
+              fill={colors.mutedForeground}
+              fontSize={9}
+              textAnchor="start">
+              {s.label}
+            </SvgText>
+          </React.Fragment>
+        );
+      })}
     </Svg>
   );
 }

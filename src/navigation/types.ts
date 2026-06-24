@@ -2,6 +2,7 @@ import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 
 export type RootStackParamList = {
   Home: undefined;
+  MainMenu: undefined;
   AgencyDashboard: undefined;
   Idols: undefined;
   IdolProfile: { id: string };
