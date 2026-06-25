@@ -100,6 +100,26 @@ const idolXuanyi = require('../assets/idols/idol_xuanyi.webp');
 const idolNattawee = require('../assets/idols/idol_nattawee.webp');
 const idolThida = require('../assets/idols/idol_thida.webp');
 const idolMinhyuk = require('../assets/idols/idol_minhyuk.webp');
+const idolChaeyoung = require('../assets/idols/idol_chaeyoung.webp');
+const idolYerin = require('../assets/idols/idol_yerin.webp');
+const idolNayeon = require('../assets/idols/idol_nayeon.webp');
+const idolRyujin = require('../assets/idols/idol_ryujin.webp');
+const idolDahyun = require('../assets/idols/idol_dahyun.webp');
+const idolSeungmin = require('../assets/idols/idol_seungmin.webp');
+const idolJaehyun = require('../assets/idols/idol_jaehyun.webp');
+const idolWonwoo = require('../assets/idols/idol_wonwoo.webp');
+const idolHyungwon = require('../assets/idols/idol_hyungwon.webp');
+const idolSangyeon = require('../assets/idols/idol_sangyeon.webp');
+const idolKoharu = require('../assets/idols/idol_koharu.webp');
+const idolTsukino = require('../assets/idols/idol_tsukino.webp');
+const idolRyusei = require('../assets/idols/idol_ryusei.webp');
+const idolZixuan = require('../assets/idols/idol_zixuan.webp');
+const idolBeilin = require('../assets/idols/idol_beilin.webp');
+const idolJunhao = require('../assets/idols/idol_junhao.webp');
+const idolMaprang = require('../assets/idols/idol_maprang.webp');
+const idolDecha = require('../assets/idols/idol_decha.webp');
+const idolMinhtu = require('../assets/idols/idol_minhtu.webp');
+const idolHailong = require('../assets/idols/idol_hailong.webp');
 
 export const LOGO_IMAGES: Record<number, ReturnType<typeof require>> = {
   1:  require('../assets/logos/1.webp'),
@@ -369,6 +389,26 @@ export const traineeArtPool = [
   { artKey: 98, gender: 'male', availableNationality: 'Thai', image: idolNattawee },
   { artKey: 99, gender: 'female', availableNationality: 'Thai', image: idolThida },
   { artKey: 100, gender: 'male', availableNationality: 'Korean', image: idolMinhyuk },
+  { artKey: 101, gender: 'female', availableNationality: 'Korean', image: idolChaeyoung },
+  { artKey: 102, gender: 'female', availableNationality: 'Korean', image: idolYerin },
+  { artKey: 103, gender: 'female', availableNationality: 'Korean', image: idolNayeon },
+  { artKey: 104, gender: 'female', availableNationality: 'Korean', image: idolRyujin },
+  { artKey: 105, gender: 'female', availableNationality: 'Korean', image: idolDahyun },
+  { artKey: 106, gender: 'male', availableNationality: 'Korean', image: idolSeungmin },
+  { artKey: 107, gender: 'male', availableNationality: 'Korean', image: idolJaehyun },
+  { artKey: 108, gender: 'male', availableNationality: 'Korean', image: idolWonwoo },
+  { artKey: 109, gender: 'male', availableNationality: 'Korean', image: idolHyungwon },
+  { artKey: 110, gender: 'male', availableNationality: 'Korean', image: idolSangyeon },
+  { artKey: 111, gender: 'female', availableNationality: 'Japanese', image: idolKoharu },
+  { artKey: 112, gender: 'female', availableNationality: 'Japanese', image: idolTsukino },
+  { artKey: 113, gender: 'male', availableNationality: 'Japanese', image: idolRyusei },
+  { artKey: 114, gender: 'female', availableNationality: 'Chinese', image: idolZixuan },
+  { artKey: 115, gender: 'female', availableNationality: 'Chinese', image: idolBeilin },
+  { artKey: 116, gender: 'male', availableNationality: 'Chinese', image: idolJunhao },
+  { artKey: 117, gender: 'female', availableNationality: 'Thai', image: idolMaprang },
+  { artKey: 118, gender: 'male', availableNationality: 'Thai', image: idolDecha },
+  { artKey: 119, gender: 'female', availableNationality: 'Vietnamese', image: idolMinhtu },
+  { artKey: 120, gender: 'male', availableNationality: 'Vietnamese', image: idolHailong },
 ] as const;
 
 export const trainingTypes = [

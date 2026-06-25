@@ -2,7 +2,7 @@ import { ArrowDownRight, ArrowUpRight, ChevronLeft, ChevronRight, TrendingDown, 
 import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card, SectionTitle } from '../components/AppShell';
-import { LineChart, ResponsiveChart, lineColors } from '../components/charts';
+import { BarChart, ResponsiveChart, barColors } from '../components/charts';
 import { getCityByName } from '../features/cities';
 import {
   calculateTotalFanbase,
@@ -10,10 +10,9 @@ import {
   selectFinanceHealth,
   selectRunwayWeeks,
 } from '../features/economy';
-import { fmtCount } from '../utils/format';
+import { fmt, fmtCount, aggregateMonthlyRevenue } from '../utils/format';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
-import { fmt } from '../utils/format';
 
 const TXN_PAGE_SIZE = 10;
 
@@ -50,6 +49,8 @@ export function FinanceScreen() {
   const runway  = selectRunwayWeeks(agency.money, net);
   const fanbase = calculateTotalFanbase(idols, groups);
 
+  const monthlyHistory = useMemo(() => aggregateMonthlyRevenue(revenueHistory), [revenueHistory]);
+
   // ── revenue sources (what actually drives income) ──────────────────────────
   const revSources = useMemo(() => {
     // Group: sum of group.monthlyRevenue / 4 = weekly
@@ -70,9 +71,9 @@ export function FinanceScreen() {
       }, 0);
     const total = groupWeekly + soloWeekly + merchWeekly;
     return [
-      { key: 'Group', weekly: groupWeekly,  color: lineColors.group, pct: pct(groupWeekly, total)  },
-      { key: 'Solo',  weekly: soloWeekly,   color: lineColors.solo,  pct: pct(soloWeekly,  total)  },
-      { key: 'Merch', weekly: merchWeekly,  color: lineColors.merch, pct: pct(merchWeekly, total)  },
+      { key: 'Group', weekly: groupWeekly,  color: barColors.group, pct: pct(groupWeekly, total)  },
+      { key: 'Solo',  weekly: soloWeekly,   color: barColors.solo,  pct: pct(soloWeekly,  total)  },
+      { key: 'Merch', weekly: merchWeekly,  color: barColors.merch, pct: pct(merchWeekly, total)  },
     ];
   }, [groups, idols]);
 
@@ -115,17 +116,28 @@ export function FinanceScreen() {
 
   // ── transaction pagination ─────────────────────────────────────────────────
   const [txPage, setTxPage] = useState(0);
-  const txReversed = useMemo(() => [...transactions].reverse(), [transactions]);
-  const txTotal    = txReversed.length;
-  const txPages    = Math.max(1, Math.ceil(txTotal / TXN_PAGE_SIZE));
+  const txReversed  = useMemo(() => [...transactions].reverse(), [transactions]);
+  const txTotal     = txReversed.length;
+  const txPages     = Math.max(1, Math.ceil(txTotal / TXN_PAGE_SIZE));
 
-  // Jump to page 0 (latest) whenever new transactions arrive
+  // Page 0 = newest items; its size is the remainder (e.g. 7 of 17 → shows 11–17)
+  // Subsequent pages are full TXN_PAGE_SIZE chunks going backwards in time.
+  const firstPageSize = txTotal % TXN_PAGE_SIZE || TXN_PAGE_SIZE;
+
   useEffect(() => { setTxPage(0); }, [txTotal]);
 
-  const txSlice   = txReversed.slice(txPage * TXN_PAGE_SIZE, (txPage + 1) * TXN_PAGE_SIZE);
-  // Range in original chronological 1-based numbering (newest = highest number)
-  const rangeHigh = txTotal - txPage * TXN_PAGE_SIZE;
-  const rangeLow  = Math.max(1, rangeHigh - TXN_PAGE_SIZE + 1);
+  const txSlice = useMemo(() => {
+    if (txPage === 0) return txReversed.slice(0, firstPageSize);
+    const start = firstPageSize + (txPage - 1) * TXN_PAGE_SIZE;
+    return txReversed.slice(start, start + TXN_PAGE_SIZE);
+  }, [txReversed, txPage, firstPageSize]);
+
+  // Range in original chronological 1-based numbering (highest = newest)
+  const rangeHigh = txPage === 0
+    ? txTotal
+    : txTotal - firstPageSize - (txPage - 1) * TXN_PAGE_SIZE;
+  const rangeSize = txPage === 0 ? firstPageSize : Math.min(TXN_PAGE_SIZE, rangeHigh);
+  const rangeLow  = Math.max(1, rangeHigh - rangeSize + 1);
 
   return (
     <AppShell title="Finance" subtitle="Agency ledger">
@@ -212,15 +224,15 @@ export function FinanceScreen() {
         <SectionTitle>REVENUE HISTORY</SectionTitle>
         <ResponsiveChart height={220}>
           {w => (
-            <LineChart
+            <BarChart
               width={w}
               height={220}
-              data={revenueHistory}
+              data={monthlyHistory}
               xKey="m"
               series={[
-                { key: 'group', color: lineColors.group, label: 'Group' },
-                { key: 'solo',  color: lineColors.solo,  label: 'Solo'  },
-                { key: 'merch', color: lineColors.merch, label: 'Merch' },
+                { key: 'group', color: barColors.group, label: 'Group' },
+                { key: 'solo',  color: barColors.solo,  label: 'Solo'  },
+                { key: 'merch', color: barColors.merch, label: 'Merch' },
               ]}
             />
           )}
@@ -440,5 +452,4 @@ const styles = StyleSheet.create({
   pagerBtnDisabled: { opacity: 0.3 },
   pagerLabel:       { fontSize: 12, fontWeight: '600', color: colors.foreground },
   pagerLabelDisabled:{ color: colors.mutedForeground },
-  pagerInfo:        { fontSize: 11, fontWeight: '700', color: colors.tealBright, minWidth: 64, textAlign: 'center' },
-});
+  pagerInfo:        { fontSize: 12, fontWeight: '700', color: colors.foreground, minWidth: 64, textAlign: 'center' },});

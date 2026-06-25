@@ -401,7 +401,7 @@ function ChartTracker({ groups, currentWeek }: { groups: Group[]; currentWeek: n
                 <Text style={styles.trackerTitle} numberOfLines={1}>"{r.title}"</Text>
                 <Text style={styles.trackerMeta}>
                   {r.groupName} · Week {r.weekReleased}
-                  {isNew ? '  🆕' : `  ${weeksSince} weeks ago`}
+                  {isNew ? '  NEW' : `  ${weeksSince} weeks ago`}
                 </Text>
                 <Text style={styles.trackerSales}>{fmtCount(r.totalSales)} sales</Text>
               </View>

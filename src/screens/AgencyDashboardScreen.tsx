@@ -4,7 +4,7 @@ import { Sparkles } from 'lucide-react-native';
 import React, { useMemo } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AppShell, Card } from '../components/AppShell';
-import { LineChart, ResponsiveChart, lineColors } from '../components/charts';
+import { BarChart, ResponsiveChart, barColors } from '../components/charts';
 import { DashboardAgendaStrip } from '../components/dashboard/DashboardAgendaStrip';
 import { DashboardBanner } from '../components/dashboard/DashboardBanner';
 import { DashboardGroupsStrip } from '../components/dashboard/DashboardGroupsStrip';
@@ -16,7 +16,7 @@ import { SESSION_COST, selectDynamicSchedule } from '../features/simulation';
 import type { RootStackParamList } from '../navigation/types';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
-import { fmt } from '../utils/format';
+import { fmt, aggregateMonthlyRevenue } from '../utils/format';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -53,10 +53,12 @@ export function AgencyDashboardScreen() {
 
   const canAfford = agency.money >= weeklyCost;
 
+  const monthlyHistory = useMemo(() => aggregateMonthlyRevenue(revenueHistory), [revenueHistory]);
+
   const totalRevenue = revenueHistory.reduce((sum, p) => sum + p.group + p.solo + p.merch, 0);
-  const revRangeLabel = revenueHistory.length >= 2
-    ? `${revenueHistory[0].m} – ${revenueHistory[revenueHistory.length - 1].m}`
-    : revenueHistory.length === 1 ? revenueHistory[0].m : null;
+  const revRangeLabel = monthlyHistory.length >= 2
+    ? `${monthlyHistory[0].m} – ${monthlyHistory[monthlyHistory.length - 1].m}`
+    : monthlyHistory.length === 1 ? monthlyHistory[0].m : null;
 
   const handleAdvance = () => {
     Alert.alert(
@@ -149,14 +151,14 @@ export function AgencyDashboardScreen() {
           </View>
           <ResponsiveChart height={200}>
             {width => (
-              <LineChart
+              <BarChart
                 width={width}
-                data={revenueHistory}
+                data={monthlyHistory}
                 xKey="m"
                 series={[
-                  { key: 'group', color: lineColors.group, label: 'Group' },
-                  { key: 'solo',  color: lineColors.solo,  label: 'Solo' },
-                  { key: 'merch', color: lineColors.merch, label: 'Merch' },
+                  { key: 'group', color: barColors.group, label: 'Group' },
+                  { key: 'solo',  color: barColors.solo,  label: 'Solo' },
+                  { key: 'merch', color: barColors.merch, label: 'Merch' },
                 ]}
               />
             )}

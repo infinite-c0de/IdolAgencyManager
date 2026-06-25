@@ -49,6 +49,17 @@ export const SESSION_COST: Record<string, number> = {
 
 const WEEKS_PER_YEAR = 52;
 
+const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const GAME_START_YEAR = 2026;
+
+/** January includes the year ("2026 Jan"), all other months just show abbreviation ("Jun"). */
+function weekToMonthLabel(week: number): string {
+  const totalMonths = Math.floor((week - 1) * 12 / 52);
+  const year  = GAME_START_YEAR + Math.floor(totalMonths / 12);
+  const month = totalMonths % 12;
+  return month === 0 ? `${year} Jan` : MONTH_ABBR[month];
+}
+
 function clamp(value: number, min = 0, max = 100) {
   return Math.max(min, Math.min(max, Math.round(value)));
 }
@@ -353,7 +364,7 @@ export function calculateWeeklyProgression({
     trainingCostAmount,
     weeklyMerchRevenue,
     revenuePoint: {
-      m: `W${currentWeek + 1}`,
+      m: weekToMonthLabel(currentWeek + 1),
       group: Math.round(groupsRevenue / 4),
       solo: Math.round(Math.max(nextIdols.filter(i => !i.group).length, 0) * 2_200_000),
       merch: weeklyMerchRevenue,
