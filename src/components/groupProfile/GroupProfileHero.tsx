@@ -33,17 +33,38 @@ function PortraitCell({ member }: { member: Idol }) {
   );
 }
 
+function buildRows(members: Idol[], numRows: number): Idol[][] {
+  const rows: Idol[][] = [];
+  let remaining = [...members];
+  for (let r = 0; r < numRows; r++) {
+    const rowsLeft = numRows - r;
+    const rowSize = Math.ceil(remaining.length / rowsLeft);
+    rows.push(remaining.splice(0, rowSize));
+  }
+  return rows;
+}
+
 export function GroupProfileHero({ group, members, synergyTier }: Props) {
   const logoPreset = group.logo?.kind === 'preset' ? group.logo.preset : 1;
   const fans = fmtCount(group.popularity * 3200);
+
+  const numRows = members.length > 8 ? 3 : members.length > 4 ? 2 : 1;
+  const rows = buildRows(members, numRows);
+  const collageHeight = numRows === 3 ? 260 : numRows === 2 ? 228 : 190;
 
   return (
     <View style={styles.hero}>
 
       {/* Portrait collage */}
-      <View style={styles.collage}>
+      <View style={[styles.collage, { height: collageHeight }]}>
         {members.length > 0 ? (
-          members.map(m => <PortraitCell key={m.id} member={m} />)
+          <View style={styles.collageRows}>
+            {rows.map((row, ri) => (
+              <View key={ri} style={styles.collageRow}>
+                {row.map(m => <PortraitCell key={m.id} member={m} />)}
+              </View>
+            ))}
+          </View>
         ) : (
           <View style={styles.collageEmpty} />
         )}
@@ -132,9 +153,17 @@ const styles = StyleSheet.create({
   // Portrait collage
   collage: {
     height: 190,
-    flexDirection: 'row',
     backgroundColor: '#080B12',
     position: 'relative',
+    overflow: 'hidden',
+  },
+  collageRows: {
+    flex: 1,
+    flexDirection: 'column',
+  },
+  collageRow: {
+    flex: 1,
+    flexDirection: 'row',
   },
   collageEmpty: {
     flex: 1,
