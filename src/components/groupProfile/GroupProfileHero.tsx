@@ -1,7 +1,6 @@
 import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { AgencyLogoMark } from '../ui/AgencyLogoMark';
-import { Gradient } from '../ui/Gradient';
 import { colors, radius, spacing } from '../../theme';
 import type { Group, Idol } from '../../types';
 import { fmt, fmtCount } from '../../utils/format';
@@ -69,65 +68,30 @@ export function GroupProfileHero({ group, members, synergyTier }: Props) {
           <View style={styles.collageEmpty} />
         )}
 
-        {/* Group gradient tint wash */}
-        <View style={styles.gradientWash} pointerEvents="none">
-          <Gradient
-            colors={[group.gradient[0] + '55', group.gradient[group.gradient.length - 1] + '55']}
-            direction="to-r"
-            style={StyleSheet.absoluteFill}
-          />
-        </View>
+        {/* Full black overlay — uniform brightness */}
+        <View style={styles.fullOverlay} pointerEvents="none" />
 
-        {/* Dark bottom fade for overlay legibility */}
-        <View style={styles.bottomFade} pointerEvents="none">
-          <Gradient
-            colors={['transparent', 'rgba(0,0,0,0.88)']}
-            direction="to-b"
-            style={StyleSheet.absoluteFill}
-          />
-        </View>
-
-        {/* Bottom overlay: logo + name + pills */}
-        <View style={styles.overlay}>
-          <View style={[styles.logoWrap, { borderColor: colors.borderStrong }]}>
-            {group.logo?.kind === 'custom' ? (
-              <Image source={{ uri: group.logo.uri }} style={styles.logoImg} resizeMode="cover" />
-            ) : (
-              <AgencyLogoMark preset={logoPreset} size={40} />
-            )}
-          </View>
-
-          <View style={styles.overlayText}>
-            <Text style={styles.groupName} numberOfLines={1}>{group.name}</Text>
-            <View style={styles.pillRow}>
-              <View style={[styles.pill, { borderColor: synergyTier.borderColor, backgroundColor: synergyTier.backgroundColor }]}>
-                <Text style={[styles.pillText, { color: synergyTier.textColor }]}>{group.status}</Text>
-              </View>
-              <View style={styles.pill}>
-                <Text style={styles.pillTextMuted}>{group.concept}</Text>
-              </View>
-            </View>
-            <Text style={styles.fandom}>
-              ♡{'  '}<Text style={styles.fandomVal}>{group.fanName}</Text>
-            </Text>
-          </View>
-
-          {/* Synergy badge */}
+        {/* Synergy badge — top right */}
+        <View style={styles.synergyCorner} pointerEvents="none">
           <View style={[styles.synergyBadge, { borderColor: synergyTier.borderColor, backgroundColor: synergyTier.backgroundColor }]}>
             <Text style={styles.synergyLabel}>SYNERGY</Text>
             <Text style={[styles.synergyNum, { color: synergyTier.textColor }]}>{group.synergy}</Text>
             <Text style={[styles.synergyTier, { color: synergyTier.textColor }]}>{synergyTier.label}</Text>
           </View>
         </View>
+
+        <View style={styles.statusCard}>
+          <Text style={styles.statusLabel}>{group.status}</Text>
+        </View>
       </View>
 
       {/* Stat strip */}
       <View style={styles.statStrip}>
-        <StatCell label="FANS"    value={fans}                           color={colors.violetBright} />
+        <StatCell label="FANS" value={fans} color={colors.violetBright} />
         <View style={styles.stripDivider} />
-        <StatCell label="INCOME"  value={group.monthlyRevenue ? fmt(group.monthlyRevenue) : '—'} color={colors.mint} />
+        <StatCell label="INCOME" value={group.monthlyRevenue ? fmt(group.monthlyRevenue) : '—'} color={colors.mint} />
         <View style={styles.stripDivider} />
-        <StatCell label="MEMBERS" value={`${group.memberIds.length}`}    color={colors.tealBright} />
+        <StatCell label="MEMBERS" value={`${group.memberIds.length}`} color={colors.tealBright} />
       </View>
     </View>
   );
@@ -188,48 +152,19 @@ const styles = StyleSheet.create({
     color: 'rgba(103,232,249,0.3)',
     letterSpacing: 2,
   },
-  gradientWash: {
-    ...StyleSheet.absoluteFillObject,
+  fullOverlay: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
-  bottomFade: {
+  synergyCorner: {
     position: 'absolute',
-    left: 0, right: 0, bottom: 0,
-    height: '65%',
+    top: spacing.md,
+    right: spacing.md,
   },
-
-  // Bottom overlay
-  overlay: {
+  statusCard: {
     position: 'absolute',
-    left: 0, right: 0, bottom: 0,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    padding: spacing.md,
-    gap: spacing.sm,
-  },
-  logoWrap: {
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    overflow: 'hidden',
-    flexShrink: 0,
-  },
-  logoImg: { width: 40, height: 40 },
-  overlayText: {
-    flex: 1,
-    gap: 4,
-    minWidth: 0,
-  },
-  groupName: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: colors.foreground,
-    letterSpacing: -0.4,
-  },
-  pillRow: {
-    flexDirection: 'row',
-    gap: 5,
-    flexWrap: 'wrap',
-  },
-  pill: {
+    left: spacing.md, 
+    top: spacing.md,
     borderRadius: radius.full,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.18)',
@@ -237,24 +172,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  pillText: {
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.4,
-  },
-  pillTextMuted: {
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.4,
-    color: 'rgba(255,255,255,0.6)',
-  },
-  fandom: {
-    fontSize: 10,
-    color: colors.mutedForeground,
-  },
-  fandomVal: {
-    fontWeight: '700',
-    color: colors.violetBright,
+  statusLabel: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.foreground,
   },
   synergyBadge: {
     alignItems: 'center',

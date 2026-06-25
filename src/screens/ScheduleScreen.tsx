@@ -329,7 +329,7 @@ export function ScheduleScreen() {
         {promoMode === 'group' ? (
           <>
             <Text style={styles.tinyMuted}>Step 1: pick group</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.selectRow}>
+            <View style={styles.selectRow}>
               {groups.map(group => {
                 const active = selectedGroupId === group.id;
                 const logoPreset = group.logo?.kind === 'preset' ? group.logo.preset : 1;
@@ -347,7 +347,7 @@ export function ScheduleScreen() {
                 );
               })}
               {groups.length === 0 && <Text style={styles.tinyMuted}>Create a group first to unlock group promotions.</Text>}
-            </ScrollView>
+            </View>
           </>
         ) : (
           <>

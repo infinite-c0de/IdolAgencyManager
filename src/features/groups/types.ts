@@ -107,6 +107,40 @@ export type ReleaseDebutBuildResult =
     }
   | Extract<ReleaseDebutResult, { ok: false }>;
 
+export type RemoveGroupMemberPayload = {
+  groupId: string;
+  memberId: string;
+};
+
+export type RemoveGroupMemberResult =
+  | { ok: true; groupName: string }
+  | { ok: false; reason: 'GROUP_NOT_FOUND' | 'MEMBER_NOT_FOUND' | 'TOO_FEW_MEMBERS' };
+
+export type RemoveGroupMemberBuildResult =
+  | { ok: true; group: Group; updatedIdols: Idol[] }
+  | Extract<RemoveGroupMemberResult, { ok: false }>;
+
+export type DisbandGroupResult =
+  | { ok: true; groupName: string }
+  | { ok: false; reason: 'GROUP_NOT_FOUND' | 'ALREADY_DISBANDED' };
+
+export type DisbandGroupBuildResult =
+  | { ok: true; group: Group; updatedIdols: Idol[] }
+  | Extract<DisbandGroupResult, { ok: false }>;
+
+export type RenameGroupPayload = {
+  groupId: string;
+  name: string;
+};
+
+export type RenameGroupResult =
+  | { ok: true; groupName: string }
+  | { ok: false; reason: 'GROUP_NOT_FOUND' | 'MISSING_NAME' | 'DUPLICATE_NAME' };
+
+export type RenameGroupBuildResult =
+  | { ok: true; group: Group; updatedIdols: Idol[] }
+  | Extract<RenameGroupResult, { ok: false }>;
+
 export type UseGroupActionsParams = {
   idols: Idol[];
   groups: Group[];

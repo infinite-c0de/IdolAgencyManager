@@ -6,6 +6,11 @@ import type {
   AddGroupMembersPayload,
   CreateGroupBuildResult,
   CreateGroupPayload,
+  DisbandGroupBuildResult,
+  RemoveGroupMemberBuildResult,
+  RemoveGroupMemberPayload,
+  RenameGroupBuildResult,
+  RenameGroupPayload,
   UpdateGroupRolesBuildResult,
   UpdateGroupRolesPayload,
 } from './types';
@@ -426,6 +431,94 @@ export function buildGroupReadiness(members: GroupMember[], group: import('../..
     ready: members.length >= 3 && hasLeader && vocalAvg >= 70 && danceAvg >= 70,
     checks,
   };
+}
+
+export function disbandGroup(
+  groups: Group[],
+  idols: Idol[],
+  groupId: string,
+): DisbandGroupBuildResult {
+  const group = groups.find(g => g.id === groupId);
+  if (!group) return { ok: false, reason: 'GROUP_NOT_FOUND' };
+  if (group.status === 'Disbanded') return { ok: false, reason: 'ALREADY_DISBANDED' };
+
+  const updatedGroup: Group = {
+    ...group,
+    status: 'Disbanded',
+    monthlyRevenue: 0,
+    synergy: 0,
+  };
+
+  const updatedIdols = idols.map(idol =>
+    group.memberIds.includes(idol.id)
+      ? { ...idol, group: undefined, status: 'Active' as const, role: 'Member' }
+      : idol,
+  );
+
+  return { ok: true, group: updatedGroup, updatedIdols };
+}
+
+export function removeGroupMember(
+  groups: Group[],
+  idols: Idol[],
+  payload: RemoveGroupMemberPayload,
+): RemoveGroupMemberBuildResult {
+  const group = groups.find(g => g.id === payload.groupId);
+  if (!group) return { ok: false, reason: 'GROUP_NOT_FOUND' };
+  if (!group.memberIds.includes(payload.memberId)) return { ok: false, reason: 'MEMBER_NOT_FOUND' };
+  if (group.memberIds.length <= MIN_GROUP_MEMBERS) return { ok: false, reason: 'TOO_FEW_MEMBERS' };
+
+  const newMemberIds = group.memberIds.filter(id => id !== payload.memberId);
+  const newRoleAssignments = group.roleAssignments
+    ? (Object.fromEntries(
+        Object.entries(group.roleAssignments).filter(([, id]) => id !== payload.memberId),
+      ) as Partial<Record<GroupRole, string>>)
+    : undefined;
+
+  const updatedIdols = idols.map(idol =>
+    idol.id === payload.memberId
+      ? { ...idol, group: undefined, status: 'Active' as const, role: 'Member' }
+      : idol,
+  );
+
+  const remainingMembers = newMemberIds
+    .map(id => updatedIdols.find(i => i.id === id))
+    .filter((i): i is Idol => Boolean(i));
+
+  const updatedGroupBase: Group = { ...group, memberIds: newMemberIds, roleAssignments: newRoleAssignments };
+  const metrics = recalculateGroupMetrics(updatedGroupBase, remainingMembers);
+  const updatedGroup: Group = {
+    ...updatedGroupBase,
+    popularity: metrics.popularity,
+    synergy: metrics.synergy,
+    monthlyRevenue: metrics.monthlyRevenue,
+  };
+
+  return { ok: true, group: updatedGroup, updatedIdols };
+}
+
+export function renameGroup(
+  groups: Group[],
+  idols: Idol[],
+  payload: RenameGroupPayload,
+): RenameGroupBuildResult {
+  const name = payload.name.trim();
+  if (!name) return { ok: false, reason: 'MISSING_NAME' };
+
+  const group = groups.find(g => g.id === payload.groupId);
+  if (!group) return { ok: false, reason: 'GROUP_NOT_FOUND' };
+
+  if (groups.some(g => g.id !== payload.groupId && g.name.trim().toLowerCase() === name.toLowerCase())) {
+    return { ok: false, reason: 'DUPLICATE_NAME' };
+  }
+
+  const oldName = group.name;
+  const updatedGroup: Group = { ...group, name };
+  const updatedIdols = idols.map(idol =>
+    idol.group === oldName ? { ...idol, group: name } : idol,
+  );
+
+  return { ok: true, group: updatedGroup, updatedIdols };
 }
 
 /** Pure projection used both for preview and actual release. */

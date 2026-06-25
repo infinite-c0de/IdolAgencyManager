@@ -488,7 +488,7 @@ export const BASE_REFRESH_COST = 10_000_000;
 // ── Roster & group size limits ──────────────────────────────────────────────
 export const MAX_ROSTER_SIZE = 30;
 export const MIN_GROUP_MEMBERS = 2;
-export const MAX_GROUP_MEMBERS = 6;
+export const MAX_GROUP_MEMBERS = 12;
 
 export const conceptOptions = ['Girl Crush', 'Fresh', 'Elegant', 'Hip-Hop', 'Ballad', 'Experimental', 'Global Pop'];
 export const languageOptions = ['Korean', 'Japanese', 'Chinese', 'Vietnamese', 'English'];

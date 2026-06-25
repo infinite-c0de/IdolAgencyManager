@@ -2,8 +2,9 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ChevronLeft, Sparkles } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
-import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { AppShell, Avatar, Card } from '../components/AppShell';
+import { AgencyLogoMark } from '../components/ui/AgencyLogoMark';
 import { GroupLineupTab } from '../components/groupProfile/GroupLineupTab';
 import { GroupPerformanceTab } from '../components/groupProfile/GroupPerformanceTab';
 import { GroupProfileHero } from '../components/groupProfile/GroupProfileHero';
@@ -11,7 +12,7 @@ import { GroupProfileTabBar } from '../components/groupProfile/GroupProfileTabBa
 import type { GroupProfileTab } from '../components/groupProfile/GroupProfileTabBar';
 import { GroupReleasesTab } from '../components/groupProfile/GroupReleasesTab';
 import { buildGroupRadar, buildGroupReadiness, getGroupMembers } from '../features/groups';
-import { MAX_GROUP_MEMBERS } from '../data/gameData';
+import { MAX_GROUP_MEMBERS, MIN_GROUP_MEMBERS } from '../data/gameData';
 import type { RootStackParamList } from '../navigation/types';
 import { useGame } from '../state/GameContext';
 import { colors, radius, spacing } from '../theme';
@@ -62,13 +63,15 @@ function isAssignedToKnownGroup(groupRef: string | undefined, groups: ReturnType
 export function GroupProfileScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute();
-  const { groups, idols, addGroupMembers, updateGroupRoles } = useGame();
+  const { groups, idols, addGroupMembers, updateGroupRoles, disbandGroup, removeGroupMember, renameGroup } = useGame();
 
   const [tab, setTab] = useState<GroupProfileTab>('lineup');
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openRoleModal, setOpenRoleModal] = useState(false);
+  const [openRenameModal, setOpenRenameModal] = useState(false);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [draftRoles, setDraftRoles] = useState<Partial<Record<GroupRole, string>>>({});
+  const [renameInput, setRenameInput] = useState('');
 
   const groupId = (route.params as RootStackParamList['GroupProfile'] | undefined)?.groupId;
   const group = groups.find(g => g.id === groupId) ?? groups[0];
@@ -149,6 +152,81 @@ export function GroupProfileScreen() {
     closeRoleModal();
   };
 
+  const handleRemoveMember = (memberId: string) => {
+    const member = members.find(m => m.id === memberId);
+    Alert.alert(
+      'Remove member',
+      `Remove ${member?.stageName ?? 'this idol'} from ${group.name}? They will return to the solo roster.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => {
+            const result = removeGroupMember({ groupId: group.id, memberId });
+            if (!result.ok) {
+              const messages: Record<typeof result.reason, string> = {
+                GROUP_NOT_FOUND: 'Group not found.',
+                MEMBER_NOT_FOUND: 'Member not found in group.',
+                TOO_FEW_MEMBERS: `Groups require at least ${MIN_GROUP_MEMBERS} members. Disband the group instead.`,
+              };
+              Alert.alert('Cannot remove member', messages[result.reason]);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleDisband = () => {
+    Alert.alert(
+      'Disband group',
+      `Disband ${group.name}? All members will return to the solo roster. The group history is preserved.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Disband',
+          style: 'destructive',
+          onPress: () => {
+            const result = disbandGroup(group.id);
+            if (!result.ok) {
+              Alert.alert('Error', result.reason === 'ALREADY_DISBANDED' ? 'Group is already disbanded.' : 'Group not found.');
+            } else {
+              navigation.navigate('Groups');
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const openRenameEditor = () => { setRenameInput(group.name); setOpenRenameModal(true); };
+  const closeRenameModal = () => { setRenameInput(''); setOpenRenameModal(false); };
+  const saveRename = () => {
+    const result = renameGroup({ groupId: group.id, name: renameInput });
+    if (!result.ok) {
+      const messages: Record<typeof result.reason, string> = {
+        GROUP_NOT_FOUND: 'Group not found.',
+        MISSING_NAME: 'Name cannot be empty.',
+        DUPLICATE_NAME: 'Another group already uses this name.',
+      };
+      Alert.alert('Cannot rename', messages[result.reason]);
+      return;
+    }
+    closeRenameModal();
+  };
+
+  const logoPreset = group.logo?.kind === 'preset' ? group.logo.preset : 1;
+  const groupLogoIcon = (
+    <View style={styles.headerLogoWrap}>
+      {group.logo?.kind === 'custom' ? (
+        <Image source={{ uri: group.logo.uri }} style={styles.headerLogoImg} resizeMode="cover" />
+      ) : (
+        <AgencyLogoMark preset={logoPreset} size={36} />
+      )}
+    </View>
+  );
+
   const backBtn = (
     <TouchableOpacity style={styles.backBtn} onPress={() => navigation.navigate('Groups')} activeOpacity={0.8}>
       <ChevronLeft size={14} color={colors.slate900} />
@@ -157,7 +235,7 @@ export function GroupProfileScreen() {
   );
 
   return (
-    <AppShell title={group.name} subtitle="Group Profile" action={backBtn}>
+    <AppShell title={group.name} subtitle={`${group.fanName}  ·  ${group.concept}`} icon={groupLogoIcon} action={backBtn}>
 
       {/* Hero */}
       <GroupProfileHero group={group} members={members} synergyTier={synergyTier} />
@@ -174,9 +252,13 @@ export function GroupProfileScreen() {
             alerts={alerts}
             readinessChecks={readiness.checks}
             readinessReady={readiness.ready}
+            canDisband={group.status !== 'Disbanded'}
             onMemberPress={id => navigation.navigate('IdolProfile', { id })}
             onAddMember={() => setOpenAddModal(true)}
             onManageRoles={openRoleEditor}
+            onRemoveMember={handleRemoveMember}
+            onDisband={handleDisband}
+            onRename={openRenameEditor}
           />
         )}
 
@@ -197,7 +279,7 @@ export function GroupProfileScreen() {
           <GroupReleasesTab releases={group.releases} />
         )}
 
-      </View>
+        </View>
 
       {/* ── ADD MEMBERS MODAL ── */}
       <Modal visible={openAddModal} transparent animationType="fade" onRequestClose={closeAddModal}>
@@ -318,6 +400,36 @@ export function GroupProfileScreen() {
         </View>
       </Modal>
 
+      {/* ── RENAME MODAL ── */}
+      <Modal visible={openRenameModal} transparent animationType="fade" onRequestClose={closeRenameModal}>
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, styles.renameModalCard]}>
+            <Text style={styles.modalTitle}>Rename Group</Text>
+            <Text style={styles.modalSub}>Enter a new name for {group.name}.</Text>
+            <TextInput
+              style={styles.renameInput}
+              value={renameInput}
+              onChangeText={setRenameInput}
+              placeholder="Group name…"
+              placeholderTextColor={colors.mutedForeground}
+              autoFocus
+              maxLength={40}
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={closeRenameModal} activeOpacity={0.8}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.confirmBtn, renameInput.trim().length === 0 && styles.confirmBtnDim]}
+                onPress={saveRename}
+                activeOpacity={0.8}>
+                <Text style={styles.confirmText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </AppShell>
   );
 }
@@ -327,6 +439,16 @@ const styles = StyleSheet.create({
   subMuted: { fontSize: 11, color: colors.mutedForeground },
   emptyText: { color: colors.mutedForeground, textAlign: 'center', fontSize: 12 },
 
+  headerLogoWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.whiteA05,
+  },
+  headerLogoImg: { width: 40, height: 40 },
   backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -337,7 +459,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   backText: { fontSize: 11, fontWeight: '700', color: colors.slate900 },
-
   tabContent: { marginTop: spacing.sm },
 
   // Modal
@@ -432,6 +553,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(103,232,249,0.3)',
     padding: spacing.lg,
+  },
+  renameModalCard: { maxHeight: 260 },
+  renameInput: {
+    marginTop: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.whiteA05,
+    color: colors.foreground,
+    fontSize: 15,
+    fontWeight: '700',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   modalTitle: { fontSize: 18, fontWeight: '900', color: colors.tealBright },
   modalSub:   { fontSize: 11, color: colors.mutedForeground, marginTop: 4 },

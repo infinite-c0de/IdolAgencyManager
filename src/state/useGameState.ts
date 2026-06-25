@@ -24,8 +24,13 @@ import type {
   AddGroupMembersResult,
   CreateGroupPayload,
   CreateGroupResult,
+  DisbandGroupResult,
   ReleaseDebutPayload,
   ReleaseDebutResult,
+  RemoveGroupMemberPayload,
+  RemoveGroupMemberResult,
+  RenameGroupPayload,
+  RenameGroupResult,
   UpdateGroupRolesPayload,
   UpdateGroupRolesResult,
 } from '../features/groups';
@@ -72,6 +77,9 @@ export type GameState = {
   createGroup: (payload: CreateGroupPayload) => CreateGroupResult;
   addGroupMembers: (payload: AddGroupMembersPayload) => AddGroupMembersResult;
   updateGroupRoles: (payload: UpdateGroupRolesPayload) => UpdateGroupRolesResult;
+  disbandGroup: (groupId: string) => DisbandGroupResult;
+  removeGroupMember: (payload: RemoveGroupMemberPayload) => RemoveGroupMemberResult;
+  renameGroup: (payload: RenameGroupPayload) => RenameGroupResult;
   setTrainingPlan: (targetId: string, plan: Record<string, string>) => void;
   advanceWeek: () => void;
   releaseDebut: (payload: ReleaseDebutPayload) => ReleaseDebutResult;
@@ -157,7 +165,7 @@ export function useGameState(): GameState {
     setIsAgencyCreated,
   });
 
-  const { createGroup, addGroupMembers, updateGroupRoles } = useGroupActions({
+  const { createGroup, addGroupMembers, updateGroupRoles, disbandGroup, removeGroupMember, renameGroup } = useGroupActions({
     idols,
     groups,
     setIdols,
@@ -472,6 +480,9 @@ export function useGameState(): GameState {
       createGroup,
       addGroupMembers,
       updateGroupRoles,
+      disbandGroup,
+      removeGroupMember,
+      renameGroup,
       setTrainingPlan,
       advanceWeek,
       releaseDebut,
@@ -509,6 +520,9 @@ export function useGameState(): GameState {
       createGroup,
       addGroupMembers,
       updateGroupRoles,
+      disbandGroup,
+      removeGroupMember,
+      renameGroup,
       setTrainingPlan,
       advanceWeek,
       releaseDebut,

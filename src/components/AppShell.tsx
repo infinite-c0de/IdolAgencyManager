@@ -161,14 +161,17 @@ export function MoreNavRow() {
 export function PageHeader({
   title,
   subtitle,
+  icon,
   action,
 }: {
   title: string;
   subtitle?: string;
+  icon?: ReactNode;
   action?: ReactNode;
 }) {
   return (
     <View style={styles.pageHeader}>
+      {icon ? <View style={styles.pageHeaderIcon}>{icon}</View> : null}
       <View style={styles.flex1}>
         <Text style={styles.pageTitle}>{title}</Text>
         {subtitle ? <Text style={styles.pageSubtitle}>{subtitle}</Text> : null}
@@ -182,11 +185,13 @@ export function AppShell({
   children,
   title,
   subtitle,
+  icon,
   action,
 }: {
   children: ReactNode;
   title?: string;
   subtitle?: string;
+  icon?: ReactNode;
   action?: ReactNode;
 }) {
   const insets = useSafeAreaInsets();
@@ -199,7 +204,7 @@ export function AppShell({
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
-        {title ? <PageHeader title={title} subtitle={subtitle} action={action} /> : null}
+        {title ? <PageHeader title={title} subtitle={subtitle} icon={icon} action={action} /> : null}
         {children}
       </ScrollView>
       <BottomNav />
@@ -414,10 +419,15 @@ const styles = StyleSheet.create({
 
   pageHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    gap: spacing.md,
+    gap: spacing.sm,
     paddingHorizontal: spacing.xs,
+  },
+  pageHeaderIcon: {
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    flexShrink: 0,
   },
   pageTitle: {
     color: colors.foreground,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, TouchableOpacity } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { buildGroupReadiness } from '../../features/groups';
 import { colors, radius } from '../../theme';
 import type { Group, Idol } from '../../types';
@@ -33,51 +33,56 @@ export function GroupCard({ group, members, onPress }: Props) {
   const isPreDebut = group.status === 'Pre-debut';
 
   return (
-    <TouchableOpacity
+    // Outer shadow wrapper — must NOT have overflow:hidden so shadows render
+    <View
       style={[
-        styles.card,
-        { borderColor },
+        styles.shadow,
         shadowColor && { shadowColor, shadowOpacity: 0.25, shadowRadius: 10 },
-      ]}
-      onPress={onPress}
-      activeOpacity={0.88}>
+      ]}>
+      {/* Inner card clips to border radius */}
+      <View style={[styles.card, { borderColor }]}>
 
-      <GroupCardHeader
-        name={group.name}
-        fanName={group.fanName}
-        concept={group.concept}
-        logo={group.logo}
-        status={group.status}
-        memberCount={members.length}
-        gradient={group.gradient}
-      />
-
-      <GroupStatStrip
-        popularity={group.popularity}
-        monthlyRevenue={group.monthlyRevenue}
-        synergy={group.synergy}
-      />
-
-      <GroupMemberRow members={members} />
-
-      {isPreDebut && (
-        <GroupReadinessBar
-          checks={readiness.checks}
-          ready={readiness.ready}
+        <GroupCardHeader
+          name={group.name}
+          fanName={group.fanName}
+          concept={group.concept}
+          logo={group.logo}
+          status={group.status}
+          memberCount={members.length}
+          gradient={group.gradient}
+          onViewPress={onPress}
         />
-      )}
+        <GroupStatStrip
+          popularity={group.popularity}
+          monthlyRevenue={group.monthlyRevenue}
+          synergy={group.synergy}
+        />
 
-    </TouchableOpacity>
+        {/* Free-scrolling member row — NOT inside TouchableOpacity */}
+        <GroupMemberRow members={members} />
+
+        {isPreDebut && (
+          <GroupReadinessBar
+            checks={readiness.checks}
+            ready={readiness.ready}
+          />
+        )}
+
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  shadow: {
+    borderRadius: radius.xl,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 4,
+  },
   card: {
     borderRadius: radius.xl,
     overflow: 'hidden',
     borderWidth: 1,
     backgroundColor: 'rgba(20,23,34,0.92)',
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 4,
   },
 });

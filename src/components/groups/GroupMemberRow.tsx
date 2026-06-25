@@ -25,7 +25,7 @@ function MemberCell({ member }: { member: Idol }) {
         )}
         {isLeader && (
           <View style={styles.crownBadge}>
-            <Crown size={8} color={colors.amber} />
+            <Crown size={7} color={colors.amber} />
           </View>
         )}
       </View>
@@ -40,6 +40,8 @@ export function GroupMemberRow({ members }: Props) {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
+      scrollEnabled
+      nestedScrollEnabled
       contentContainerStyle={styles.row}>
       {members.map(m => (
         <MemberCell key={m.id} member={m} />
@@ -48,19 +50,19 @@ export function GroupMemberRow({ members }: Props) {
   );
 }
 
-const AVATAR = 46;
+const AVATAR = 45;
 
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: spacing.xs,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
   cell: {
     alignItems: 'center',
     gap: 3,
-    width: AVATAR + 8,
+    width: AVATAR + 6,
   },
   avatarWrap: {
     width: AVATAR,
@@ -86,7 +88,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.tealActiveBg,
   },
   avatarInitials: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '900',
     color: 'rgba(103,232,249,0.4)',
     letterSpacing: 1,
@@ -95,8 +97,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 1,
     right: 1,
-    width: 14,
-    height: 14,
+    width: 13,
+    height: 13,
     borderRadius: radius.full,
     backgroundColor: 'rgba(0,0,0,0.75)',
     alignItems: 'center',

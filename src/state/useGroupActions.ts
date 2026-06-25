@@ -1,9 +1,14 @@
-import { addMembersToExistingGroup, createGroupFromIdols, updateGroupRoles } from '../features/groups';
+import { addMembersToExistingGroup, createGroupFromIdols, disbandGroup, removeGroupMember, renameGroup, updateGroupRoles } from '../features/groups';
 import type {
   AddGroupMembersPayload,
   AddGroupMembersResult,
   CreateGroupPayload,
   CreateGroupResult,
+  DisbandGroupResult,
+  RemoveGroupMemberPayload,
+  RemoveGroupMemberResult,
+  RenameGroupPayload,
+  RenameGroupResult,
   UpdateGroupRolesPayload,
   UpdateGroupRolesResult,
   UseGroupActionsParams,
@@ -45,5 +50,39 @@ export function useGroupActions({ idols, groups, setIdols, setGroups }: UseGroup
     return { ok: true, groupName: result.group.name };
   };
 
-  return { createGroup, addGroupMembers, updateGroupRoles: updateRoles };
+  const disbandGroupAction = (groupId: string): DisbandGroupResult => {
+    const result = disbandGroup(groups, idols, groupId);
+    if (!result.ok) return result;
+
+    setGroups(current => current.map(g => (g.id === result.group.id ? result.group : g)));
+    setIdols(result.updatedIdols);
+    return { ok: true, groupName: result.group.name };
+  };
+
+  const removeGroupMemberAction = (payload: RemoveGroupMemberPayload): RemoveGroupMemberResult => {
+    const result = removeGroupMember(groups, idols, payload);
+    if (!result.ok) return result;
+
+    setGroups(current => current.map(g => (g.id === result.group.id ? result.group : g)));
+    setIdols(result.updatedIdols);
+    return { ok: true, groupName: result.group.name };
+  };
+
+  const renameGroupAction = (payload: RenameGroupPayload): RenameGroupResult => {
+    const result = renameGroup(groups, idols, payload);
+    if (!result.ok) return result;
+
+    setGroups(current => current.map(g => (g.id === result.group.id ? result.group : g)));
+    setIdols(result.updatedIdols);
+    return { ok: true, groupName: result.group.name };
+  };
+
+  return {
+    createGroup,
+    addGroupMembers,
+    updateGroupRoles: updateRoles,
+    disbandGroup: disbandGroupAction,
+    removeGroupMember: removeGroupMemberAction,
+    renameGroup: renameGroupAction,
+  };
 }

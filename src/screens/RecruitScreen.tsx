@@ -173,23 +173,23 @@ export function RecruitScreen() {
         <View style={styles.filterSection}>
           <Text style={styles.filterSectionLabel}>SKILL</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-            {filters.map(f => {
-              const active = activeFilter === f;
+          {filters.map(f => {
+            const active = activeFilter === f;
               const accent = SKILL_COLOR[f];
               const count = f === 'All' ? orderedCandidates.length : orderedCandidates.filter(t => t.skill === f).length;
               const hasMatches = count > 0;
-              return (
-                <TouchableOpacity
-                  key={f}
+            return (
+              <TouchableOpacity
+                key={f}
                   onPress={() => handleSkillFilterPress(f)}
                   style={[styles.filterChip, active && { borderColor: (accent ?? colors.tealBright) + 'AA', backgroundColor: (accent ?? colors.tealBright) + '18' }, !hasMatches && styles.filterChipEmpty]}
-                  activeOpacity={0.7}>
+                activeOpacity={0.7}>
                   {accent && <View style={[styles.filterDot, { backgroundColor: accent, opacity: active ? 1 : hasMatches ? 0.35 : 0.15 }]} />}
                   <Text style={[styles.filterText, active && { color: accent ?? colors.tealBright, fontWeight: '700' }, !hasMatches && styles.filterTextEmpty]}>{f}</Text>
                   {f !== 'All' && <Text style={[styles.filterCount, active && { color: accent ?? colors.tealBright }]}>{count}</Text>}
-                </TouchableOpacity>
-              );
-            })}
+              </TouchableOpacity>
+            );
+          })}
           </ScrollView>
         </View>
 
@@ -211,8 +211,8 @@ export function RecruitScreen() {
                 </TouchableOpacity>
               );
             })}
-          </View>
-        </View>
+                  </View>
+                </View>
 
         {/* Nationality row */}
         <View style={styles.filterSection}>
@@ -234,7 +234,7 @@ export function RecruitScreen() {
               );
             })}
           </ScrollView>
-        </View>
+              </View>
 
         {/* Refresh CTA + match count */}
         <View style={styles.refreshRow}>
@@ -340,7 +340,7 @@ export function RecruitScreen() {
                 onPress={() => setConfirm(null)}
                 activeOpacity={0.8}>
                 <Text style={styles.continueText}>Continue Scouting</Text>
-              </TouchableOpacity>
+            </TouchableOpacity>
             </View>
           </View>
         </View>
